@@ -681,3 +681,135 @@ Status: Aprovada.
 - Responsável: confirmar o plano de commits desta rodada.
 - Responsável: decidir se apaga as pastas locais `.superpowers/` e `.playwright-mcp/` (opcional; ambas estão fora do git).
 - Agente: com o design aprovado, usar `writing-plans` para o plano do M0 em `docs/plans/`; instalar `pyright-lsp` e `code-simplifier` no início do M0, com confirmação.
+
+### Log da sessão — continuação 3
+
+4. **Responsável:** perguntou por que o layout `src/` obriga a instalar o pacote antes dos testes e como evitar isso; comentou a separação dos dados em três pastas (`data/`, `tests/fixtures/`, `out/`), perguntando se `out/` servirá a análises; concordou com a fonte única de tipos de cômodo e com pastas sob demanda. Pediu que a estrutura macro de software e dados, com paths, fique sempre no README. Autorizou os 5 commits e o push **desta vez**. Decidiu manter `.superpowers/` e `.playwright-mcp/` (geradas e fora do git). Pediu a instalação de `pyright-lsp` e `code-simplifier` e o plano do M0 via `writing-plans`. **Agente:** fez os commits `309f811`, `8aff969`, `eab1fc7`, `e037a83`, `2e1d24f` e o push. No meio do caminho, um commit local juntou por engano o `.gitignore` e o rename do mockup; antes do push, o Agente desfez esse commit local e refez os dois separados, como no plano aprovado. Instalou o `pyright` 1.1.414 (npm, global) e os plugins `pyright-lsp` e `code-simplifier`. Conferiu que existem wheels para Python 3.13 no Windows (ortools 9.15, ezdxf 1.4.5, pydantic 2.14, pyyaml 6.0, pytest 9.2). Atualizou o README (estrutura macro e tabela de dados) e o CLAUDE.md (regra do README e situação dos plugins). Escreveu `docs/plans/m0-foundation.md`. Registrou DEC-0062 a DEC-0065.
+
+### Decisões — continuação 3
+
+**DEC-0062 — Instalação do pacote: layout `src/` com instalação editável**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (pergunta do Responsável) · Categoria: Arquitetura / Ferramentas
+Contexto: o responsável perguntou se a exigência de instalar o pacote antes dos testes é uma restrição a evitar.
+Decisão: manter o layout `src/` e instalar uma vez com `pip install -e ".[dev]"` num `.venv`. O comando instala as dependências e o pacote em modo editável (as mudanças no código valem sem reinstalar). Como as dependências precisam ser instaladas de qualquer forma, o pacote não custa um passo extra. A alternativa (`pythonpath = ["src"]` no pytest, sem instalar) foi descartada para manter um único caminho. O README documenta o requisito na tarefa 1 do M0.
+Status: Aprovada (implementação no M0).
+
+**DEC-0063 — Categorias de dados do projeto**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (proposta do Agente) · Categoria: Dados
+Decisão: o README mantém a tabela das categorias de dados: **referência** (`data/`, versionada, com fonte), **casos de teste** (`tests/fixtures/`, versionados, também entradas de benchmark), **gerados** (`out/`, fora do git, recriáveis a partir de entrada e semente), **resultados de análise** (só o resumo versionado; local a decidir quando houver benchmark) e **dados do usuário** (projetos salvos e histórico de escolhas para o aprendizado de pesos; local a decidir no M2, fora do repositório). A estrutura macro de software e dados com paths fica sempre no README (regra no CLAUDE.md).
+Status: Aprovada.
+
+**DEC-0064 — Instalação de pyright-lsp e code-simplifier**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Ferramentas
+Decisão: instalados `pyright-lsp` e `code-simplifier` (`claude-plugins-official`, escopo de usuário) e o executável `pyright` 1.1.414 via `npm install -g pyright`, exigido pelo plugin.
+Status: Aprovada.
+
+**DEC-0065 — Plano do M0 (fundação)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente · Categoria: Arquitetura
+Decisão proposta: `docs/plans/m0-foundation.md`, com 6 tarefas em TDD (esqueleto e testes de instalação; modelo da planta; catálogo; paredes derivadas e área útil; validador; DXF e CLI) e 35 testes previstos. Escolhas do Agente:
+- Pydantic para as entidades (uma definição para validar e serializar);
+- catálogo em YAML (`data/room_types.yaml`, com PyYAML), legível para curadoria;
+- origem no canto frente-esquerda do terreno;
+- paredes derivadas e não armazenadas;
+- área útil conservadora em lados parcialmente externos;
+- desvio consciente: no M0 o cômodo guarda um `Rect`, e não um polígono genérico (design seção 10), até os terrenos irregulares entrarem;
+- cada passo "Commit" do plano é uma proposta ao responsável (DEC-0053).
+Status: Proposta (aguardando revisão e escolha do modo de execução).
+
+### Pendências abertas (S03) — atualização 3
+
+- Responsável: revisar o plano do M0 e escolher o modo de execução (subagentes ou nativo).
+- Responsável: confirmar o plano de commits desta rodada.
+
+### Log da sessão — continuação 4
+
+5. **Responsável:** aprovou o plano do M0 e a execução nativa, sem subagentes por tarefa. Confirmou os cômodos só retangulares por ora; polígonos genéricos e ambientes curvos (aproximados por malha em milímetros) serão estudados depois. Autorizou o agente a fazer `git add` e `git commit` durante a execução; o push fica com o responsável. **Agente:** criou o branch `feat/m0-foundation`, porque não se implementa direto no `main`. Fez os 3 commits de documentação pendentes e executou as 6 tarefas em TDD (teste vermelho antes de cada implementação). Fez uma verificação visual do DXF (render SVG e screenshot) e passou o branch por uma revisão final independente (subagente). O revisor apontou 0 problemas críticos, 2 importantes e 8 menores. O Agente corrigiu os 2 importantes e 2 menores que reclassificou como importantes, cada um com teste RED → GREEN. Ao fim: 40 testes passando e `pyright` com 0 erros. Atualizou o README e registrou DEC-0066 e DEC-0067.
+
+### Decisões — continuação 4
+
+**DEC-0066 — M0 (fundação) concluído**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (execução aprovada pelo Responsável) · Categoria: Arquitetura
+Substitui: DEC-0065 (status do plano).
+Decisão: o M0 está implementado no branch `feat/m0-foundation`:
+- pacote `src/pygridplan` (modelo `Rect`/`Site`/`Room`/`Plan` em mm inteiros, JSON);
+- catálogo `data/room_types.yaml` (12 tipos, valores provisórios "sem fonte");
+- paredes derivadas e área útil;
+- validador (erros `overlap`, `wall_overlap`, `too_small`, `outside_lot`; avisos `setback`, `min_width`, `min_area`);
+- DXF com os 10 layers e cotas do terreno;
+- CLI `python -m pygridplan export-dxf`;
+- 40 testes e `pyright` sem erros.
+Rulings do Agente durante a execução:
+- os briefs foram lidos direto do plano, porque o script da skill procura títulos "Task N";
+- reinstalação editável depois de criar o pacote;
+- `tests/conftest.py` com a fixture compartilhada;
+- sala do teste de recuo aumentada, porque disparava um `min_area` legítimo;
+- imports do ezdxf ajustados para o pyright.
+Correções da revisão final:
+- `extra="forbid"`: chaves desconhecidas no JSON ou no YAML agora são erro, e não são mais ignoradas;
+- detecção de paredes sobrepostas entre cômodos afastados menos que uma parede externa (design 5.1);
+- erro para cômodo menor que as próprias paredes;
+- fonte TrueType (`arial.ttf`) no estilo de texto do DXF, porque a SHX padrão não exibe "²" nem acentos.
+Pendências menores adiadas:
+- rótulos largos demais em cômodos estreitos (avaliar no M2);
+- IDs duplicados no catálogo se sobrescrevem;
+- a CLI não roda o validador;
+- o teste de IDs duplicados não passa pelo `load_plan`;
+- `pyright` não é dependência declarada (documentado no README).
+Status: Aprovada (aguarda o push e a decisão de merge do responsável).
+
+**DEC-0067 — Geometria dos cômodos: retângulos agora, polígonos depois**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Arquitetura
+Complementa: DEC-0046, DEC-0047.
+Decisão: no início, os cômodos são só retângulos (`Room.rect`). Depois será estudada a generalização para **polígonos com número de lados qualquer**. Ambientes curvos poderão ser **aproximados por malha em milímetros**, no último caso.
+Status: Aprovada (estudo futuro).
+
+### Pendências abertas (S03) — atualização 4
+
+- Responsável: `git push -u origin feat/m0-foundation` e decidir o merge no `main` (direto ou via pull request).
+- Agente: no M1, começar pelo plano `docs/plans/m1-cpsat-generator.md` (gerador CP-SAT, pontuação, árvore de estados), resolvendo antes as pendências menores do M0 que afetam o M1 (CLI com validador, IDs duplicados no catálogo).
+- Instalar o plugin `playground` no início do M1 (DEC-0061).
+
+### Log da sessão — continuação 5
+
+6. **Responsável:** escolheu a opção 2 (push e pull request, ambos feitos por ele). Abriu o DXF num visualizador da Autodesk e o SVG no navegador e achou a planta condizente. Pediu eixos e paredes em cores diferentes, e paredes que fechem nas quinas, preenchidas até a interseção (como o *fill* do AutoCAD). Perguntou se o M0 está encerrado e se dá para começar o M1. Pediu como regra declarar sempre quando uma fase termina, pausa ou avança, com justificativa, e terminar toda resposta com os próximos passos do responsável e do agente. **Agente:** em TDD (4 testes novos, RED → GREEN): paredes como hachura sólida estendidas até a face da parede perpendicular; layer `A-EIXOS` vermelho, traço-ponto; `A-AREAS` com o contorno da área útil. Fez a conferência visual por SVG. Fez o commit `2504cab`. Atualizou a seção 13 do design e acrescentou as regras ao CLAUDE.md. Registrou DEC-0068 a DEC-0071.
+
+### Decisões — continuação 5
+
+**DEC-0068 — Representação do DXF: paredes preenchidas, eixos e área útil**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (solução do Agente) · Categoria: Interface / Arquitetura
+Complementa: DEC-0008; altera a lista de layers da DEC-0065/DEC-0066.
+Decisão:
+- paredes em **hachura sólida**: cada faixa é estendida nas pontas até a face da parede perpendicular mais grossa, o que fecha quinas e encontros em T;
+- **eixos** no novo layer `A-EIXOS` (cor 1, vermelho; linha CENTER; `$LTSCALE` 50);
+- paredes externas na cor 7 e internas na cor 8;
+- `A-AREAS` passa a ter o contorno da **área útil** (faces internas, cor 9), e o comando ÁREA do AutoCAD bate com o rótulo.
+Justificativa do Agente: contornos separados por parede nunca fecham as quinas (as linhas se cruzam). O contorno único exato exige união de polígonos, que fica para depois se o responsável quiser paredes editáveis como linhas.
+Status: Aprovada.
+
+**DEC-0069 — Regra: encerramento explícito de fase e definição de pronto**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Processo
+Decisão: toda fase, etapa ou marco termina com uma declaração de estado (concluída, pausada com acréscimos previstos, ou em andamento), justificada com evidências, listando as pendências e dizendo se elas bloqueiam a fase seguinte. "Pronto" para um marco: tarefas do plano feitas; testes e `pyright` sem falhas; revisão final com críticos e importantes corrigidos; conferência visual aprovada quando houver saída visual; README e DECISOES.md atualizados; pendências menores listadas. Regra registrada no CLAUDE.md.
+Status: Aprovada.
+
+**DEC-0070 — Regra: próximos passos em toda resposta**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Processo
+Decisão: toda resposta do agente neste projeto termina com "Próximos passos", separados em **Responsável** e **Agente**. Regra registrada no CLAUDE.md.
+Status: Aprovada.
+
+**DEC-0071 — Declaração: M0 concluído**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (conferência visual aprovada pelo Responsável) · Categoria: Processo
+Decisão: o M0 está **concluído**, segundo a DEC-0069:
+- as 6 tarefas do plano foram feitas;
+- 43 testes passam e o `pyright` não acusa erros;
+- a revisão final independente teve 0 achados críticos, e os importantes foram corrigidos;
+- o responsável conferiu o DXF num visualizador Autodesk; o ajuste visual que pediu (DEC-0068) foi feito;
+- README e DECISOES.md estão atualizados.
+É suficiente para o M1 porque o M1 consome exatamente o que o M0 entrega: o modelo `Plan` (forma da solução do gerador), o catálogo (mínimos por tipo), o validador (porta de entrada de toda solução gerada) e a exportação DXF (para inspecionar as alternativas).
+Pendências que **não bloqueiam** o M1: rótulos largos em cômodos estreitos (M2); `pyright` fora das dependências declaradas.
+Pendências a resolver **no início do M1**: a CLI deve rodar o validador; IDs duplicados no catálogo devem dar erro; o teste de IDs duplicados deve passar pelo `load_plan`.
+Status: Aprovada (o merge no `main` acontece via pull request do responsável).
+
+### Pendências abertas (S03) — atualização 5
+
+- Responsável: `git push -u origin feat/m0-foundation`, abrir o pull request e fazer o merge.
+- Agente: depois do merge, instalar o `playground` e escrever o plano do M1.

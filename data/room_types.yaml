@@ -1,0 +1,17 @@
+# Catálogo de tipos de cômodo — fonte única de zona, passagem e mínimos.
+# Medidas em mm; área mínima em m². Valores provisórios até a curadoria com fontes (DEC-0024).
+version: "0.1"
+updated: "2026-11-11"
+types:
+  - {id: sala,         name: Sala,         zone: social,  passage: traversable, min_width_mm: 2700, min_area_m2: 10.0, source: "provisório, sem fonte"}
+  - {id: cozinha,      name: Cozinha,      zone: servico, passage: traversable, min_width_mm: 1800, min_area_m2: 5.0,  source: "provisório, sem fonte"}
+  - {id: quarto,       name: Quarto,       zone: intima,  passage: private,     min_width_mm: 2400, min_area_m2: 8.0,  source: "provisório, sem fonte"}
+  - {id: banheiro,     name: Banheiro,     zone: intima,  passage: private,     min_width_mm: 1200, min_area_m2: 2.5,  source: "provisório, sem fonte"}
+  - {id: lavabo,       name: Lavabo,       zone: social,  passage: private,     min_width_mm: 900,  min_area_m2: 1.5,  source: "provisório, sem fonte"}
+  - {id: closet,       name: Closet,       zone: intima,  passage: private,     min_width_mm: 1000, min_area_m2: 2.0,  source: "provisório, sem fonte"}
+  - {id: lavanderia,   name: Lavanderia,   zone: servico, passage: traversable, min_width_mm: 1200, min_area_m2: 3.0,  source: "provisório, sem fonte"}
+  - {id: garagem,      name: Garagem,      zone: servico, passage: traversable, min_width_mm: 2500, min_area_m2: 12.5, source: "provisório, sem fonte"}
+  - {id: circulacao,   name: Circulação,   zone: social,  passage: traversable, min_width_mm: 900,                     source: "provisório, sem fonte"}
+  - {id: escritorio,   name: Escritório,   zone: social,  passage: traversable, min_width_mm: 2200, min_area_m2: 6.0,  source: "provisório, sem fonte"}
+  - {id: varanda,      name: Varanda,      zone: social,  passage: traversable, min_width_mm: 1200, min_area_m2: 3.0,  source: "provisório, sem fonte"}
+  - {id: home_theater, name: Home theater, zone: social,  passage: traversable, min_width_mm: 3000, min_area_m2: 12.0, source: "provisório, sem fonte"}

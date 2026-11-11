@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygridplan"
+version = "0.0.1"
+description = "Gerador offline de plantas baixas residenciais 2D"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.14",
+    "pyyaml>=6.0",
+    "ezdxf>=1.4",
+    "ortools>=9.15",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["src"]

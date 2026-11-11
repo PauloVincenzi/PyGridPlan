@@ -1,0 +1,17 @@
+{
+  "site": {
+    "width_mm": 10000,
+    "depth_mm": 25000,
+    "setbacks": {"front": 4000, "back": 2000, "left": 1500, "right": 1500},
+    "attached_sides": []
+  },
+  "rooms": [
+    {"id": "sala", "type": "sala", "rect": {"x": 1600, "y": 4100, "w": 4000, "h": 4000}},
+    {"id": "cozinha", "type": "cozinha", "rect": {"x": 5600, "y": 4100, "w": 2800, "h": 4000}},
+    {"id": "circulacao", "type": "circulacao", "rect": {"x": 1600, "y": 8100, "w": 6800, "h": 1000}},
+    {"id": "quarto1", "type": "quarto", "rect": {"x": 1600, "y": 9100, "w": 2700, "h": 5000}},
+    {"id": "banheiro", "type": "banheiro", "rect": {"x": 4300, "y": 9100, "w": 1400, "h": 2500}},
+    {"id": "closet", "type": "closet", "rect": {"x": 4300, "y": 11600, "w": 1400, "h": 2500}},
+    {"id": "quarto2", "type": "quarto", "rect": {"x": 5700, "y": 9100, "w": 2700, "h": 5000}}
+  ]
+}
