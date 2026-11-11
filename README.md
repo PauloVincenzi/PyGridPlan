@@ -12,7 +12,7 @@ Gerador inteligente de **plantas baixas residenciais**, que roda **offline**. Vo
 
 ## Estado atual
 
-🧭 **Design aprovado; plano do M0 escrito.** Ainda não há código. Design: [docs/design/mvp.md](docs/design/mvp.md) · Plano: [docs/plans/m0-foundation.md](docs/plans/m0-foundation.md).
+✅ **M0 (fundação) concluído:** modelo da planta, catálogo de cômodos, validador geométrico e exportação DXF, com 40 testes. Próximo: M1 (gerador CP-SAT). Design: [docs/design/mvp.md](docs/design/mvp.md) · Plano: [docs/plans/m0-foundation.md](docs/plans/m0-foundation.md).
 Histórico completo de decisões: [DECISOES.md](DECISOES.md).
 
 ## Stack prevista
@@ -26,12 +26,12 @@ Python (motor) · HTML/CSS/TypeScript (interface web local) · ezdxf (DXF). As d
 ```
 PyGridPlan/
 ├── README.md · CLAUDE.md · DECISOES.md · .gitignore      ✅ governança
-├── pyproject.toml                                          🔜 M0  dependências e config. de testes
+├── pyproject.toml                                          ✅ M0  dependências e config. de testes
 │
-├── src/pygridplan/          SOFTWARE — motor Python         🔜 M0
-│   ├── model/               entidades, paredes, catálogo
-│   ├── validation/          validade geométrica e recomendações
-│   ├── export/              DXF
+├── src/pygridplan/          SOFTWARE — motor Python         ✅ M0
+│   ├── model/               entidades, paredes, catálogo   ✅
+│   ├── validation/          validade geométrica e recomendações ✅
+│   ├── export/              DXF                            ✅
 │   ├── generators/          CP-SAT, subdivisão             🔜 M1/M7
 │   ├── pipeline/            etapas e árvore de estados     🔜 M1
 │   ├── scoring/             critérios e diversidade        🔜 M1
@@ -39,8 +39,8 @@ PyGridPlan/
 │   └── server/              comandos e eventos             🔜 M2
 ├── web/                     SOFTWARE — interface TypeScript 🔜 M2
 │
-├── data/                    DADOS — referência curada       🔜 M0
-├── tests/                   testes                          🔜 M0
+├── data/                    DADOS — referência curada       ✅ room_types.yaml
+├── tests/                   testes                          ✅ 40 testes
 │   └── fixtures/            DADOS — casos de teste
 ├── out/                     DADOS — gerados (fora do git)
 │
@@ -78,6 +78,14 @@ O `pip install -e` instala as dependências e o próprio pacote de uma vez, em m
 
 ```bash
 pytest
+```
+
+Checagem de tipos (opcional): `pyright`, instalado à parte com `npm install -g pyright`.
+
+**Uso (M0):** exportar uma planta descrita em JSON para DXF:
+
+```bash
+python -m pygridplan export-dxf tests/fixtures/plans/basic-house.json out/basic-house.dxf
 ```
 
 ## Aviso

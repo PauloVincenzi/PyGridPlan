@@ -720,3 +720,51 @@ Status: Proposta (aguardando revisão e escolha do modo de execução).
 
 - Responsável: revisar o plano do M0 e escolher o modo de execução (subagentes ou nativo).
 - Responsável: confirmar o plano de commits desta rodada.
+
+### Log da sessão — continuação 4
+
+5. **Responsável:** aprovou o plano do M0 e a execução nativa, sem subagentes por tarefa. Confirmou os cômodos só retangulares por ora; polígonos genéricos e ambientes curvos (aproximados por malha em milímetros) serão estudados depois. Autorizou o agente a fazer `git add` e `git commit` durante a execução; o push fica com o responsável. **Agente:** criou o branch `feat/m0-foundation`, porque não se implementa direto no `main`. Fez os 3 commits de documentação pendentes e executou as 6 tarefas em TDD (teste vermelho antes de cada implementação). Fez uma verificação visual do DXF (render SVG e screenshot) e passou o branch por uma revisão final independente (subagente). O revisor apontou 0 problemas críticos, 2 importantes e 8 menores. O Agente corrigiu os 2 importantes e 2 menores que reclassificou como importantes, cada um com teste RED → GREEN. Ao fim: 40 testes passando e `pyright` com 0 erros. Atualizou o README e registrou DEC-0066 e DEC-0067.
+
+### Decisões — continuação 4
+
+**DEC-0066 — M0 (fundação) concluído**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (execução aprovada pelo Responsável) · Categoria: Arquitetura
+Substitui: DEC-0065 (status do plano).
+Decisão: o M0 está implementado no branch `feat/m0-foundation`:
+- pacote `src/pygridplan` (modelo `Rect`/`Site`/`Room`/`Plan` em mm inteiros, JSON);
+- catálogo `data/room_types.yaml` (12 tipos, valores provisórios "sem fonte");
+- paredes derivadas e área útil;
+- validador (erros `overlap`, `wall_overlap`, `too_small`, `outside_lot`; avisos `setback`, `min_width`, `min_area`);
+- DXF com os 10 layers e cotas do terreno;
+- CLI `python -m pygridplan export-dxf`;
+- 40 testes e `pyright` sem erros.
+Rulings do Agente durante a execução:
+- os briefs foram lidos direto do plano, porque o script da skill procura títulos "Task N";
+- reinstalação editável depois de criar o pacote;
+- `tests/conftest.py` com a fixture compartilhada;
+- sala do teste de recuo aumentada, porque disparava um `min_area` legítimo;
+- imports do ezdxf ajustados para o pyright.
+Correções da revisão final:
+- `extra="forbid"`: chaves desconhecidas no JSON ou no YAML agora são erro, e não são mais ignoradas;
+- detecção de paredes sobrepostas entre cômodos afastados menos que uma parede externa (design 5.1);
+- erro para cômodo menor que as próprias paredes;
+- fonte TrueType (`arial.ttf`) no estilo de texto do DXF, porque a SHX padrão não exibe "²" nem acentos.
+Pendências menores adiadas:
+- rótulos largos demais em cômodos estreitos (avaliar no M2);
+- IDs duplicados no catálogo se sobrescrevem;
+- a CLI não roda o validador;
+- o teste de IDs duplicados não passa pelo `load_plan`;
+- `pyright` não é dependência declarada (documentado no README).
+Status: Aprovada (aguarda o push e a decisão de merge do responsável).
+
+**DEC-0067 — Geometria dos cômodos: retângulos agora, polígonos depois**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Arquitetura
+Complementa: DEC-0046, DEC-0047.
+Decisão: no início, os cômodos são só retângulos (`Room.rect`). Depois será estudada a generalização para **polígonos com número de lados qualquer**. Ambientes curvos poderão ser **aproximados por malha em milímetros**, no último caso.
+Status: Aprovada (estudo futuro).
+
+### Pendências abertas (S03) — atualização 4
+
+- Responsável: `git push -u origin feat/m0-foundation` e decidir o merge no `main` (direto ou via pull request).
+- Agente: no M1, começar pelo plano `docs/plans/m1-cpsat-generator.md` (gerador CP-SAT, pontuação, árvore de estados), resolvendo antes as pendências menores do M0 que afetam o M1 (CLI com validador, IDs duplicados no catálogo).
+- Instalar o plugin `playground` no início do M1 (DEC-0061).
