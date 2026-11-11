@@ -79,6 +79,7 @@ Status: Proposta | Aprovada | Aprovada (detalhe a definir) | Substituída por DE
 - Os locais acima **substituem os padrões das skills** (ex.: `docs/superpowers/specs/` → `docs/design/`, `docs/superpowers/plans/` → `docs/plans/`).
 - Um mockup aprovado é copiado de `.superpowers/` para `docs/design/mockups/`.
 - Não criar pastas vazias nem arquivos "para o futuro": cada pasta nasce com seu primeiro arquivo.
+- O **README.md** mantém sempre atualizada a estrutura macro (software e dados, com paths e o marco de cada pasta). Toda pasta nova ou mudança de estrutura atualiza o README na mesma rodada.
 
 ## Skills e plugins
 
@@ -96,8 +97,8 @@ Regras gerais: sugerir a skill adequada quando a fase pedir; recomendar só plug
 | `karpathy-guidelines` | `andrej-karpathy-skills` (comunidade, MIT) | em uso | ao escrever, revisar ou refatorar código: o mínimo que resolve, nada especulativo, sem redundância de definições ou armazenamento, mudanças cirúrgicas, meta verificável. **Nunca** corta testes nem validações |
 | `frontend-design` | oficial | instalado | M2–M3: interface com qualidade de produto, seguindo o mockup aprovado |
 | `playwright` | oficial | instalado | testes de ponta a ponta e screenshots da interface |
-| `pyright-lsp` | oficial | instalar no M0 | checagem de tipos do Python enquanto o código é escrito (requer o executável `pyright`) |
-| `code-simplifier` | oficial | instalar no M0 | revisão de simplificação depois de implementar, junto com a karpathy |
+| `pyright-lsp` | oficial | instalado (pyright 1.1.414 via npm) | checagem de tipos do Python enquanto o código é escrito |
+| `code-simplifier` | oficial | instalado | revisão de simplificação depois de implementar, junto com a karpathy |
 | `playground` | oficial | instalar no M1 | páginas interativas para visualizar e depurar os geradores (CP-SAT, subdivisão) |
 | `typescript-lsp` | oficial | instalar no M2 | checagem do TypeScript da interface |
 | `modern-web-guidance` | oficial | instalar no M2 | boas práticas web atuais na interface |
