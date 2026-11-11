@@ -681,3 +681,42 @@ Status: Aprovada.
 - Responsável: confirmar o plano de commits desta rodada.
 - Responsável: decidir se apaga as pastas locais `.superpowers/` e `.playwright-mcp/` (opcional; ambas estão fora do git).
 - Agente: com o design aprovado, usar `writing-plans` para o plano do M0 em `docs/plans/`; instalar `pyright-lsp` e `code-simplifier` no início do M0, com confirmação.
+
+### Log da sessão — continuação 3
+
+4. **Responsável:** perguntou por que o layout `src/` obriga a instalar o pacote antes dos testes e como evitar isso; comentou a separação dos dados em três pastas (`data/`, `tests/fixtures/`, `out/`), perguntando se `out/` servirá a análises; concordou com a fonte única de tipos de cômodo e com pastas sob demanda. Pediu que a estrutura macro de software e dados, com paths, fique sempre no README. Autorizou os 5 commits e o push **desta vez**. Decidiu manter `.superpowers/` e `.playwright-mcp/` (geradas e fora do git). Pediu a instalação de `pyright-lsp` e `code-simplifier` e o plano do M0 via `writing-plans`. **Agente:** fez os commits `309f811`, `8aff969`, `eab1fc7`, `e037a83`, `2e1d24f` e o push. No meio do caminho, um commit local juntou por engano o `.gitignore` e o rename do mockup; antes do push, o Agente desfez esse commit local e refez os dois separados, como no plano aprovado. Instalou o `pyright` 1.1.414 (npm, global) e os plugins `pyright-lsp` e `code-simplifier`. Conferiu que existem wheels para Python 3.13 no Windows (ortools 9.15, ezdxf 1.4.5, pydantic 2.14, pyyaml 6.0, pytest 9.2). Atualizou o README (estrutura macro e tabela de dados) e o CLAUDE.md (regra do README e situação dos plugins). Escreveu `docs/plans/m0-foundation.md`. Registrou DEC-0062 a DEC-0065.
+
+### Decisões — continuação 3
+
+**DEC-0062 — Instalação do pacote: layout `src/` com instalação editável**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (pergunta do Responsável) · Categoria: Arquitetura / Ferramentas
+Contexto: o responsável perguntou se a exigência de instalar o pacote antes dos testes é uma restrição a evitar.
+Decisão: manter o layout `src/` e instalar uma vez com `pip install -e ".[dev]"` num `.venv`. O comando instala as dependências e o pacote em modo editável (as mudanças no código valem sem reinstalar). Como as dependências precisam ser instaladas de qualquer forma, o pacote não custa um passo extra. A alternativa (`pythonpath = ["src"]` no pytest, sem instalar) foi descartada para manter um único caminho. O README documenta o requisito na tarefa 1 do M0.
+Status: Aprovada (implementação no M0).
+
+**DEC-0063 — Categorias de dados do projeto**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (proposta do Agente) · Categoria: Dados
+Decisão: o README mantém a tabela das categorias de dados: **referência** (`data/`, versionada, com fonte), **casos de teste** (`tests/fixtures/`, versionados, também entradas de benchmark), **gerados** (`out/`, fora do git, recriáveis a partir de entrada e semente), **resultados de análise** (só o resumo versionado; local a decidir quando houver benchmark) e **dados do usuário** (projetos salvos e histórico de escolhas para o aprendizado de pesos; local a decidir no M2, fora do repositório). A estrutura macro de software e dados com paths fica sempre no README (regra no CLAUDE.md).
+Status: Aprovada.
+
+**DEC-0064 — Instalação de pyright-lsp e code-simplifier**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Ferramentas
+Decisão: instalados `pyright-lsp` e `code-simplifier` (`claude-plugins-official`, escopo de usuário) e o executável `pyright` 1.1.414 via `npm install -g pyright`, exigido pelo plugin.
+Status: Aprovada.
+
+**DEC-0065 — Plano do M0 (fundação)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente · Categoria: Arquitetura
+Decisão proposta: `docs/plans/m0-foundation.md`, com 6 tarefas em TDD (esqueleto e testes de instalação; modelo da planta; catálogo; paredes derivadas e área útil; validador; DXF e CLI) e 35 testes previstos. Escolhas do Agente:
+- Pydantic para as entidades (uma definição para validar e serializar);
+- catálogo em YAML (`data/room_types.yaml`, com PyYAML), legível para curadoria;
+- origem no canto frente-esquerda do terreno;
+- paredes derivadas e não armazenadas;
+- área útil conservadora em lados parcialmente externos;
+- desvio consciente: no M0 o cômodo guarda um `Rect`, e não um polígono genérico (design seção 10), até os terrenos irregulares entrarem;
+- cada passo "Commit" do plano é uma proposta ao responsável (DEC-0053).
+Status: Proposta (aguardando revisão e escolha do modo de execução).
+
+### Pendências abertas (S03) — atualização 3
+
+- Responsável: revisar o plano do M0 e escolher o modo de execução (subagentes ou nativo).
+- Responsável: confirmar o plano de commits desta rodada.
