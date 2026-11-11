@@ -22,11 +22,13 @@ Python (motor) · HTML/CSS/TypeScript (interface web local) · ezdxf (DXF). As d
 ## Estrutura
 
 ```
-CLAUDE.md                  regras do agente de IA
-DECISOES.md                registro cronológico append-only de decisões
-README.md                  este arquivo
-docs/mockups/layout-v5.html  mockup aprovado da interface (referência visual)
+CLAUDE.md          regras do agente de IA (inclui as skills usadas)
+DECISOES.md        registro cronológico append-only de decisões
+README.md          este arquivo
+docs/design/       documento de design do MVP (mvp.md) e mockups aprovados
 ```
+
+Estrutura-alvo, criada conforme o código nasce: `src/pygridplan/` (motor), `web/` (interface), `data/` (dados de referência), `tests/`, `docs/plans/`, `docs/theory/`. Detalhes na seção 17 de [docs/design/mvp.md](docs/design/mvp.md).
 
 ## Requisitos, instalação e execução
 
