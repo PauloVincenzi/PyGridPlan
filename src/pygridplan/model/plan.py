@@ -13,7 +13,7 @@ Side = Literal["left", "right", "back"]
 
 
 class _Frozen(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
 
 class Rect(_Frozen):

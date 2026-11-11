@@ -10,7 +10,7 @@ DEFAULT_CATALOG_PATH = Path(__file__).resolve().parents[3] / "data" / "room_type
 
 
 class RoomType(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: str
     name: str
@@ -22,6 +22,8 @@ class RoomType(BaseModel):
 
 
 class Catalog(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     version: str
     updated: str
     types: dict[str, RoomType]

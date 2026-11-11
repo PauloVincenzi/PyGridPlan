@@ -43,3 +43,13 @@ def test_save_load_roundtrip(basic_house, tmp_path):
 def test_empty_plan_is_allowed():
     plan = Plan(site=Site(width_mm=5000, depth_mm=5000))
     assert plan.rooms == ()
+
+
+def test_unknown_keys_are_rejected_on_load(tmp_path):
+    path = tmp_path / "typo.json"
+    path.write_text(
+        '{"site": {"width_mm": 5000, "depth_mm": 5000, "setback": {"front": 4000}}, "wall_ext": 200}',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValidationError):
+        load_plan(path)

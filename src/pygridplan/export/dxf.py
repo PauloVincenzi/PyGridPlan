@@ -33,6 +33,7 @@ def _wall_band(w: Wall) -> list[tuple[float, float]]:
 def export_dxf(plan: Plan, path: Path, catalog: Catalog) -> None:
     doc = new_drawing("R2010")
     doc.units = units.MM
+    doc.styles.get("Standard").dxf.font = "arial.ttf"  # SHX padrão (txt) não tem "²" nem acentos
     for name in LAYERS:
         doc.layers.add(name)
     msp = doc.modelspace()

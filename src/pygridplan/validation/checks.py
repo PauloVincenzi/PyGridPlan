@@ -21,14 +21,29 @@ def _mm(v: float) -> str:
     return f"{v:,.0f}".replace(",", " ") + " mm"
 
 
+def _gaps(a: Rect, b: Rect) -> tuple[int, int]:
+    """Vão entre dois retângulos em x e em y (> 0 = afastados; <= 0 = projeções se tocam)."""
+    return max(a.x, b.x) - min(a.x2, b.x2), max(a.y, b.y) - min(a.y2, b.y2)
+
+
 def validate_geometry(plan: Plan) -> list[Issue]:
     issues: list[Issue] = []
     rooms = plan.rooms
     for i, a in enumerate(rooms):
         for b in rooms[i + 1 :]:
-            if a.rect.overlaps_interior(b.rect):
+            gx, gy = _gaps(a.rect, b.rect)
+            if gx < 0 and gy < 0:
                 issues.append(Issue(code="overlap", message=f"{a.id} e {b.id} se sobrepõem",
                                     room_ids=(a.id, b.id)))
+            elif (gx > 0 or gy > 0) and gx < plan.wall_ext_mm and gy < plan.wall_ext_mm:
+                # afastados por menos que uma parede externa: as faixas de parede se cruzam
+                issues.append(Issue(code="wall_overlap",
+                                    message=f"{a.id} e {b.id}: paredes sobrepostas",
+                                    room_ids=(a.id, b.id)))
+    for r in rooms:
+        if min(useful_dims_mm(r, plan)) <= 0:
+            issues.append(Issue(code="too_small", message=f"{r.id}: menor que as próprias paredes",
+                                room_ids=(r.id,)))
     lot = Rect(x=0, y=0, w=plan.site.width_mm, h=plan.site.depth_mm)
     for r in rooms:
         if not lot.contains(r.rect.expanded(plan.wall_ext_mm // 2)):

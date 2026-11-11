@@ -48,3 +48,18 @@ def test_min_width_warning():
 def test_unknown_type_has_no_minimum_warnings():
     plan = Plan(site=LOT, rooms=(Room(id="x", type="quadra_de_areia", rect=Rect(x=1000, y=1000, w=500, h=500)),))
     assert check_recommendations(plan, load_catalog()) == []
+
+
+def test_wall_overlap_between_close_rooms():
+    plan = Plan(site=LOT, rooms=(
+        Room(id="a", type="sala", rect=Rect(x=1000, y=1000, w=4000, h=4000)),
+        Room(id="b", type="sala", rect=Rect(x=5100, y=1000, w=4000, h=4000)),  # vão de 100 mm < 150
+    ))
+    issues = validate_geometry(plan)
+    assert _codes(issues) == ["wall_overlap"]
+    assert issues[0].room_ids == ("a", "b")
+
+
+def test_room_smaller_than_its_walls():
+    plan = Plan(site=LOT, rooms=(Room(id="x", type="quadra_de_areia", rect=Rect(x=1000, y=1000, w=50, h=50)),))
+    assert _codes(validate_geometry(plan)) == ["too_small"]

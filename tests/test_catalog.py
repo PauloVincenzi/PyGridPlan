@@ -40,3 +40,14 @@ def test_invalid_zone_is_rejected(tmp_path):
     )
     with pytest.raises(ValidationError):
         load_catalog(path)
+
+
+def test_unknown_catalog_key_is_rejected(tmp_path):
+    path = tmp_path / "c.yaml"
+    path.write_text(
+        'version: "x"\nupdated: "x"\ntypes:\n'
+        "  - {id: a, name: A, zone: social, passage: private, min_widht_mm: 900, source: s}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValidationError):
+        load_catalog(path)

@@ -60,3 +60,8 @@ def test_cli_exports_file(tmp_path):
     out = tmp_path / "x" / "p.dxf"
     assert main(["export-dxf", str(BASIC_HOUSE), str(out)]) == 0
     assert out.exists()
+
+
+def test_text_style_uses_truetype_font(doc):
+    # fonte SHX padrão (txt) não tem "²" nem acentos
+    assert doc.styles.get("Standard").dxf.font.lower().endswith(".ttf")
