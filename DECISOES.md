@@ -813,3 +813,56 @@ Status: Aprovada (o merge no `main` acontece via pull request do responsável).
 
 - Responsável: `git push -u origin feat/m0-foundation`, abrir o pull request e fazer o merge.
 - Agente: depois do merge, instalar o `playground` e escrever o plano do M1.
+
+### Log da sessão — continuação 6
+
+7. **Responsável:** fez o push, abriu e mergeou o PR #1 (M0). Perguntou se as medidas mínimas e os tipos de cômodo do catálogo foram embasados em pesquisa, já que a maioria dos cômodos foi citada de memória por ele, e pediu pesquisa extensa em material de arquitetura e engenharia: nomes de cômodos, destinos, dimensões mínimas, normas e padrões. Pediu para voltar ao `main` atualizado, criar o branch do M1, instalar o `playground` e escrever o plano do M1 para revisão antes de codar. **Agente:** respondeu que **não** houve pesquisa: os valores do catálogo são provisórios, marcados "provisório, sem fonte", e propôs a trilha de dados D1 (DEC-0072). Atualizou o `main` (`1ececa7`), criou `feat/m1-cpsat-generator` e apagou o branch local do M0, já mergeado. Instalou o `playground` e corrigiu a finalidade dele no CLAUDE.md: ele monta textos a partir de controles visuais e não executa o motor. Escreveu `docs/plans/m1-cpsat-generator.md` (DEC-0073).
+
+### Decisões — continuação 6
+
+**DEC-0072 — Trilha de dados D1: curadoria de cômodos e medidas com fontes (proposta)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (pedido) / Agente (proposta de método) · Categoria: Dados
+Contexto: os 12 tipos do catálogo e seus mínimos foram definidos sem pesquisa, a partir de cômodos lembrados pelo responsável e de valores provisórios do Agente.
+Decisão proposta: uma trilha de dados **paralela ao M1**, sem código, que entrega:
+1. `docs/theory/room-program.md`: síntese com referências sobre os tipos de cômodo residenciais (inclusive atípicos e de alto padrão), destino, zona, dimensões e áreas mínimas usuais, circulações e vãos de porta;
+2. `data/room_types.yaml` revisado, com **fonte, versão e data em cada valor** (DEC-0024).
+Fontes a buscar:
+- ABNT NBR 15575-1 (anexo de dimensões e mobiliário mínimos);
+- ABNT NBR 9050 (circulação e acessibilidade);
+- códigos de obras municipais de várias cidades (variam entre si);
+- Neufert, *A arte de projetar em arquitetura*;
+- Panero & Zelnik, *Dimensionamento humano para espaços interiores*;
+- especificações da Caixa para habitação de interesse social;
+- literatura acadêmica.
+Método: skill `deep-research` (subagentes de busca na web), com verificação cruzada entre fontes.
+Ressalvas:
+- normas pagas não são copiadas, só os valores com a citação;
+- a legislação é municipal e varia, então o catálogo guarda **referências usuais**, não conformidade (DEC-0015).
+Status: Proposta (aguardando o responsável autorizar a execução).
+
+**DEC-0073 — Plano do M1 (gerador CP-SAT)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente · Categoria: Arquitetura
+Decisão proposta: `docs/plans/m1-cpsat-generator.md`, com 7 tarefas:
+1. pendências do M0;
+2. modelo do pedido;
+3. checagem de acesso;
+4. nota decomposta e diversidade;
+5. modelo CP-SAT;
+6. laço de alternativas;
+7. CLI `generate` com página HTML de comparação.
+Escolhas do Agente:
+- diversidade **por construção** (proibir padrões de posição relativa já vistos);
+- alternativas rejeitadas pelo validador são proibidas e o solver roda de novo;
+- pesos numa fonte única (`WEIGHTS`), usada pela nota e pelo solver;
+- tempo determinístico do CP-SAT para garantir reprodutibilidade;
+- área-alvo padrão = mínimo × 1,25;
+- passagem mínima de 900 mm;
+- novos atributos no catálogo: `suite_access`, `wet`, `sun`;
+- `Site.north` para o critério solar.
+Proposta de mudança de escopo: a **árvore de estados** passa do M1 para o M2, porque com uma única etapa não há o que navegar.
+Status: Proposta (aguardando revisão e o modo de execução).
+
+### Pendências abertas (S03) — atualização 6
+
+- Responsável: revisar o plano do M1, aprovar ou não a mudança da árvore de estados para o M2 e escolher o modo de execução.
+- Responsável: autorizar a trilha D1 (pesquisa de cômodos e medidas).
