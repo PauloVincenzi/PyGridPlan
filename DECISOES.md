@@ -768,3 +768,48 @@ Status: Aprovada (estudo futuro).
 - Responsável: `git push -u origin feat/m0-foundation` e decidir o merge no `main` (direto ou via pull request).
 - Agente: no M1, começar pelo plano `docs/plans/m1-cpsat-generator.md` (gerador CP-SAT, pontuação, árvore de estados), resolvendo antes as pendências menores do M0 que afetam o M1 (CLI com validador, IDs duplicados no catálogo).
 - Instalar o plugin `playground` no início do M1 (DEC-0061).
+
+### Log da sessão — continuação 5
+
+6. **Responsável:** escolheu a opção 2 (push e pull request, ambos feitos por ele). Abriu o DXF num visualizador da Autodesk e o SVG no navegador e achou a planta condizente. Pediu eixos e paredes em cores diferentes, e paredes que fechem nas quinas, preenchidas até a interseção (como o *fill* do AutoCAD). Perguntou se o M0 está encerrado e se dá para começar o M1. Pediu como regra declarar sempre quando uma fase termina, pausa ou avança, com justificativa, e terminar toda resposta com os próximos passos do responsável e do agente. **Agente:** em TDD (4 testes novos, RED → GREEN): paredes como hachura sólida estendidas até a face da parede perpendicular; layer `A-EIXOS` vermelho, traço-ponto; `A-AREAS` com o contorno da área útil. Fez a conferência visual por SVG. Fez o commit `2504cab`. Atualizou a seção 13 do design e acrescentou as regras ao CLAUDE.md. Registrou DEC-0068 a DEC-0071.
+
+### Decisões — continuação 5
+
+**DEC-0068 — Representação do DXF: paredes preenchidas, eixos e área útil**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (solução do Agente) · Categoria: Interface / Arquitetura
+Complementa: DEC-0008; altera a lista de layers da DEC-0065/DEC-0066.
+Decisão:
+- paredes em **hachura sólida**: cada faixa é estendida nas pontas até a face da parede perpendicular mais grossa, o que fecha quinas e encontros em T;
+- **eixos** no novo layer `A-EIXOS` (cor 1, vermelho; linha CENTER; `$LTSCALE` 50);
+- paredes externas na cor 7 e internas na cor 8;
+- `A-AREAS` passa a ter o contorno da **área útil** (faces internas, cor 9), e o comando ÁREA do AutoCAD bate com o rótulo.
+Justificativa do Agente: contornos separados por parede nunca fecham as quinas (as linhas se cruzam). O contorno único exato exige união de polígonos, que fica para depois se o responsável quiser paredes editáveis como linhas.
+Status: Aprovada.
+
+**DEC-0069 — Regra: encerramento explícito de fase e definição de pronto**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Processo
+Decisão: toda fase, etapa ou marco termina com uma declaração de estado (concluída, pausada com acréscimos previstos, ou em andamento), justificada com evidências, listando as pendências e dizendo se elas bloqueiam a fase seguinte. "Pronto" para um marco: tarefas do plano feitas; testes e `pyright` sem falhas; revisão final com críticos e importantes corrigidos; conferência visual aprovada quando houver saída visual; README e DECISOES.md atualizados; pendências menores listadas. Regra registrada no CLAUDE.md.
+Status: Aprovada.
+
+**DEC-0070 — Regra: próximos passos em toda resposta**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Processo
+Decisão: toda resposta do agente neste projeto termina com "Próximos passos", separados em **Responsável** e **Agente**. Regra registrada no CLAUDE.md.
+Status: Aprovada.
+
+**DEC-0071 — Declaração: M0 concluído**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (conferência visual aprovada pelo Responsável) · Categoria: Processo
+Decisão: o M0 está **concluído**, segundo a DEC-0069:
+- as 6 tarefas do plano foram feitas;
+- 43 testes passam e o `pyright` não acusa erros;
+- a revisão final independente teve 0 achados críticos, e os importantes foram corrigidos;
+- o responsável conferiu o DXF num visualizador Autodesk; o ajuste visual que pediu (DEC-0068) foi feito;
+- README e DECISOES.md estão atualizados.
+É suficiente para o M1 porque o M1 consome exatamente o que o M0 entrega: o modelo `Plan` (forma da solução do gerador), o catálogo (mínimos por tipo), o validador (porta de entrada de toda solução gerada) e a exportação DXF (para inspecionar as alternativas).
+Pendências que **não bloqueiam** o M1: rótulos largos em cômodos estreitos (M2); `pyright` fora das dependências declaradas.
+Pendências a resolver **no início do M1**: a CLI deve rodar o validador; IDs duplicados no catálogo devem dar erro; o teste de IDs duplicados deve passar pelo `load_plan`.
+Status: Aprovada (o merge no `main` acontece via pull request do responsável).
+
+### Pendências abertas (S03) — atualização 5
+
+- Responsável: `git push -u origin feat/m0-foundation`, abrir o pull request e fazer o merge.
+- Agente: depois do merge, instalar o `playground` e escrever o plano do M1.

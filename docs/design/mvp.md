@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.1 · Criado em: 2026-11-11 · Atualizado em: 2026-11-11 · Status: **conteúdo aprovado pelo responsável; seções 5.5 e 6.2 incluídas na S03 aguardam leitura**
+Versão: 1.2 · Criado em: 2026-11-11 · Atualizado em: 2026-11-11 · Status: **conteúdo aprovado pelo responsável; seções 5.5 e 6.2 incluídas na S03 aguardam leitura**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -248,7 +248,8 @@ Cada candidata entra só depois de um teste curto que a justifique (DEC-0009):
 ## 13. Exportação DXF (DEC-0008)
 
 - Via ezdxf, sem precisar do AutoCAD.
-- Layers do MVP **[decisão do Agente, a partir da lista pendente da DEC-0015]**: `A-TERRENO`, `A-PAREDES-EXT`, `A-PAREDES-INT`, `A-PORTAS`, `A-JANELAS`, `A-MOBILIARIO`, `A-COTAS`, `A-TEXTOS`, `A-AREAS`, `A-AVISOS` (violações aceitas).
+- Layers do MVP **[decisão do Agente, a partir da lista pendente da DEC-0015]**: `A-TERRENO`, `A-EIXOS` (DEC-0068), `A-PAREDES-EXT`, `A-PAREDES-INT`, `A-PORTAS`, `A-JANELAS`, `A-MOBILIARIO`, `A-COTAS`, `A-TEXTOS`, `A-AREAS`, `A-AVISOS` (violações aceitas).
+- Representação (DEC-0068): paredes como **hachura sólida**, estendidas até a face da parede perpendicular (quinas e encontros em T fechados); **eixos** em layer próprio, vermelho, traço-ponto; `A-AREAS` com o contorno da **área útil** (faces internas).
 - Unidade do desenho em milímetros.
 
 ## 14. Biblioteca de medidas e base teórica (DEC-0024, DEC-0038)

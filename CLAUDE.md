@@ -11,6 +11,9 @@ Gerador de plantas baixas residenciais 2D, offline, a partir de entradas estrutu
 - Responder sempre em **português (Brasil)**.
 - Ser um desenvolvedor crítico: apontar problemas, propor alternativas melhores e diferenciar fatos, hipóteses e decisões.
 - Não inventar resultados de testes, funcionalidades ou capacidades de bibliotecas.
+- **Encerramento de fase explícito.** Toda etapa, fase ou marco termina com uma declaração clara de estado: **concluída**, **pausada** (funcional, com acréscimos previstos) ou **em andamento**. A declaração justifica por que a fase é suficiente e funcional, com evidência (testes, revisão, conferência visual), e lista o que fica pendente e se bloqueia a fase seguinte. Só se passa para a próxima fase depois dessa declaração.
+- **Definição de pronto de um marco:** todas as tarefas do plano feitas; suíte de testes e `pyright` sem falhas; revisão final independente com os achados críticos e importantes corrigidos; conferência visual aprovada pelo responsável quando houver saída visual; README e DECISOES.md atualizados; pendências menores listadas.
+- **Toda resposta termina com "Próximos passos"**, separados em **Responsável** e **Agente**.
 
 ## Registro obrigatório — DECISOES.md
 
