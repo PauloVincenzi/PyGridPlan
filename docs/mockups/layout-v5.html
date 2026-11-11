@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Layout v5</title>
+<style>
+  :root{
+    --bg:#121211; --panel:#1c1c1a; --panel2:#24241f; --line:#2f2f2a; --muted:#8a8a80;
+    --text:#ecebe6; --orange:#d97757; --purple:#9b87f5; --green:#6fae7a; --red:#d98a7a;
+    --grid:rgba(255,255,255,.045); --grid2:rgba(255,255,255,.09);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:28px 20px 60px}
+  .wrap{max-width:1280px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px;font-weight:600}
+  h2{font-size:17px;margin:34px 0 4px;font-weight:600}
+  .sub{color:var(--muted);margin:0 0 8px}
+  .changes{margin:0 0 24px;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+  .changes li{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:4px 12px;font-size:12.5px;color:#c9c8c0}
+  .changes li b{color:var(--orange)}
+  .mh{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+  .num{width:26px;height:26px;border-radius:8px;background:var(--orange);color:#1a1a18;display:grid;place-items:center;font-weight:700;font-size:13px}
+  .mh h3{margin:0;font-size:16px} .mh p{margin:0;color:var(--muted);font-size:13px}
+
+  .screen{width:100%;aspect-ratio:16/9;background:var(--bg);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;font-size:11px}
+  .topbar{height:31px;flex:0 0 31px;background:#171716;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:6px;padding:0 12px;color:#b9b8b0;font-size:14px}
+  .topbar .logo{color:var(--orange);font-weight:700;margin-right:10px}
+  .topbar .mi{padding:3px 10px;border-radius:6px}
+  .topbar .tab{background:var(--panel2);color:var(--text);padding:3px 12px;border-radius:6px;margin-left:8px}
+  .topbar .sp{flex:1}
+  .steps{display:flex;gap:5px;align-items:center;margin-left:10px}
+  .steps i{display:block;width:32px;height:5px;border-radius:3px;background:var(--panel2)}
+  .steps i.on{background:var(--orange)} .steps i.done{background:#7a5444}
+
+  .main{flex:1;display:flex;min-height:0}
+  .left{flex:1;display:flex;flex-direction:column;min-width:0}
+  .canvas{flex:1;position:relative;min-height:0;background-color:var(--bg);
+    background-image:linear-gradient(var(--grid2) 1px,transparent 1px),linear-gradient(90deg,var(--grid2) 1px,transparent 1px),
+                     linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+    background-size:64px 64px,64px 64px,12.8px 12.8px,12.8px 12.8px}
+  .plan{position:absolute;inset:6% 11% 5% 5%}
+  .plan svg{width:100%;height:100%;overflow:visible}
+  .alts{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}
+  .alt{width:66px;height:38px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;color:var(--muted);font-size:11px}
+  .alt.on{border-color:var(--orange);color:var(--text)}
+  .strip{flex:0 0 auto;background:var(--panel);border-top:1px solid var(--line);padding:16px 20px;display:flex;align-items:center;gap:22px}
+  .strip .q{font-size:17px;line-height:1.35;color:var(--text);flex:0 0 auto;max-width:36%}
+  .strip .q small{display:block;color:var(--muted);font-size:12.5px;margin-top:3px}
+  .btns{display:flex;gap:10px;flex-wrap:wrap}
+  .b{padding:9px 18px;border-radius:8px;background:var(--panel2);color:var(--text);border:1px solid var(--line);font-size:14px}
+  .b.pri{background:var(--orange);color:#1a1a18;border-color:var(--orange);font-weight:600}
+  .b.ghost{color:var(--muted);background:transparent}
+
+  /* painel lateral 70 / 30 */
+  .side{width:29%;flex:0 0 29%;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .stack{flex:1;min-height:0;display:flex;flex-direction:column}
+  .lbl{color:var(--muted);font-size:9px;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center}
+  .prem{flex:0 0 70%;min-height:0;overflow-y:auto;padding:7px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:#3a3a34 transparent}
+  .prem > .blk{padding:6px 0;border-top:1px solid rgba(255,255,255,.07)}
+  .prem > .blk:first-of-type{border-top:none}
+  .console{flex:0 0 30%;min-height:0;display:flex;flex-direction:column}
+  .gbox{display:flex;align-items:center;gap:8px}
+  .gbox svg{width:48%;height:auto;display:block}
+  .gbox .gl{font-size:9px;color:var(--muted);line-height:1.5}
+  .gbox .gl b{color:var(--text);font-weight:500}
+
+  .line{font-size:10px;color:#d6d5ce;line-height:1.45}
+  .line .h{color:var(--muted);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;margin-right:6px}
+  .line .sep{color:#55554d;margin:0 4px}
+  .line .m{color:var(--muted)}
+  .sec-h{display:flex;justify-content:space-between;color:var(--muted);font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;margin-bottom:4px}
+  .legend{display:flex;gap:10px;font-size:8.5px;color:var(--muted);text-transform:none;letter-spacing:0}
+  .legend b{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:3px;vertical-align:middle}
+  .meters{display:grid;grid-template-columns:1fr 1fr;column-gap:14px;row-gap:4px}
+  .mt{display:flex;align-items:center;gap:7px;font-size:10px;color:#d6d5ce;min-width:0}
+  .mt .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mt.new .nm{color:var(--orange)}
+  .warn{font-size:10px;color:#e8c88a}
+
+  /* indicador: anel (rosca) */
+  .ring{flex:0 0 14px;width:14px;height:14px;border-radius:50%;
+        background:conic-gradient(var(--c) calc(var(--p)*1%), #2c2c27 0);
+        -webkit-mask:radial-gradient(circle,transparent 3.4px,#000 3.6px);mask:radial-gradient(circle,transparent 3.4px,#000 3.6px)}
+  .ring.pos{--c:var(--green)} .ring.neg{--c:var(--red)}
+  .mt.new .ring{box-shadow:0 0 0 2px rgba(217,119,87,.35)}
+  .mt .sg{font-family:ui-monospace,Consolas,monospace;font-size:9px;width:14px;text-align:right}
+  .sg.pos{color:var(--green)} .sg.neg{color:var(--red)}
+
+  .console .lbl{padding:5px 9px 3px}
+  .log{flex:1;min-height:0;overflow-y:scroll;padding:2px 9px 6px;font-family:ui-monospace,Consolas,monospace;font-size:8.5px;line-height:1.55;color:#b9b8b0;scrollbar-width:thin;scrollbar-color:#4a4a42 #1a1a18}
+  .log::-webkit-scrollbar{width:6px} .log::-webkit-scrollbar-thumb{background:#4a4a42;border-radius:3px} .log::-webkit-scrollbar-track{background:#1a1a18}
+  .log .c{color:var(--purple)} .log .k{color:var(--orange)} .log .ok{color:var(--green)} .log .t{color:#5d5d55}
+  .free{flex:0 0 auto;border-top:1px solid var(--line);padding:8px 9px 9px;background:#191917}
+  .free .hint{font-size:9.5px;color:var(--muted);margin-bottom:5px}
+  .free .hint b{color:var(--orange);font-weight:600}
+  .inp{display:flex;align-items:center;gap:8px;border:1px solid #3a3a34;border-radius:8px;padding:8px 10px;background:var(--bg);font-size:13px;color:var(--muted)}
+  .inp .caret{color:var(--orange);font-weight:700}
+  .inp .send{margin-left:auto;width:22px;height:22px;border-radius:6px;background:var(--orange);color:#1a1a18;display:grid;place-items:center;font-size:12px;font-weight:700}
+
+  /* comparação de indicadores */
+  .options{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+  .option{flex:1;min-width:270px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;cursor:pointer}
+  .option.selected{border-color:var(--orange);box-shadow:0 0 0 3px rgba(217,119,87,.18)}
+  .option h3{margin:0 0 2px;font-size:15px} .option p{margin:0 0 10px;color:var(--muted);font-size:12.5px}
+  .demo{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;row-gap:7px;font-size:12.5px;background:var(--bg);border-radius:8px;padding:10px 12px}
+  .demo .r{display:flex;align-items:center;gap:8px}
+  .demo .r span.n{flex:1}
+  .demo .ring{flex:0 0 18px;width:18px;height:18px;-webkit-mask:radial-gradient(circle,transparent 4.5px,#000 4.8px);mask:radial-gradient(circle,transparent 4.5px,#000 4.8px)}
+  .vb{position:relative;flex:0 0 7px;width:7px;height:20px;border-radius:3px;background:#2c2c27}
+  .vb::after{content:"";position:absolute;left:-2px;right:-2px;top:50%;height:1px;background:#55554d}
+  .vb i{position:absolute;left:0;right:0;border-radius:3px}
+  .vb i.p{bottom:50%;background:var(--green)} .vb i.n{top:50%;background:var(--red)}
+  .dots{display:flex;gap:2px}
+  .dots i{width:6px;height:6px;border-radius:50%;background:#2c2c27}
+  .dots.pos i.on{background:var(--green)} .dots.neg i.on{background:var(--red)}
+  .note{color:var(--muted);font-size:12.5px;margin:10px 0 0}
+  .note b{color:var(--text)}
+  .foot{color:var(--muted);font-size:13px;margin-top:22px}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#2b2440;color:var(--purple);margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Layout v5</h1>
+  <p class="sub">Grafo dentro do bloco de premissas (70%), console igual (30%), linhas suaves entre os subtópicos, novo indicador e cotas do terreno.</p>
+  <ul class="changes">
+    <li><b>Grafo</b> menor, dentro do bloco de premissas</li>
+    <li><b>Premissas</b> 70% · <b>Console</b> 30%</li>
+    <li><b>Indicador</b>: anel (rosca) verde ou vermelho, sem esquerda/direita</li>
+    <li><b>Cotas</b> do terreno em um lado de cada par paralelo</li>
+  </ul>
+
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <g id="plan">
+        <rect x="0" y="0" width="250" height="100" fill="none" stroke="#d97757" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <g fill="rgba(155,135,245,.10)" stroke="#ecebe6" stroke-width="1.6">
+          <rect x="0" y="0" width="58" height="46"/><rect x="0" y="46" width="58" height="54" fill="rgba(217,119,87,.10)"/>
+          <rect x="58" y="0" width="82" height="56"/><rect x="140" y="0" width="50" height="56"/>
+          <rect x="58" y="56" width="60" height="44" fill="rgba(111,174,122,.10)"/><rect x="118" y="56" width="26" height="44" fill="rgba(111,174,122,.10)"/><rect x="144" y="56" width="50" height="44" fill="rgba(111,174,122,.10)"/>
+        </g>
+        <rect x="190" y="0" width="60" height="100" fill="rgba(111,174,122,.07)" stroke="#6fae7a" stroke-width=".8" stroke-dasharray="3 3"/>
+        <g fill="#8a8a80" font-size="7" font-family="system-ui" text-anchor="middle">
+          <text x="29" y="25">Garagem</text><text x="29" y="75">Oficina</text><text x="99" y="30">Sala</text><text x="165" y="30">Cozinha</text>
+          <text x="88" y="80">Suíte</text><text x="131" y="80">WC</text><text x="169" y="80">Quarto</text><text x="220" y="52">Quintal</text>
+        </g>
+      </g>
+      <!-- cotas do terreno: uma horizontal (topo) e uma vertical (esquerda) -->
+      <g id="dims" stroke="#b9b8b0" stroke-width=".6" fill="#ecebe6" font-family="ui-monospace,Consolas,monospace" font-size="6.5">
+        <line x1="0" y1="-12" x2="250" y2="-12"/>
+        <line x1="0" y1="-16" x2="0" y2="-3" stroke-dasharray="1.5 1.5"/><line x1="250" y1="-16" x2="250" y2="-3" stroke-dasharray="1.5 1.5"/>
+        <line x1="-2" y1="-10" x2="2" y2="-14"/><line x1="248" y1="-10" x2="252" y2="-14"/>
+        <text x="125" y="-15" text-anchor="middle" stroke="none">25,00 m</text>
+        <line x1="-12" y1="0" x2="-12" y2="100"/>
+        <line x1="-16" y1="0" x2="-3" y2="0" stroke-dasharray="1.5 1.5"/><line x1="-16" y1="100" x2="-3" y2="100" stroke-dasharray="1.5 1.5"/>
+        <line x1="-14" y1="2" x2="-10" y2="-2"/><line x1="-14" y1="102" x2="-10" y2="98"/>
+        <text x="-15" y="50" text-anchor="middle" stroke="none" transform="rotate(-90 -15 50)">10,00 m</text>
+      </g>
+      <g id="bubbles">
+        <g stroke="#9b87f5" stroke-width="1.3"><line x1="40" y1="30" x2="85" y2="30"/><line x1="85" y1="30" x2="85" y2="66"/><line x1="85" y1="66" x2="125" y2="66"/><line x1="40" y1="30" x2="15" y2="64" stroke="#8a8a80" stroke-dasharray="2 2"/></g>
+        <line x1="22" y1="63" x2="72" y2="63" stroke="#d98a7a" stroke-width="1.1" stroke-dasharray="3 2"/>
+        <g fill="#24241f" stroke-width="1.2">
+          <rect x="24" y="20" width="32" height="20" rx="3" stroke="#d97757"/><rect x="70" y="20" width="30" height="20" rx="3" stroke="#d97757"/>
+          <rect x="72" y="56" width="26" height="20" rx="3" stroke="#6fae7a"/><rect x="112" y="56" width="26" height="20" rx="3" stroke="#6fae7a"/>
+          <rect x="4" y="54" width="22" height="18" rx="3" stroke="#8a8a80"/>
+        </g>
+        <g fill="#ecebe6" font-size="6.5" font-family="system-ui" text-anchor="middle">
+          <text x="40" y="32">Sala</text><text x="85" y="32">Cozinha</text><text x="85" y="68">Suíte</text><text x="125" y="68">WC</text><text x="15" y="65">Ofic.</text>
+        </g>
+        <g fill="#9b87f5" font-size="6" font-family="ui-monospace,monospace"><text x="58" y="27">+9</text><text x="88" y="50">+4</text><text x="102" y="63">+7</text></g>
+        <text x="40" y="58" fill="#d98a7a" font-size="6" font-family="ui-monospace,monospace">−8</text>
+      </g>
+    </defs>
+  </svg>
+
+  <div class="mh"><div class="num">1</div><div><h3>Etapa 1 com 30 premissas</h3><p>O grafo vira o primeiro item do bloco de premissas. Linhas suaves separam os subtópicos.</p></div></div>
+  <div class="screen">
+    <div class="topbar"><span class="logo">◆ planta</span><span class="mi">Novo</span><span class="mi">Abrir</span><span class="mi">Salvar</span><span class="mi">Excluir</span><span class="tab">Casa 25×10</span><span class="mi">＋</span><span class="sp"></span><span>Etapa 1 · Cômodos</span><span class="steps"><i class="done"></i><i class="on"></i><i></i><i></i></span></div>
+    <div class="main">
+      <div class="left">
+        <div class="canvas">
+          <div class="plan"><svg viewBox="-24 -24 284 130"><use href="#dims"/><use href="#plan"/></svg></div>
+          <div class="alts"><div class="alt on">Opção 1</div><div class="alt">Opção 2</div><div class="alt">Opção 3</div><div class="alt">Opção 4</div></div>
+        </div>
+        <div class="strip">
+          <div class="q">A cozinha deve ser integrada à sala?<small>afeta a etapa 1 · cômodos</small></div>
+          <div class="btns"><span class="b pri">Sim, totalmente</span><span class="b">Só visual</span><span class="b">Não</span></div>
+          <span style="flex:1"></span><span class="b ghost">aceitar opção 1 →</span>
+        </div>
+      </div>
+
+      <div class="side">
+        <div class="stack">
+          <div class="prem">
+            <div class="lbl" style="margin-bottom:2px"><span>Suas premissas e preferências · 30</span><span>editar</span></div>
+
+            <div class="blk gbox">
+              <svg viewBox="0 0 145 85"><use href="#bubbles"/></svg>
+              <div class="gl"><b>Grafo de relações</b><br>8 cômodos · 11 ligações<br>ampliar ⤢</div>
+            </div>
+
+            <div class="blk line"><span class="h">Terreno</span>25 × 10 m<span class="sep">·</span>térrea<span class="sep">·</span>frente norte<span class="sep">·</span>recuo 5 m</div>
+            <div class="blk line"><span class="h">Cômodos</span>Sala <span class="m">25</span><span class="sep">·</span>Cozinha <span class="m">14</span><span class="sep">·</span>Quarto <span class="m">10</span> ×2<span class="sep">·</span>Suíte <span class="m">16</span><span class="sep">·</span>WC<span class="sep">·</span>Oficina <span class="m">12</span><span class="sep">·</span>Lavanderia <span class="m">G</span><span class="sep">·</span>Gourmet<span class="sep">·</span>Garagem <span class="m">2 carros</span></div>
+            <div class="blk line"><span class="h">Itens</span>ilha 1,2×0,9<span class="sep">·</span>pia 3 m<span class="sep">·</span>mesa 10 pessoas<span class="sep">·</span>geladeira enorme</div>
+
+            <div class="blk">
+              <div class="sec-h"><span>Relações entre cômodos</span><span class="legend"><span><b style="background:var(--green)"></b>aproximar</span><span><b style="background:var(--red)"></b>afastar</span></span></div>
+              <div class="meters">
+                <div class="mt"><span class="ring pos" style="--p:90"></span><span class="nm">cozinha ↔ sala</span></div>
+                <div class="mt"><span class="ring pos" style="--p:80"></span><span class="nm">gourmet ↔ quintal</span></div>
+                <div class="mt"><span class="ring pos" style="--p:70"></span><span class="nm">wc ↔ quartos</span></div>
+                <div class="mt"><span class="ring pos" style="--p:60"></span><span class="nm">lavand. ↔ varal</span></div>
+                <div class="mt"><span class="ring pos" style="--p:40"></span><span class="nm">suíte ↔ entrada</span></div>
+                <div class="mt"><span class="ring neg" style="--p:80"></span><span class="nm">oficina ↔ quartos</span></div>
+              </div>
+            </div>
+
+            <div class="blk">
+              <div class="sec-h"><span>O que você valoriza</span><span class="legend"><span><b style="background:var(--green)"></b>quero</span><span><b style="background:var(--red)"></b>evitar</span></span></div>
+              <div class="meters">
+                <div class="mt new"><span class="ring pos" style="--p:100"></span><span class="nm">luz natural</span></div>
+                <div class="mt"><span class="ring pos" style="--p:100"></span><span class="nm">janelas a leste</span></div>
+                <div class="mt"><span class="ring pos" style="--p:50"></span><span class="nm">ventilação</span></div>
+                <div class="mt"><span class="ring pos" style="--p:50"></span><span class="nm">privacidade</span></div>
+                <div class="mt"><span class="ring pos" style="--p:3"></span><span class="nm">quintal grande</span></div>
+                <div class="mt"><span class="ring neg" style="--p:100"></span><span class="nm">corredores</span></div>
+              </div>
+            </div>
+
+            <div class="blk warn">⚠ garagem 2,40 m (recomendado 2,70) · aceito por você</div>
+          </div>
+
+          <div class="console">
+            <div class="lbl"><span>Console</span><span>148 linhas</span></div>
+            <div class="log">
+              <div><span class="t">09:51</span> <span class="c">&gt; prever</span> cozinha.largura ≥ 3,20 m (ilha)</div>
+              <div><span class="t">09:51</span> <span class="c">&gt; gerar</span> etapa 1 · cp-sat · grade 100 mm</div>
+              <div><span class="t">09:52</span> <span class="ok">✓</span> 4 soluções em 1,8 s</div>
+              <div><span class="t">09:52</span> <span class="k">★ nota</span> op.1 0,82 · op.2 0,79 · op.3 0,74</div>
+              <div><span class="t">09:52</span> <span class="c">&gt; cotas</span> terreno 25,00 × 10,00 m</div>
+              <div><span class="t">09:52</span> <span class="c">&gt; desenhar</span> op.1</div>
+              <div><span class="t">09:52</span> <span class="c">&gt; paredes</span> 23 segmentos</div>
+              <div><span class="t">09:52</span> <span class="c">&gt; validar</span> sobreposição <span class="ok">✓</span> terreno <span class="ok">✓</span></div>
+              <div><span class="t">09:52</span> <span class="c">&gt; validar</span> acesso a todos os cômodos <span class="ok">✓</span></div>
+              <div><span class="t">09:52</span> <span class="k">⚠</span> garagem abaixo do recomendado</div>
+            </div>
+          </div>
+        </div>
+        <div class="free">
+          <div class="hint"><b>✎ Texto livre</b>: ajuste qualquer coisa que não foi perguntada</div>
+          <div class="inp"><span class="caret">›</span><span>ex.: "quero a lavanderia perto da garagem"</span><span class="send">↑</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Qual indicador de intensidade?</h2>
+  <p class="sub">Os três funcionam em duas colunas porque nenhum depende de esquerda/direita. Mesmos 6 itens nos três. Clique no que preferir.</p>
+  <div class="options">
+    <div class="option" data-choice="anel" onclick="toggleSelect(this)">
+      <h3>A · Anel (rosca)</h3><p>Cor = direção (verde quero / vermelho evitar). Quanto do anel está preenchido = intensidade. É o que está na tela acima.</p>
+      <div class="demo">
+        <div class="r"><span class="ring pos" style="--p:100"></span><span class="n">luz natural</span></div>
+        <div class="r"><span class="ring pos" style="--p:50"></span><span class="n">ventilação</span></div>
+        <div class="r"><span class="ring pos" style="--p:3"></span><span class="n">quintal grande</span></div>
+        <div class="r"><span class="ring neg" style="--p:100"></span><span class="n">corredores</span></div>
+        <div class="r"><span class="ring pos" style="--p:90"></span><span class="n">cozinha ↔ sala</span></div>
+        <div class="r"><span class="ring neg" style="--p:80"></span><span class="n">oficina ↔ quartos</span></div>
+      </div>
+    </div>
+    <div class="option" data-choice="vertical" onclick="toggleSelect(this)">
+      <h3>B · Barra vertical</h3><p>Sobe em verde (quero), desce em vermelho (evitar), a partir de uma linha central.</p>
+      <div class="demo">
+        <div class="r"><span class="vb"><i class="p" style="height:50%"></i></span><span class="n">luz natural</span></div>
+        <div class="r"><span class="vb"><i class="p" style="height:25%"></i></span><span class="n">ventilação</span></div>
+        <div class="r"><span class="vb"><i class="p" style="height:2%"></i></span><span class="n">quintal grande</span></div>
+        <div class="r"><span class="vb"><i class="n" style="height:50%"></i></span><span class="n">corredores</span></div>
+        <div class="r"><span class="vb"><i class="p" style="height:45%"></i></span><span class="n">cozinha ↔ sala</span></div>
+        <div class="r"><span class="vb"><i class="n" style="height:40%"></i></span><span class="n">oficina ↔ quartos</span></div>
+      </div>
+    </div>
+    <div class="option" data-choice="pontos" onclick="toggleSelect(this)">
+      <h3>C · Pontos</h3><p>De 1 a 5 pontos acesos, na cor da direção. Lê como "nota", sem precisar estimar tamanho.</p>
+      <div class="demo">
+        <div class="r"><span class="dots pos"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="n">luz natural</span></div>
+        <div class="r"><span class="dots pos"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></span><span class="n">ventilação</span></div>
+        <div class="r"><span class="dots pos"><i></i><i></i><i></i><i></i><i></i></span><span class="n">quintal grande</span></div>
+        <div class="r"><span class="dots neg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="n">corredores</span></div>
+        <div class="r"><span class="dots pos"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="n">cozinha ↔ sala</span></div>
+        <div class="r"><span class="dots neg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="n">oficina ↔ quartos</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="note"><b>Cotas:</b> nesta fase, só o terreno é cotado, uma cota horizontal (topo) e uma vertical (esquerda), no estilo de cota do AutoCAD. A cota interativa com o mouse fica registrada para depois.</p>
+  <p class="foot">Responda no chat: qual indicador, e se algo mais deve mudar.</p>
+</div>
+</body>
+</html>
