@@ -1,0 +1,35 @@
+# Ferramentas do agente (sessões de brainstorm, screenshots do playwright)
+.superpowers/
+.playwright-mcp/
+.claude/settings.local.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+
+# Node / TypeScript
+node_modules/
+
+# Segredos e ambiente local
+.env
+.env.*
+
+# Sistema operacional e editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
+# Saídas geradas
+*.dxf.bak
