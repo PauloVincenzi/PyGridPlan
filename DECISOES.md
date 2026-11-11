@@ -600,3 +600,84 @@ Status: Proposta (aguardando o responsável junto com o plano de commits).
 - Responsável: confirmar o plano de commits; depois, criar o repositório remoto e fazer o `git push`.
 - Responsável: decidir se renomeia o branch `master` para `main` (padrão atual do GitHub).
 - Agente: escrever o documento de design (`docs/superpowers/specs/`), passá-lo por revisão independente e levá-lo à aprovação; depois, o plano de implementação.
+
+### Log da sessão — continuação
+
+2. **Responsável:** confirmou os três commits, pediu a renomeação do branch para `main` e autorizou o push **desta vez**. Pediu o documento de design. Pediu que o agente sugira skills de repositórios confiáveis sempre que for oportuno (interface, otimização etc.) e que o oriente continuamente sobre o presente e os próximos passos. Pediu a instalação de uma skill vista no Instagram que faz o Claude escrever só o código estritamente necessário. **Agente:** fez os commits `89b9cb8`, `055b001` e `f2173b3`, renomeou o branch para `main` e fez o push para `origin/main`. Identificou a skill como `karpathy-guidelines` (repositório comunitário `forrestchang/andrej-karpathy-skills`, licença MIT; não é oficial do Karpathy nem da Anthropic), leu o conteúdo antes de instalar (só markdown, sem scripts nem hooks) e instalou o plugin `andrej-karpathy-skills@karpathy-skills` no escopo de usuário. Levantou no marketplace oficial os plugins úteis por fase. Escreveu o documento de design `docs/superpowers/specs/2026-11-11-pygridplan-mvp-design.md`, passou-o por um revisor independente (subagente), resolveu 4 das 6 dúvidas levantadas e levou as outras 2 ao responsável.
+
+### Decisões — continuação
+
+**DEC-0055 — Skill de código mínimo: karpathy-guidelines**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (identificação e instalação pelo Agente) · Categoria: Ferramentas / Processo
+Decisão: o plugin `andrej-karpathy-skills` foi instalado e a skill `karpathy-guidelines` passa a orientar a escrita de código (pensar antes de codar, simplicidade primeiro, mudanças cirúrgicas, execução guiada por metas verificáveis). A regra foi acrescentada à seção "Princípios de arquitetura" do CLAUDE.md, por pedido do responsável.
+Nota do Agente: não há como confirmar que é exatamente a skill do post visto no Instagram. É a mais difundida com essa proposta e contém a regra "se escreveu 200 linhas e dava em 50, reescreva". Outra candidata com a mesma proposta é a `ponytail` (DietrichGebert), não instalada. Código mínimo não autoriza cortar validação nem testes.
+Status: Aprovada.
+
+**DEC-0056 — Sugestão proativa de skills e orientação contínua**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Processo
+Decisão: o agente sugere skills e plugins adequados a cada fase, apenas os que existem de fato e com o conteúdo de terceiros lido antes de instalar, e fecha cada rodada dizendo o que foi feito e quais são os próximos passos. A autorização de push desta rodada foi pontual: a regra da DEC-0053 continua valendo.
+Status: Aprovada.
+
+**DEC-0057 — Documento de design do MVP (rascunho)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente · Categoria: Arquitetura / Escopo
+Decisão proposta: o documento `docs/superpowers/specs/2026-11-11-pygridplan-mvp-design.md` consolida DEC-0001 a DEC-0054. Escolhas próprias do Agente, marcadas no texto: K = 4 alternativas por etapa; unidade em mm e grade de 100 mm; modelo de cômodos nos eixos das paredes (externa 150 mm, interna 100 mm); agregação inicial por soma ponderada com retornos decrescentes; métrica de diversidade; layers do DXF; marcos M0–M8 com sugestão de fechar o MVP no M5; estrutura do repositório; mínimos e recuos rígidos até existir a negociação; valores mínimos provisórios marcados "sem fonte"; orientação solar com sol bom ao norte (hemisfério sul); meta de ~5 s por alternativa com soluções parciais transmitidas desde o M1.
+Status: Proposta (aguardando duas respostas e a aprovação do responsável).
+
+### Pendências abertas (S03) — atualização
+
+- Responsável: responder se a casa é um bloco único e como se define a área construída.
+- Responsável: responder se é permitido passar por um cômodo para chegar a outro e onde fica a entrada.
+- Responsável: aprovar o documento de design. Depois disso, o Agente segue para a skill `writing-plans`.
+- Commit do documento, do CLAUDE.md e do DECISOES.md, com o plano de commits a apresentar após a aprovação.
+
+### Log da sessão — continuação 2
+
+3. **Responsável:** pediu que o agente pensasse como engenheiro de software e de dados, porque a raiz confundia: `.superpowers/` sem propósito claro e `docs/superpowers/` aparentemente duplicando. Pediu pastas com nomes que digam o que guardam, questionou a data no nome do documento de design e perguntou sobre pastas `data` e `src`. Confirmou a skill `karpathy-guidelines`, com a ressalva de não poupar testes e validações, mas evitar complexidade, passos demais e redundância de definições ou armazenamento. Pediu que o CLAUDE.md liste todas as skills, com finalidade e regras. Achou o documento de design condizente com a conversa, aprovou as 5 skills por fase e respondeu às duas perguntas (implantação no terreno e passagem entre cômodos). **Agente:** explicou que `.superpowers/` é rascunho do servidor de mockups (nome fixo da skill, fora do git) e que `docs/superpowers/` era só o local padrão das skills, substituível. Moveu o design para `docs/design/mvp.md` (sem data no nome) e os mockups para `docs/design/mockups/`, removendo `docs/superpowers/`. Acrescentou ao CLAUDE.md as seções "Estrutura de pastas" e "Skills e plugins", atualizou o README e o `.gitignore` (`out/`), incorporou as respostas ao design (seções 5.5 e 6.2) e registrou DEC-0058 a DEC-0061.
+
+### Decisões — continuação 2
+
+**DEC-0058 — Estrutura de pastas do repositório**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (proposta do Agente) · Categoria: Arquitetura / Processo
+Contexto: confusão entre `.superpowers/` e `docs/superpowers/`; documento de design com data no nome.
+Decisão:
+- `src/pygridplan/` (motor, layout "src"), `web/` (interface), `data/` (dados de referência versionados), `tests/` (com `fixtures/`), `docs/design/` (design e mockups), `docs/plans/` (planos por marco), `docs/theory/` (teoria), `out/` (saídas geradas, fora do git);
+- `.superpowers/` e `.playwright-mcp/` são rascunhos das ferramentas, fora do git, e não guardam nada importante;
+- nomes de pastas e arquivos em inglês, minúsculas com hífen; conteúdo em português;
+- **sem data no nome dos arquivos**: data e versão no cabeçalho, histórico no git;
+- esses locais substituem os padrões das skills (`docs/superpowers/specs` → `docs/design`, `docs/superpowers/plans` → `docs/plans`);
+- pastas só nascem com o primeiro arquivo.
+Justificativa do Agente: o layout "src" evita importar o pacote sem instalá-lo (erro clássico de testes passando só na máquina do autor); separar `data/` (referência curada, versionada, com fonte) de `out/` (gerado, descartável) e de `tests/fixtures/` (casos de teste) evita misturar dado de verdade com dado produzido.
+Consequências: o documento de design foi movido de `docs/superpowers/specs/2026-11-11-pygridplan-mvp-design.md` para `docs/design/mvp.md`, e o mockup citado na DEC-0045 está agora em `docs/design/mockups/layout-v5.html`. A antiga pasta `knowledge/` do design virou `data/`. O catálogo de tipos de cômodo em `data/` é a fonte única de zona, classe de passagem e mínimos.
+Status: Aprovada (organização pedida pelo responsável; nomes propostos pelo Agente).
+
+**DEC-0059 — Implantação no terreno: bloco único e pergunta condicional de divisas**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (parâmetros propostos pelo Agente) · Categoria: Produto / Arquitetura
+Decisão:
+- a casa **por padrão** é um bloco único, mas nem sempre precisa ser; blocos separados são representáveis no modelo. O gerador do MVP produz bloco único (proposta do Agente);
+- o encostamento em divisas é definido pelo usuário numa pergunta **semi-obrigatória**: "A casa pode encostar em alguma divisa?", com marcação de esquerda, direita e fundo (nenhuma = casa solta; a frente nunca encosta);
+- a pergunta só aparece quando é relevante: área pretendida ÷ área do terreno ≥ 0,30, **ou** a casa compacta não cabe com os afastamentos recomendados (limiares propostos pelo Agente, configuráveis);
+- área construída pretendida é campo opcional; sem ela, o motor estima pela soma dos mínimos mais a circulação.
+Exemplos do responsável: terreno 100×100 m com 200 m² → não pergunta; terreno 25×10 m com ≥ 100 m² → pergunta.
+Status: Aprovada (limiares a validar com casos de teste).
+
+**DEC-0060 — Passagem entre cômodos: privativos vs. atravessáveis**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (detalhes propostos pelo Agente) · Categoria: Arquitetura / Produto
+Decisão:
+- **privativos, sem travessia:** quarto, banheiro e closet. A sequência quarto → closet → banheiro dentro da suíte é natural e não conta como travessia social;
+- **atravessáveis:** os demais, incluindo salas integradas ou separadas, cozinhas, áreas de lazer;
+- o sistema precisa suportar programas atípicos de alto padrão (cinema, spa, academia, quadras, várias cozinhas, excesso de cômodos convencionais).
+Detalhes propostos pelo Agente: a classe de passagem é atributo do tipo de cômodo no catálogo de `data/`; tipos novos entram como atravessáveis e o usuário pode mudar; atravessar tem custo suave, maior em cômodos de uso concentrado (cinema, escritório, spa); a entrada fica na frente do terreno, posição escolhida pelo motor e ajustável.
+Status: Aprovada.
+
+**DEC-0061 — Registro de skills no CLAUDE.md**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Ferramentas / Processo
+Complementa: DEC-0055, DEC-0056.
+Decisão: o CLAUDE.md lista todas as skills e plugins usados, a usar e possíveis, com origem, situação, finalidade e regra de uso. Ficam aprovados para instalação por fase: `pyright-lsp` e `code-simplifier` (M0), `playground` (M1), `typescript-lsp` e `modern-web-guidance` (M2), além do já previsto `mcp-server-dev`. A `karpathy-guidelines` é confirmada com a ressalva do responsável: evitar complexidade, passos demais e redundância de definições ou armazenamento, **sem** poupar testes nem validações. O documento de design teve o conteúdo aprovado; as seções 5.5 e 6.2, novas, aguardam a leitura do responsável.
+Status: Aprovada.
+
+### Pendências abertas (S03) — atualização 2
+
+- Responsável: ler as seções 5.5 (passagem) e 6.2 (implantação) do `docs/design/mvp.md`.
+- Responsável: confirmar o plano de commits desta rodada.
+- Responsável: decidir se apaga as pastas locais `.superpowers/` e `.playwright-mcp/` (opcional; ambas estão fora do git).
+- Agente: com o design aprovado, usar `writing-plans` para o plano do M0 em `docs/plans/`; instalar `pyright-lsp` e `code-simplifier` no início do M0, com confirmação.
