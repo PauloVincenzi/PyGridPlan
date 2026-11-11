@@ -62,7 +62,23 @@ PyGridPlan/
 
 ## Requisitos, instalação e execução
 
-Requisitos: Python ≥ 3.13. Instalação e testes chegam com o M0 (tarefa 1 do plano).
+**Requisitos:** Python ≥ 3.13.
+
+**Instalação** (uma vez, na raiz do projeto):
+
+```bash
+python -m venv .venv
+.venv\Scripts\activate          # Windows  (Linux/macOS: source .venv/bin/activate)
+pip install -e ".[dev]"
+```
+
+O `pip install -e` instala as dependências e o próprio pacote de uma vez, em modo editável: mudanças no código valem sem reinstalar. O código fica em `src/`, então os testes sempre rodam contra o pacote instalado.
+
+**Testes:**
+
+```bash
+pytest
+```
 
 ## Aviso
 
