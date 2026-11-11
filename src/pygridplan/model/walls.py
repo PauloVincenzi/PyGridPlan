@@ -91,9 +91,17 @@ def _half_thickness(room: Room, side: SideName, plan: Plan) -> int:
     return (plan.wall_ext_mm if exterior else plan.wall_int_mm) // 2
 
 
-def useful_dims_mm(room: Room, plan: Plan) -> tuple[int, int]:
+def useful_bounds(room: Room, plan: Plan) -> tuple[int, int, int, int]:
+    """(x1, y1, x2, y2) das faces internas das paredes; pode ser invertido se o cômodo
+    for menor que as próprias paredes (o validador acusa `too_small`)."""
     t = {side: _half_thickness(room, side, plan) for side in OPPOSITE}
-    return room.rect.w - t["left"] - t["right"], room.rect.h - t["bottom"] - t["top"]
+    r = room.rect
+    return r.x + t["left"], r.y + t["bottom"], r.x2 - t["right"], r.y2 - t["top"]
+
+
+def useful_dims_mm(room: Room, plan: Plan) -> tuple[int, int]:
+    x1, y1, x2, y2 = useful_bounds(room, plan)
+    return x2 - x1, y2 - y1
 
 
 def useful_area_mm2(room: Room, plan: Plan) -> int:
