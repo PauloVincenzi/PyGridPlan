@@ -1000,3 +1000,126 @@ Status: Aprovada.
 
 - Responsável: abrir `out/m1/report.html` e um `alt-N.dxf` (conferência visual do M1), fazer push, abrir o PR e o merge.
 - Responsável: revisar as propostas da DEC-0074 e os limites de qualidade da DEC-0077, e decidir se viram um M1.1 antes do M2.
+
+---
+
+## Sessão S04 — 2026-11-12
+
+### Log da sessão (prompts e ações, em resumo)
+
+1. **Responsável:** leu o relatório da D1 e concordou que a área mínima é consequência do mobiliário mais as circulações. Pediu uma verificação de "cabe?" durante a definição dos cômodos. Disse que as divergências entre fontes não limitam nada: servem para um piso conservador, uma média ou mediana, ou um mínimo escolhido pelo usuário. O objetivo é evitar plantas sem sentido e dezenas de perguntas. Aprovou as seis propostas da DEC-0074.
+   Sobre o `report.html` do M1:
+   - o terreno era grande para o programa, então centralizar fazia sentido; em lote menor, o motor deveria encostar numa lateral ou na frente, respeitando o vizinho e as aberturas;
+   - pediu **muro em todo o perímetro do lote**;
+   - perguntou por que as silhuetas são irregulares e por que quase não há paredes na mesma reta. Lembrou que 3 quartos alinhados com as mesmas medidas são mais fáceis de construir, sem forçar o usuário;
+   - não entendeu os vazios internos sem acesso: só fariam sentido como jardim de inverno, e indicados;
+   - pediu um esquema de **3 a 4 cores**: 2 para os cômodos, 1 para a área externa construída e 1 para a área verde.
+
+   Pediu ao Agente para tomar as 3 decisões pendentes e julgar a necessidade de M1.1 e M1.2.
+
+   **Agente:** explicou que as formas irregulares não são um bug, e sim uma lacuna do modelo: nada pedia bloco cheio, alinhamento ou posição no lote. Tomou as 3 decisões (DEC-0079 a DEC-0081). Acrescentou ao design a seção 20 (M1.1 e M1.2) e os marcos M1.1 e M1.2. Registrou DEC-0079 a DEC-0083.
+
+### Decisões
+
+**DEC-0079 — Aprovação das propostas da DEC-0074**
+Data: 2026-11-12 · Sessão: S04 · Autor: Responsável · Categoria: Dados / Produto
+Decisão: ficam aprovadas:
+- escritório e home theater atravessáveis, com `concentrated_use`;
+- rouparia, despensa e depósito privativos;
+- suíte como relação (`suite_access`);
+- atributo `exterior` em vez de uma quarta zona;
+- closet com largura mínima de 1,30 m;
+- perfil "piso nacional", com banheiro de 1,50 m.
+Status: Aprovada.
+
+**DEC-0080 — M1 encerrado; integração via pull request**
+Data: 2026-11-12 · Sessão: S04 · Autor: Agente (por delegação do Responsável) · Categoria: Processo
+Complementa: DEC-0077.
+Decisão: o responsável conferiu as 4 plantas no `report.html`. O M1 fica **concluído como gerador funcional**: as plantas são válidas, diferentes, reprodutíveis e têm nota. Os problemas de qualidade apontados (forma, alinhamento, vazios, implantação) são o escopo do **M1.1** e não bloqueiam o encerramento. O branch `feat/m1-cpsat-generator` vai para o `main` pela **opção 2**: o responsável faz o push e abre o PR, como no M0. O M1.1 começa num branch novo, a partir do `main` atualizado.
+Status: Aprovada.
+
+**DEC-0081 — Filosofia dos dados: piso conservador, mediana ou escolha do usuário**
+Data: 2026-11-12 · Sessão: S04 · Autor: Responsável · Categoria: Dados / Produto
+Complementa: DEC-0074.
+Decisão: as divergências entre fontes não precisam ser resolvidas. Os dados oferecem **perfis de mínimo**:
+- **conservador** (padrão): o maior mínimo entre as fontes;
+- **mediana** das fontes;
+- **personalizado**: o valor que o usuário informar.
+
+O objetivo é o motor decidir a partir do pouco que o usuário informa, sem gerar plantas sem sentido para aquele pedido e sem uma longa sequência de perguntas.
+Status: Aprovada.
+
+**DEC-0082 — M1.1: forma e implantação**
+Data: 2026-11-12 · Sessão: S04 · Autor: Responsável (requisitos) / Agente (solução) · Categoria: Arquitetura / Produto / Interface
+Decisão: o escopo está na seção 20.1 do design:
+- critério de bloco cheio (`void_area`);
+- rejeição de vazio interno não pedido (um pátio só existe se for pedido, e aí é rotulado);
+- critério suave de alinhamento (faces na mesma reta, cômodos iguais enfileirados);
+- implantação padrão encostada no recuo frontal e centralizada na largura;
+- em lote pequeno, encostar automaticamente numa divisa, com aviso e lado marcado "sem janela" a menos de 1,5 m da divisa (Código Civil, art. 1.301);
+- muro em todo o perímetro (`A-MURO`, 150 mm, valor a confirmar);
+- 4 categorias de cor: interna seca, interna molhada, externa construída e externa verde;
+- aviso de permeabilidade abaixo de 25%.
+
+Propostas do Agente:
+- implantação padrão;
+- espessura do muro;
+- as 2 cores dos cômodos serem seca × molhada (útil para a hidráulica), com a zona social/íntima/serviço ficando para o grafo de bolhas.
+Status: Proposta (aguardando aprovação do design; depois, plano).
+
+**DEC-0083 — M1.2: dimensionamento pelo mobiliário**
+Data: 2026-11-12 · Sessão: S04 · Autor: Responsável (requisito) / Agente (solução) · Categoria: Arquitetura / Dados
+Decisão: o escopo está na seção 20.2 do design:
+- trilha de dados D2 (mobiliário mínimo e folgas por tipo de cômodo, com fonte, em `data/furniture.yaml`);
+- verificação "cabe?" por empacotamento CP-SAT dentro de cada cômodo, que também deriva os mínimos;
+- perfis de mínimo (DEC-0081);
+- itens pedidos aumentam os mínimos do cômodo.
+
+Isso antecipa parte do M6 (pré-dimensionamento) e do M8 (mobiliário). Ordem dos marcos: M1.1 → M1.2 → M2.
+Status: Proposta (aguardando aprovação do design).
+
+### Pendências abertas (S04)
+
+- Responsável: push do branch `feat/m1-cpsat-generator`, abrir o PR e fazer o merge.
+- Responsável: aprovar a seção 20 do design, incluindo as propostas da DEC-0082.
+- Agente: depois da aprovação, escrever o plano do M1.1 (`docs/plans/m1-1-shape-and-site.md`) num branch novo a partir do `main`.
+
+### Log da sessão — continuação
+
+2. **Responsável:** fez o commit `f627f62` (só `docs/design/mvp.md`) e o push. Pediu como regra receber o título e o texto do PR sempre que um branch fechar; ele faz o merge depois de recebê-los. Aprovou a seção 20 do design (DEC-0082 e DEC-0083 passam a Aprovada) e pediu para iniciar o M1.1 e escrever o plano. **Agente:**
+   - entregou o título e o texto do PR do M1 e registrou a regra no CLAUDE.md;
+   - notou que a sessão S04 do DECISOES.md ficou fora do `f627f62` e a levou para o branch do M1.1;
+   - criou o branch `feat/m1-1-shape-and-site` a partir da ponta do M1;
+   - escreveu `docs/plans/m1-1-shape-and-site.md`.
+
+### Decisões — continuação
+
+**DEC-0084 — Regra: título e texto do PR ao fechar cada branch**
+Data: 2026-11-12 · Sessão: S04 · Autor: Responsável · Categoria: Processo
+Decisão: ao fechar um branch, o agente entrega o título e o texto do pull request, em inglês. O responsável abre o PR e faz o merge. Regra registrada no CLAUDE.md ("Arquivos e git").
+Status: Aprovada.
+
+**DEC-0085 — Seção 20 aprovada e plano do M1.1**
+Data: 2026-11-12 · Sessão: S04 · Autor: Responsável (aprovação) / Agente (plano) · Categoria: Arquitetura
+Substitui: DEC-0082 e DEC-0083 (status: Proposta → Aprovada).
+Decisão:
+- O responsável aprovou a seção 20 do design, incluindo as propostas do Agente: implantação no recuo frontal centralizada na largura, muro de 150 mm e cores seca × molhada.
+- Plano proposto `docs/plans/m1-1-shape-and-site.md`, com 6 tarefas:
+  1. dados de implantação com fonte e tipo `patio`;
+  2. vazio fechado como erro de validade;
+  3. forma no solver e na nota (implantação rígida, área vazia com peso 3,0, critério `alignment`);
+  4. encosto automático em lote pequeno e marcação "sem janela";
+  5. muro, área verde e 4 cores;
+  6. verificação e fechamento.
+- Escolhas do Agente no plano:
+  - um pátio é um **cômodo** do tipo `patio`, nunca um vazio;
+  - ordem do encosto automático: esquerda, depois as duas laterais, depois o fundo;
+  - permeabilidade de 25% só como aviso, com a cidade citada (lei municipal, regra 4);
+  - cores únicas em `CATEGORY_STYLE`: seca laranja, molhada azul, construída cinza, verde verde.
+
+Status: Plano Proposto (aguardando revisão, modo de execução e autorização de commits).
+
+### Pendências abertas (S04) — atualização
+
+- Responsável: fazer o merge do PR do M1, com o texto entregue nesta rodada.
+- Responsável: revisar o plano do M1.1, escolher o modo de execução e autorizar os commits.
