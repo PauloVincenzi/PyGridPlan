@@ -9,6 +9,8 @@ import sys
 import time
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from pygridplan.export.dxf import export_dxf
 from pygridplan.export.report import write_report
 from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT, GenerationError, generate_alternatives
@@ -18,8 +20,23 @@ from pygridplan.model.request import load_request
 from pygridplan.validation.checks import check_recommendations, validate_geometry
 
 
+def _input_error(exc: Exception) -> int:
+    """Entrada inválida: mensagem em português, sem traceback."""
+    if isinstance(exc, ValidationError):
+        for err in exc.errors():
+            where = ".".join(str(p) for p in err["loc"]) or "arquivo"
+            print(f"ERRO: {where}: {err['msg']}", file=sys.stderr)
+    else:
+        print(f"ERRO: {exc}", file=sys.stderr)
+    return 1
+
+
 def _export(args: argparse.Namespace) -> int:
-    plan, catalog = load_plan(args.plan), load_catalog()
+    try:
+        plan = load_plan(args.plan)
+    except (ValidationError, ValueError, OSError) as exc:
+        return _input_error(exc)
+    catalog = load_catalog()
     errors = validate_geometry(plan)
     for issue in errors:
         print(f"ERRO: {issue.message}", file=sys.stderr)
@@ -33,7 +50,11 @@ def _export(args: argparse.Namespace) -> int:
 
 
 def _generate(args: argparse.Namespace) -> int:
-    request, catalog = load_request(args.request), load_catalog()
+    try:
+        request = load_request(args.request)
+    except (ValidationError, ValueError, OSError) as exc:
+        return _input_error(exc)
+    catalog = load_catalog()
     start = time.perf_counter()
     try:
         alternatives = generate_alternatives(request, catalog, k=args.k, seed=args.seed, time_limit=args.time_limit)
@@ -50,6 +71,15 @@ def _generate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _positive(cast):
+    def parse(text: str):
+        value = cast(text)
+        if value <= 0:
+            raise argparse.ArgumentTypeError("precisa ser maior que zero")
+        return value
+    return parse
+
+
 def main(argv: list[str] | None = None) -> int:
     # consoles do Windows (cp1252) não têm todos os caracteres das mensagens: substitui em vez de quebrar
     for stream in (sys.stdout, sys.stderr):
@@ -63,9 +93,9 @@ def main(argv: list[str] | None = None) -> int:
     gen = sub.add_parser("generate", help="gera K plantas alternativas a partir de um pedido JSON")
     gen.add_argument("request", type=Path)
     gen.add_argument("output", type=Path)
-    gen.add_argument("--k", type=int, default=4)
+    gen.add_argument("--k", type=_positive(int), default=4)
     gen.add_argument("--seed", type=int, default=0)
-    gen.add_argument("--time-limit", type=float, default=DEFAULT_TIME_LIMIT)
+    gen.add_argument("--time-limit", type=_positive(float), default=DEFAULT_TIME_LIMIT)
     args = parser.parse_args(argv)
     return _export(args) if args.command == "export-dxf" else _generate(args)
 

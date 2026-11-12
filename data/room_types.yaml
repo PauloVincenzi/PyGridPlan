@@ -45,10 +45,8 @@ types:
     passage: private
     wet: true
     stay: transient
-    min_width_mm: 1000
-    min_area_m2: 1.5
     comfort_area_m2: [1.2, 1.7]
-    sources: {min_width_mm: bh-11834-2025, min_area_m2: bh-11834-2025, comfort_area_m2: planner5d}
+    sources: {comfort_area_m2: planner5d}  # mínimos de BH (L-mun) não valem como padrão nacional (DEC-0078)
   - id: home_theater
     name: Home theater
     zone: social

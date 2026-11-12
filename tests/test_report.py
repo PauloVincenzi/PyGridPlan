@@ -63,3 +63,20 @@ def test_cli_survives_windows_cp1252_console(tmp_path):
                           "--k", "1", "--time-limit", "0.5"], capture_output=True, env=env)
     assert b"Traceback" not in run.stderr
     assert run.returncode == 0
+
+
+def test_cli_invalid_request_shows_message_not_traceback(tmp_path, capsys):
+    request = {"site": {"width_mm": 10000, "depth_mm": 25000}, "rooms": [{"id": "s", "type": "sala"}],
+               "relations": [{"a": "s", "b": "x", "kind": "near", "intensity": 3}]}
+    path = tmp_path / "bad.json"
+    path.write_text(json.dumps(request), encoding="utf-8")
+    assert main(["generate", str(path), str(tmp_path / "o")]) == 1
+    err = capsys.readouterr().err
+    assert "ERRO" in err and "inexistente" in err
+
+
+def test_cli_rejects_k_zero(tmp_path):
+    import pytest
+
+    with pytest.raises(SystemExit):
+        main(["generate", str(BASIC_PROGRAM), str(tmp_path / "o"), "--k", "0"])

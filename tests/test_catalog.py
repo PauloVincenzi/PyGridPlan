@@ -85,3 +85,20 @@ def test_duplicate_catalog_ids_rejected(tmp_path):
                             "  - {id: a, name: B, zone: social, passage: private}\n")
     with pytest.raises(ValueError, match="duplicado"):
         load_catalog(path)
+
+
+def test_no_municipal_law_as_national_default():
+    # data/README.md regra 4: lei municipal nunca vira padrão nacional
+    from pygridplan.model.sources import load_sources
+
+    kinds = {k: s.kind for k, s in load_sources().items()}
+    for t in load_catalog().types.values():
+        for field in ("min_width_mm", "min_area_m2"):
+            if getattr(t, field) is not None:
+                assert kinds[t.sources[field]] != "L-mun", f"{t.id}.{field}"
+
+
+def test_comfort_range_not_below_minimum():
+    for t in load_catalog().types.values():
+        if t.comfort_area_m2 and t.min_area_m2:
+            assert t.comfort_area_m2[0] >= t.min_area_m2, t.id

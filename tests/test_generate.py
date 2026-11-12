@@ -56,3 +56,11 @@ def test_same_seed_same_plans():
     first = generate_alternatives(req, load_catalog(), k=2, time_limit=TIME)
     second = generate_alternatives(req, load_catalog(), k=2, time_limit=TIME)
     assert [a.plan for a in first] == [a.plan for a in second]
+
+
+def test_all_attempts_rejected_raises(monkeypatch):
+    import pygridplan.generators.cpsat as g
+
+    monkeypatch.setattr(g, "check_access", lambda plan, catalog: ["rejeitada"])  # força rejeição
+    with pytest.raises(GenerationError):
+        g.generate_alternatives(_req("sala", "cozinha"), load_catalog(), k=1, time_limit=TIME, max_attempts=2)

@@ -263,6 +263,9 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
             continue
         accepted.append(Alternative(plan=plan, score=score_plan(plan, request, catalog),
                                     warnings=tuple(check_recommendations(plan, catalog))))
+    if not accepted:
+        raise GenerationError(f"Nenhuma das {len(seen)} soluções encontradas gerou uma planta válida (acesso ou geometria). "
+                              "Tente mais tempo de busca (--time-limit) ou revise o programa.")
     return accepted
 
 
