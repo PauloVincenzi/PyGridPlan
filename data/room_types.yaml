@@ -68,6 +68,12 @@ types:
     min_width_mm: 800
     min_area_m2: 1.5
     sources: {min_width_mm: mcmv-725-2023, min_area_m2: mcmv-725-2023}
+  - id: patio
+    name: Pátio / jardim de inverno
+    description: Área descoberta pedida pelo usuário dentro do bloco da casa.
+    zone: social
+    passage: traversable
+    exterior: true
   - id: area_gourmet
     name: Área gourmet
     zone: social

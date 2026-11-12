@@ -102,3 +102,7 @@ def test_comfort_range_not_below_minimum():
     for t in load_catalog().types.values():
         if t.comfort_area_m2 and t.min_area_m2:
             assert t.comfort_area_m2[0] >= t.min_area_m2, t.id
+
+
+def test_patio_is_exterior():
+    assert load_catalog().get("patio").exterior

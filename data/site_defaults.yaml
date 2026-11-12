@@ -1,0 +1,9 @@
+# Parâmetros de implantação usados pelo gerador e pela representação (DEC-0082, design 20.1).
+# Cada valor cita uma fonte de data/sources.yaml.
+fence_thickness_mm: 150      # muro no perímetro do lote, por dentro da divisa
+window_min_distance_mm: 1500 # janela, terraço ou varanda a menos disto da divisa: proibido (CC art. 1.301)
+permeability_min: 0.25       # só aviso: referência municipal (Curitiba); a lei local manda
+sources:
+  fence_thickness_mm: agente
+  window_min_distance_mm: codigo-civil
+  permeability_min: curitiba-15511-2019
