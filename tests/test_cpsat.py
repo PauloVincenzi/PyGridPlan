@@ -79,3 +79,12 @@ def test_big_lot_is_feasible():
     rooms = (RoomRequest(id="sala", type="sala"), RoomRequest(id="quarto", type="quarto"),
              RoomRequest(id="banheiro", type="banheiro"))
     assert solve_layout(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME) is not None
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_solutions_are_globally_reachable(seed):
+    from pygridplan.validation.access import check_access
+
+    request, catalog = load_request(BASIC_PROGRAM), load_catalog()
+    plan = solve_layout(request, catalog, seed=seed, time_limit=TIME)
+    assert check_access(plan, catalog) == []

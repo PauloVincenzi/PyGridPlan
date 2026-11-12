@@ -7,15 +7,18 @@ import math
 from collections.abc import Sequence
 
 from ortools.sat.python import cp_model
+from pydantic import BaseModel, ConfigDict
 
 from pygridplan.model.catalog import Catalog
 from pygridplan.model.plan import Plan, Rect, Room
 from pygridplan.model.request import Request
-from pygridplan.scoring.diversity import Pattern
-from pygridplan.scoring.score import CIRCULATION_TYPE, WEIGHTS, room_target_m2
-from pygridplan.validation.access import MIN_PASSAGE_MM
+from pygridplan.scoring.diversity import Pattern, relative_pattern
+from pygridplan.scoring.score import CIRCULATION_TYPE, WEIGHTS, Score, room_target_m2, score_plan
+from pygridplan.validation.access import MIN_PASSAGE_MM, check_access
+from pygridplan.validation.checks import Issue, check_recommendations, validate_geometry
 
 GRID = 100
+MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
 DEFAULT_TIME_LIMIT = 0.5  # unidades determinísticas do CP-SAT; ~4–5 s de relógio no hardware de referência
 
 
@@ -140,6 +143,25 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
             hosts = [j for j in range(n) if j != i and (j in trav or types[i].id in types[j].suite_access)]
             m.add_bool_or([adj(i, j) for j in hosts])
 
+    # conectividade global dos atravessáveis (fluxo de uma única entrada na frente): sem isso o solver
+    # cria "ilhas" e check_access rejeita a planta
+    if len(trav) > 1:
+        big = len(trav) - 1
+        root = {i: m.new_bool_var("") for i in trav}
+        m.add_exactly_one(root.values())
+        flow: dict[tuple[int, int], cp_model.IntVar] = {}
+        for i in trav:
+            m.add_implication(root[i], front[i])
+            for j in trav:
+                if i != j:
+                    f = m.new_int_var(0, big, "")
+                    m.add(f == 0).only_enforce_if(~adj(i, j))
+                    flow[(i, j)] = f
+        for i in trav:
+            inflow = sum(flow[(j, i)] for j in trav if j != i)
+            outflow = sum(flow[(i, j)] for j in trav if j != i)
+            m.add(inflow - outflow == 1 - len(trav) * root[i])
+
     # diversidade: diferir dos padrões proibidos em pelo menos min_diff pares
     ids = [r.id for r in reqs]
     for pattern in forbidden:
@@ -204,3 +226,50 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
         for r, b in zip(reqs, boxes)
     )
     return Plan(site=site, rooms=rooms)
+
+
+class GenerationError(Exception):
+    """O pedido não gera nenhuma planta válida."""
+
+
+class Alternative(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    plan: Plan
+    score: Score
+    warnings: tuple[Issue, ...]
+
+
+def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, seed: int = 0,
+                          time_limit: float = DEFAULT_TIME_LIMIT, max_attempts: int = 20) -> list[Alternative]:
+    """K plantas válidas e diferentes entre si; soluções rejeitadas são proibidas e o solver roda de novo."""
+    if not any(catalog.get(r.type).passage == "traversable" for r in request.rooms):
+        raise GenerationError("O programa precisa de ao menos um cômodo atravessável (ex.: sala) para a entrada.")
+    pairs = math.comb(len(request.rooms), 2)
+    min_diff = max(1, math.ceil(MIN_DIFF_FRACTION * pairs))
+    seen: list[Pattern] = []
+    accepted: list[Alternative] = []
+    for attempt in range(max_attempts):
+        if len(accepted) == k:
+            break
+        plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
+                            forbidden=seen, min_diff=min_diff)
+        if plan is None:
+            if attempt == 0:
+                raise GenerationError(_no_fit_message(request, catalog))
+            break  # não há mais alternativas diferentes
+        seen.append(relative_pattern(plan))
+        if validate_geometry(plan) or check_access(plan, catalog):
+            continue
+        accepted.append(Alternative(plan=plan, score=score_plan(plan, request, catalog),
+                                    warnings=tuple(check_recommendations(plan, catalog))))
+    return accepted
+
+
+def _no_fit_message(request: Request, catalog: Catalog) -> str:
+    site, sb = request.site, request.site.setbacks
+    buildable = (site.width_mm - sb.left - sb.right) * (site.depth_mm - sb.front - sb.back) / 1e6
+    needed = sum(catalog.get(r.type).min_area_m2 or 0 for r in request.rooms)
+    return (f"Nenhuma planta coube no terreno: os mínimos somam ≈ {needed:.1f} m² de área útil, "
+            f"a área edificável (terreno menos recuos) é ≈ {buildable:.1f} m², e as larguras mínimas "
+            "e passagens também precisam caber. Tente menos cômodos, recuos menores ou mais tempo de busca.")
