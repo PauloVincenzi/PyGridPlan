@@ -50,13 +50,16 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     reqs = request.rooms
     types = [catalog.get(r.type) for r in reqs]
     n = len(reqs)
-    gap_min = math.ceil(ext / GRID)  # vão entre paredes: 0 ou >= uma parede externa (design 5.1)
     door = math.ceil(MIN_PASSAGE_MM / GRID)
+    # vão entre cômodos: 0 (encostados) ou >= uma passagem; evita paredes sobrepostas e frestas inúteis
+    gap_min = math.ceil(max(ext, MIN_PASSAGE_MM) / GRID)
+    # lado mínimo universal: cabe uma porta entre as paredes (despensa, depósito, tipos sem mínimo)
+    side_min = math.ceil((MIN_PASSAGE_MM + ext) / GRID)
 
     boxes = []
     for r, t in zip(reqs, types):
         min_side = math.ceil(((t.min_width_mm or 0) + ext) / GRID)
-        boxes.append(_Box(m, r.id, xr, yr, max(min_side, gap_min + 1)))
+        boxes.append(_Box(m, r.id, xr, yr, max(min_side, side_min)))
     m.add_no_overlap_2d([b.ix for b in boxes], [b.iy for b in boxes])
 
     # área útil aproximada (conservadora: meia parede externa em todos os lados), em mm²
@@ -103,8 +106,9 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
             ):
                 s = m.new_bool_var("")
                 m.add(same[0] == same[1]).only_enforce_if(s)
-                m.add(a1 + door <= b2).only_enforce_if(s)
-                m.add(b1 + door <= a2).only_enforce_if(s)
+                # sobreposição >= door: os dois lados também precisam ter >= door
+                for lo, hi in ((a1, b2), (b1, a2), (a1, a2), (b1, b2)):
+                    m.add(lo + door <= hi).only_enforce_if(s)
                 subs.append(s)
             v = m.new_bool_var("")
             m.add_bool_or(subs).only_enforce_if(v)
@@ -144,8 +148,11 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
             old = pattern.get((ids[i], ids[j]))
             if old is None:
                 continue
+            # difere de verdade só se nenhuma relação que valia continua valendo (diagonal não conta)
             d = m.new_bool_var("")
-            m.add_bool_or([lit if not was else ~lit for lit, was in zip(lits, old)]).only_enforce_if(d)
+            for lit, was in zip(lits, old):
+                if was:
+                    m.add_implication(d, ~lit)
             diffs.append(d)
         m.add(sum(diffs) >= min_diff)
 

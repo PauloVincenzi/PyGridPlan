@@ -30,3 +30,16 @@ def test_mirrored_plan_differs(basic_house):
 def test_distance_requires_same_rooms(basic_house):
     with pytest.raises(ValueError):
         plan_distance(basic_house, _plan(Rect(x=0, y=0, w=1000, h=1000)))
+
+
+def test_diagonal_flip_is_not_a_real_difference():
+    # r1 continua à direita de r0; só passou a estar também atrás: mesmo arranjo
+    a = _plan(Rect(x=0, y=0, w=1000, h=1000), Rect(x=2000, y=0, w=1000, h=1000))
+    b = _plan(Rect(x=0, y=0, w=1000, h=1000), Rect(x=2000, y=3000, w=1000, h=1000))
+    assert plan_distance(a, b) == 0.0
+
+
+def test_left_to_right_is_a_real_difference():
+    a = _plan(Rect(x=0, y=0, w=1000, h=1000), Rect(x=2000, y=0, w=1000, h=1000))
+    b = _plan(Rect(x=2000, y=0, w=1000, h=1000), Rect(x=0, y=0, w=1000, h=1000))
+    assert plan_distance(a, b) == 1.0

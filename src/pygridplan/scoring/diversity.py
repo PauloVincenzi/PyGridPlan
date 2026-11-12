@@ -16,8 +16,10 @@ def relative_pattern(plan: Plan) -> Pattern:
 
 
 def plan_distance(a: Plan, b: Plan) -> float:
-    """Fração de pares de cômodos cujo padrão relativo difere (0 = mesmo arranjo)."""
+    """Fração de pares cuja posição relativa mudou de verdade: nenhuma relação que valia
+    numa planta vale na outra (estar "à direita e também atrás" não difere de "à direita")."""
     pa, pb = relative_pattern(a), relative_pattern(b)
     if pa.keys() != pb.keys():
         raise ValueError("as plantas não têm os mesmos cômodos na mesma ordem")
-    return sum(pa[k] != pb[k] for k in pa) / len(pa) if pa else 0.0
+    differs = sum(not any(x and y for x, y in zip(pa[k], pb[k])) for k in pa)
+    return differs / len(pa) if pa else 0.0
