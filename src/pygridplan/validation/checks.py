@@ -26,6 +26,30 @@ def _gaps(a: Rect, b: Rect) -> tuple[int, int]:
     return max(a.x, b.x) - min(a.x2, b.x2), max(a.y, b.y) - min(a.y2, b.y2)
 
 
+def enclosed_void_area_mm2(plan: Plan) -> int:
+    """Área dentro da caixa envolvente, sem cômodo e sem ligação com a borda da caixa (vazio fechado)."""
+    if not plan.rooms:
+        return 0
+    xs = sorted({v for r in plan.rooms for v in (r.rect.x, r.rect.x2)})
+    ys = sorted({v for r in plan.rooms for v in (r.rect.y, r.rect.y2)})
+    nx, ny = len(xs) - 1, len(ys) - 1
+
+    def covered(i: int, j: int) -> bool:
+        cx, cy = (xs[i] + xs[i + 1]) / 2, (ys[j] + ys[j + 1]) / 2
+        return any(r.rect.x < cx < r.rect.x2 and r.rect.y < cy < r.rect.y2 for r in plan.rooms)
+
+    free = {(i, j) for i in range(nx) for j in range(ny) if not covered(i, j)}
+    stack = [c for c in free if c[0] in (0, nx - 1) or c[1] in (0, ny - 1)]
+    outside = set(stack)
+    while stack:
+        i, j = stack.pop()
+        for n in ((i + 1, j), (i - 1, j), (i, j + 1), (i, j - 1)):
+            if n in free and n not in outside:
+                outside.add(n)
+                stack.append(n)
+    return sum((xs[i + 1] - xs[i]) * (ys[j + 1] - ys[j]) for i, j in free - outside)
+
+
 def validate_geometry(plan: Plan) -> list[Issue]:
     issues: list[Issue] = []
     rooms = plan.rooms
@@ -40,6 +64,11 @@ def validate_geometry(plan: Plan) -> list[Issue]:
                 issues.append(Issue(code="wall_overlap",
                                     message=f"{a.id} e {b.id}: paredes sobrepostas",
                                     room_ids=(a.id, b.id)))
+    void = enclosed_void_area_mm2(plan)
+    if void:
+        area = f"{void / 1e6:.2f}".replace(".", ",")
+        issues.append(Issue(code="enclosed_void",
+                            message=f"vazio fechado de {area} m² dentro da casa (peça um pátio se for intencional)"))
     for r in rooms:
         if min(useful_dims_mm(r, plan)) <= 0:
             issues.append(Issue(code="too_small", message=f"{r.id}: menor que as próprias paredes",
