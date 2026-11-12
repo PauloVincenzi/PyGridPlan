@@ -813,3 +813,190 @@ Status: Aprovada (o merge no `main` acontece via pull request do responsável).
 
 - Responsável: `git push -u origin feat/m0-foundation`, abrir o pull request e fazer o merge.
 - Agente: depois do merge, instalar o `playground` e escrever o plano do M1.
+
+### Log da sessão — continuação 6
+
+7. **Responsável:** fez o push, abriu e mergeou o PR #1 (M0). Perguntou se as medidas mínimas e os tipos de cômodo do catálogo foram embasados em pesquisa, já que a maioria dos cômodos foi citada de memória por ele, e pediu pesquisa extensa em material de arquitetura e engenharia: nomes de cômodos, destinos, dimensões mínimas, normas e padrões. Pediu para voltar ao `main` atualizado, criar o branch do M1, instalar o `playground` e escrever o plano do M1 para revisão antes de codar. **Agente:** respondeu que **não** houve pesquisa: os valores do catálogo são provisórios, marcados "provisório, sem fonte", e propôs a trilha de dados D1 (DEC-0072). Atualizou o `main` (`1ececa7`), criou `feat/m1-cpsat-generator` e apagou o branch local do M0, já mergeado. Instalou o `playground` e corrigiu a finalidade dele no CLAUDE.md: ele monta textos a partir de controles visuais e não executa o motor. Escreveu `docs/plans/m1-cpsat-generator.md` (DEC-0073).
+
+### Decisões — continuação 6
+
+**DEC-0072 — Trilha de dados D1: curadoria de cômodos e medidas com fontes (proposta)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (pedido) / Agente (proposta de método) · Categoria: Dados
+Contexto: os 12 tipos do catálogo e seus mínimos foram definidos sem pesquisa, a partir de cômodos lembrados pelo responsável e de valores provisórios do Agente.
+Decisão proposta: uma trilha de dados **paralela ao M1**, sem código, que entrega:
+1. `docs/theory/room-program.md`: síntese com referências sobre os tipos de cômodo residenciais (inclusive atípicos e de alto padrão), destino, zona, dimensões e áreas mínimas usuais, circulações e vãos de porta;
+2. `data/room_types.yaml` revisado, com **fonte, versão e data em cada valor** (DEC-0024).
+Fontes a buscar:
+- ABNT NBR 15575-1 (anexo de dimensões e mobiliário mínimos);
+- ABNT NBR 9050 (circulação e acessibilidade);
+- códigos de obras municipais de várias cidades (variam entre si);
+- Neufert, *A arte de projetar em arquitetura*;
+- Panero & Zelnik, *Dimensionamento humano para espaços interiores*;
+- especificações da Caixa para habitação de interesse social;
+- literatura acadêmica.
+Método: skill `deep-research` (subagentes de busca na web), com verificação cruzada entre fontes.
+Ressalvas:
+- normas pagas não são copiadas, só os valores com a citação;
+- a legislação é municipal e varia, então o catálogo guarda **referências usuais**, não conformidade (DEC-0015).
+Status: Proposta (aguardando o responsável autorizar a execução).
+
+**DEC-0073 — Plano do M1 (gerador CP-SAT)**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente · Categoria: Arquitetura
+Decisão proposta: `docs/plans/m1-cpsat-generator.md`, com 7 tarefas:
+1. pendências do M0;
+2. modelo do pedido;
+3. checagem de acesso;
+4. nota decomposta e diversidade;
+5. modelo CP-SAT;
+6. laço de alternativas;
+7. CLI `generate` com página HTML de comparação.
+Escolhas do Agente:
+- diversidade **por construção** (proibir padrões de posição relativa já vistos);
+- alternativas rejeitadas pelo validador são proibidas e o solver roda de novo;
+- pesos numa fonte única (`WEIGHTS`), usada pela nota e pelo solver;
+- tempo determinístico do CP-SAT para garantir reprodutibilidade;
+- área-alvo padrão = mínimo × 1,25;
+- passagem mínima de 900 mm;
+- novos atributos no catálogo: `suite_access`, `wet`, `sun`;
+- `Site.north` para o critério solar.
+Proposta de mudança de escopo: a **árvore de estados** passa do M1 para o M2, porque com uma única etapa não há o que navegar.
+Status: Proposta (aguardando revisão e o modo de execução).
+
+### Pendências abertas (S03) — atualização 6
+
+- Responsável: revisar o plano do M1, aprovar ou não a mudança da árvore de estados para o M2 e escolher o modo de execução.
+- Responsável: autorizar a trilha D1 (pesquisa de cômodos e medidas).
+
+### Log da sessão — continuação 7
+
+8. **Responsável:** pediu a D1 antes do M1, para o M1 já usar os dados coletados, e avisou que haverá outras coletas ao longo do projeto. Pediu pesquisa além de destino, zona, larguras, áreas, circulação e portas: inventariar tudo o que o projeto precisará de material externo, incluindo o que ele esqueceu de listar. Definiu um novo tipo de dado: **custo de materiais em R$** por classe (econômica "dá pro gasto", média "já é boa", alto padrão), para estimar no futuro o custo de material da planta por quantidades. São exemplos: área de parede, reboco de parede e teto com cimento, cal ou gesso, classes de tinta, cerâmica e porcelanato, louças, metais, elétrica e hidráulica. A mão de obra fica de fora, mas estimável. Aprovou diversidade por construção, rejeição com nova tentativa, reprodutibilidade por semente e a árvore de alternativas no M2. Autorizou os 2 commits e o push. Escolheu execução nativa com revisão depois da tarefa 5 e no fim, começando o M1 logo após a D1. **Agente:** fez os commits `74c9f02` e `169d1f9` e o push do branch `feat/m1-cpsat-generator`. Executou a D1 com a skill `deep-research`: 5 frentes em paralelo (programa de cômodos; circulação, aberturas e garagem; implantação e conforto; custos de materiais; mobiliário, ergonomia e inventário), mais um relatório com citações. Estruturou o registro de dados:
+   - `data/sources.yaml` (24 fontes com tipo);
+   - `data/room_types.yaml` v0.2 (22 tipos, com fonte por valor);
+   - `data/costs/` (consumo SINAPI, preços datados, classes);
+   - `data/README.md` (dicionário e processo);
+   - `model/sources.py`, e o `load_catalog` passou a recusar valor sem fonte.
+
+   Em TDD, foram 7 testes novos no catálogo e 2 no registro. Ajustou a planta de teste porque o banheiro de 1,30 m útil ficou abaixo do novo mínimo, que tem fonte. Ao fim, 50 testes passando e `pyright` sem erros. Registrou DEC-0074 a DEC-0076.
+
+### Decisões — continuação 7
+
+**DEC-0074 — D1 concluída: registro de dados de referência com fonte por valor**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (pedido) / Agente (estrutura e valores) · Categoria: Dados
+Substitui: DEC-0072 (status).
+Decisão:
+- **Pesquisa:** `docs/research/Dados de referência para plantas.md`, com notas em `docs/research/notes/…`. Traz um inventário de 28 categorias de dados por fase, valores com fonte e 19 lacunas priorizadas.
+- **Achado central:** não existe área mínima nacional por cômodo. A NBR 15575-1 não fixa áreas, só mobiliário, folgas e três larguras. A área mínima real é **consequência do mobiliário mais as folgas**, e o validador de "cabe?" entra com o mobiliário (M8).
+- **Registro:** `data/sources.yaml` é a fonte única das citações, com os tipos N, L-fed, L-mun, F, A, P e X. O catálogo cita uma fonte por valor, e código e teste recusam valor sem fonte ou com fonte desconhecida.
+- **Catálogo v0.2:**
+  - 22 tipos;
+  - novos atributos `description`, `wet`, `sun`, `exterior`, `concentrated_use`, `stay` (permanência), `suite_access`, `comfort_area_m2` e `sources`;
+  - perfil padrão "piso nacional", o mais exigente entre o anexo da NBR 15575-1 e o MCMV;
+  - por isso o banheiro passa a ter largura mínima de 1,50 m (MCMV) e a sala de 2,40 m (era 2,70 m sem fonte);
+  - `min_area_m2` só onde há fonte;
+  - a área-alvo do gerador vem de `comfort_area_m2`.
+- **Propostas do Agente para revisão do responsável:**
+  - escritório e home theater continuam **atravessáveis**, como na DEC-0060, com `concentrated_use` (o relatório sugeria torná-los privativos);
+  - rouparia, despensa e depósito ficam privativos, porque são anexos de guarda e não caminho;
+  - suíte é uma relação (`suite_access`) e não um tipo, com base na definição de Porto Alegre;
+  - varanda e área gourmet usam `exterior: true` em vez de uma quarta zona;
+  - largura do closet de 1,30 m = armário de 0,50 m (NBR) + circulação de 0,80 m.
+- Cômodos sem nenhuma fonte (home theater, área gourmet, rouparia, despensa, brinquedoteca e outros) ficam **sem números**.
+- **Processo:** as próximas coletas são trilhas `Dn`, conforme o `data/README.md` e a regra no CLAUDE.md.
+
+Estado (DEC-0069): **concluída** como primeira coleta. Ela é suficiente para o M1, porque o gerador usa largura mínima, área mínima, faixa de conforto, passagem, `suite_access`, `wet` e `sun`, e todos já têm fonte ou estão explicitamente vazios. As lacunas (texto oficial das normas, licença do SINAPI, códigos municipais, Neufert e Panero, mobiliário de mercado) **não bloqueiam** o M1 e viram as próximas trilhas `Dn`.
+Status: Aprovada (as propostas do Agente acima aguardam revisão).
+
+**DEC-0075 — Custo de materiais: esquema, classes e primeira coleta**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável (ideia e classes) / Agente (esquema) · Categoria: Dados / Produto
+Decisão:
+- **Objetivo de produto:** estimar o custo de **material** da planta a partir de quantidades (paredes, faces de reboco, teto, piso, contagens), com classes escolhidas pelo usuário (econômica, média, alto); a mão de obra entra depois.
+- **Base:** composições SINAPI (Caixa/IBGE), que trazem consumo por m² com perdas e horas de mão de obra. O CUB e o custo médio do IBGE servem só para checar a ordem de grandeza.
+- **Esquema em `data/costs/`:**
+  - `consumption.yaml`: serviço → materiais por unidade, com o `driver` de quantidade;
+  - `prices.yaml`: preços com mês de referência, abrangência e tipo `sinapi` ou `varejo`, mais as referências de verificação;
+  - `finish_classes.yaml`: NBR 15079 para tintas (econômica 70, standard 90, premium 110, super premium 150 m²/18 L) mapeada para as 3 classes do projeto, e uma proposta do Agente para pisos.
+- **Primeira coleta:** 8 serviços (alvenaria, chapisco, reboco cimento+cal, gesso projetado, contrapiso, porcelanato, massa corrida, pintura premium) e 14 registros de preço.
+- **Pendências:**
+  - confirmar a licença de reuso do SINAPI;
+  - montar o ETL por UF;
+  - coletar as composições de teto, azulejo, selador, hidráulica, elétrica, louças e metais por classe;
+  - decidir se fundação, estrutura e cobertura entram no escopo, já que não saem de uma planta 2D.
+Status: Aprovada (implementação do estimador em fase futura).
+
+**DEC-0076 — Plano do M1 aprovado, com ajustes**
+Data: 2026-11-11 · Sessão: S03 · Autor: Responsável · Categoria: Arquitetura / Processo
+Substitui: DEC-0073 (status).
+Decisão: aprovados:
+- diversidade por construção;
+- rejeitar e tentar de novo as plantas que falham no acesso ou na validação;
+- reprodutibilidade por semente;
+- **árvore de alternativas movida para o M2**;
+- execução **nativa** com revisão independente **depois da tarefa 5 e no fim**;
+- commits durante a execução e push autorizados.
+
+Ajustes que vêm da D1 (rulings registrados no ledger da execução):
+- os atributos `suite_access`, `wet` e `sun` já entraram no catálogo pela D1, então as tarefas 3 e 4 só os consomem;
+- a área-alvo padrão passa a ser o limite inferior de `comfort_area_m2` e, sem ele, `min_area_m2 × 1,25`;
+- os IDs duplicados no catálogo, pendência da tarefa 1, já foram resolvidos na D1.
+Status: Aprovada.
+
+### Pendências abertas (S03) — atualização 7
+
+- Responsável: revisar as propostas do Agente na DEC-0074 (passagem de escritório e home theater, anexos privativos, suíte como relação, `exterior`, closet de 1,30 m) e o perfil "piso nacional" (banheiro de 1,50 m).
+- Agente: executar as tarefas do M1.
+
+### Log da sessão — continuação 8
+
+9. **Responsável:** pediu para continuar a tarefa. **Agente:** executou o M1 em modo nativo, com TDD.
+   - **Tarefas 1 a 4:** pendências do M0, pedido, acesso, nota e diversidade.
+   - **Tarefa 5 (CP-SAT):** medições levaram o tempo-limite padrão a 0,5 unidade determinística e ao uso de `interleave_search`, sem o qual 8 threads davam resultados diferentes a cada execução.
+   - **Revisão intermediária** (subagente): 4 problemas importantes, corrigidos com teste vermelho → verde. Eram passagem real ≥ 0,90 m, diversidade sem "falsos diferentes" por relação diagonal, lado mínimo universal de 1,10 m e vão entre cômodos de 0 ou ≥ 0,90 m.
+   - **Tarefa 6:** o perfil mostrou 6 de 10 soluções rejeitadas por ilhas de acesso. A restrição de **fluxo de conectividade** levou a 0 rejeições e K=4 em ~20 s.
+   - **Tarefa 7:** comando `generate`, SVG e página de comparação. A execução real revelou uma quebra no console cp1252 do Windows, corrigida com teste.
+   - **Revisão final** (subagente): 2 problemas importantes e 1 menor reclassificado, todos corrigidos com teste. Eram mínimos do lavabo vindos de lei municipal, traceback para pedido inválido e falha silenciosa com nenhuma alternativa.
+   - Registrou DEC-0077 e DEC-0078.
+
+### Decisões — continuação 8
+
+**DEC-0077 — Declaração: M1 concluído**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (conferência visual a cargo do Responsável) · Categoria: Processo / Arquitetura
+Decisão: o M1 está **concluído** segundo a DEC-0069, com a conferência visual do responsável pendente:
+- 7 de 7 tarefas feitas;
+- 103 testes passando e `pyright` sem erros;
+- revisão intermediária e revisão final independentes, sem críticos e com os importantes corrigidos;
+- conferência visual do agente em `report.html`;
+- README e DECISOES atualizados.
+
+Entrega: a partir de um pedido em JSON, gera K plantas **válidas** (geometria + acesso), **realmente diferentes** (≥ 15% dos pares com posição relativa trocada) e **reprodutíveis** por semente, com nota decomposta em 6 critérios, em JSON, DXF e HTML.
+
+Por que é suficiente para o M2: a interface vai consumir exatamente o modelo de pedido, `generate_alternatives`, a nota decomposta e o SVG.
+
+Decisões de execução que mudaram o plano (rulings):
+- tempo-limite de 0,5 unidade determinística, com `interleave_search`;
+- fluxo de conectividade dos cômodos atravessáveis;
+- lado mínimo universal de 1,10 m;
+- vão de 0 ou ≥ 0,90 m entre cômodos;
+- diversidade só por "troca de lado";
+- a CLI imprime o tempo total.
+
+Desempenho real com 8 cômodos: K=4 levou 19,9 s, 59,6 s e 33,3 s em três execuções (mesmas plantas). A variação vem da carga da máquina, e a meta de ~20 s só é atingida com a máquina livre.
+
+Limites de qualidade observados (vão para o M2 ou um M1.1):
+- silhueta recortada (compacidade 0,83–0,92);
+- a casa "flutua" no lote, sem preferência pelo recuo frontal;
+- a circulação vira uma célula de 1,10 × 1,10 m, e não um corredor;
+- rótulos se sobrepõem em cômodos pequenos.
+
+Pendências menores: estão listadas no ledger da execução e no relatório final da sessão.
+Status: Aprovada (aguarda a conferência visual do responsável e o merge).
+
+**DEC-0078 — Lavabo sem mínimos como padrão nacional**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (achado da revisão final) · Categoria: Dados
+Corrige: DEC-0074 (valores do lavabo).
+Decisão: o lavabo perde `min_width_mm` (1,00 m) e `min_area_m2` (1,5 m²). Ambos vinham da lei de BH, válida só em BH e só para multifamiliar, o que viola a regra 4 do `data/README.md`. Fica só a faixa de conforto de 1,2–1,7 m² (P). Dois testes passam a barrar essa situação: fonte `L-mun` como mínimo padrão, e faixa de conforto abaixo do mínimo.
+Status: Aprovada.
+
+### Pendências abertas (S03) — atualização 8
+
+- Responsável: abrir `out/m1/report.html` e um `alt-N.dxf` (conferência visual do M1), fazer push, abrir o PR e o merge.
+- Responsável: revisar as propostas da DEC-0074 e os limites de qualidade da DEC-0077, e decidir se viram um M1.1 antes do M2.

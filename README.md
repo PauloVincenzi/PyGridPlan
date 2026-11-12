@@ -12,7 +12,7 @@ Gerador inteligente de **plantas baixas residenciais**, que roda **offline**. Vo
 
 ## Estado atual
 
-✅ **M0 (fundação) concluído:** modelo da planta, catálogo de cômodos, validador geométrico e exportação DXF, com 40 testes. Próximo: M1 (gerador CP-SAT). Design: [docs/design/mvp.md](docs/design/mvp.md) · Plano: [docs/plans/m0-foundation.md](docs/plans/m0-foundation.md).
+✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** Próximo: M2 (interface). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
 Histórico completo de decisões: [DECISOES.md](DECISOES.md).
 
 ## Stack prevista
@@ -32,14 +32,17 @@ PyGridPlan/
 │   ├── model/               entidades, paredes, catálogo   ✅
 │   ├── validation/          validade geométrica e recomendações ✅
 │   ├── export/              DXF                            ✅
-│   ├── generators/          CP-SAT, subdivisão             🔜 M1/M7
-│   ├── pipeline/            etapas e árvore de estados     🔜 M1
-│   ├── scoring/             critérios e diversidade        🔜 M1
+│   ├── generators/          CP-SAT ✅ · subdivisão 🔜 M7
+│   ├── pipeline/            etapas e árvore de estados     🔜 M2
+│   ├── scoring/             critérios e diversidade        ✅ M1
 │   ├── interpret/           regras + LLM local             🔜 M5
 │   └── server/              comandos e eventos             🔜 M2
 ├── web/                     SOFTWARE — interface TypeScript 🔜 M2
 │
-├── data/                    DADOS — referência curada       ✅ room_types.yaml
+├── data/                    DADOS — referência curada       ✅ D1
+│   ├── sources.yaml         registro de fontes (fonte única das citações)
+│   ├── room_types.yaml      catálogo de cômodos com fonte por valor
+│   └── costs/               consumo SINAPI, preços datados, classes de acabamento
 ├── tests/                   testes                          ✅ 40 testes
 │   └── fixtures/            DADOS — casos de teste
 ├── out/                     DADOS — gerados (fora do git)
@@ -47,6 +50,7 @@ PyGridPlan/
 └── docs/
     ├── design/              design do MVP + mockups         ✅
     ├── plans/               um plano por marco              ✅
+    ├── research/            pesquisas (relatório + notas)   ✅ D1
     └── theory/              fundamentação teórica          🔜
 ```
 
@@ -82,11 +86,19 @@ pytest
 
 Checagem de tipos (opcional): `pyright`, instalado à parte com `npm install -g pyright`.
 
-**Uso (M0):** exportar uma planta descrita em JSON para DXF:
+**Uso:**
 
 ```bash
+# gerar 4 plantas alternativas a partir de um pedido (terreno + cômodos + relações)
+python -m pygridplan generate tests/fixtures/requests/basic-program.json out/m1
+#   → out/m1/alt-N.json, alt-N.dxf e report.html (comparação lado a lado)
+#   opções: --k 4  --seed 0  --time-limit 0.5
+
+# validar e exportar uma planta descrita em JSON para DXF
 python -m pygridplan export-dxf tests/fixtures/plans/basic-house.json out/basic-house.dxf
 ```
+
+O formato do pedido está em `tests/fixtures/requests/basic-program.json`; os tipos de cômodo, em `data/room_types.yaml`.
 
 ## Aviso
 

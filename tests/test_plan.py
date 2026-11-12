@@ -53,3 +53,11 @@ def test_unknown_keys_are_rejected_on_load(tmp_path):
     )
     with pytest.raises(ValidationError):
         load_plan(path)
+
+
+def test_duplicate_room_ids_rejected_on_load(tmp_path):
+    path = tmp_path / "dup.json"
+    room = '{"id": "a", "type": "sala", "rect": {"x": 0, "y": 0, "w": 1000, "h": 1000}}'
+    path.write_text(f'{{"site": {{"width_mm": 5000, "depth_mm": 5000}}, "rooms": [{room}, {room}]}}', encoding="utf-8")
+    with pytest.raises(ValidationError):
+        load_plan(path)

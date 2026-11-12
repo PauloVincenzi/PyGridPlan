@@ -71,7 +71,7 @@ def test_area_outline_is_useful_rectangle(doc):
 def test_room_texts(doc):
     texts = [t.dxf.text for t in doc.modelspace().query("TEXT[layer=='A-TEXTOS']")]
     assert len(texts) == 7
-    assert "Sala 15,02 m²" in texts
+    assert "Sala de estar 15,02 m²" in texts
 
 
 def test_lot_dimensions(doc):
@@ -97,3 +97,31 @@ def test_cli_exports_file(tmp_path):
 def test_text_style_uses_truetype_font(doc):
     # fonte SHX padrão (txt) não tem "²" nem acentos
     assert doc.styles.get("Standard").dxf.font.lower().endswith(".ttf")
+
+
+def _plan_file(tmp_path, rooms):
+    import json
+
+    data = {"site": {"width_mm": 10000, "depth_mm": 10000}, "rooms": rooms}
+    path = tmp_path / "plan.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def test_cli_rejects_invalid_plan(tmp_path, capsys):
+    plan = _plan_file(tmp_path, [
+        {"id": "a", "type": "sala", "rect": {"x": 1000, "y": 1000, "w": 3000, "h": 3000}},
+        {"id": "b", "type": "sala", "rect": {"x": 2000, "y": 2000, "w": 3000, "h": 3000}},
+    ])
+    out = tmp_path / "o.dxf"
+    assert main(["export-dxf", str(plan), str(out)]) == 1
+    assert not out.exists()
+    assert "ERRO" in capsys.readouterr().err
+
+
+def test_cli_prints_warnings(tmp_path, capsys):
+    plan = _plan_file(tmp_path, [{"id": "q", "type": "quarto", "rect": {"x": 1000, "y": 1000, "w": 2300, "h": 5000}}])
+    out = tmp_path / "o.dxf"
+    assert main(["export-dxf", str(plan), str(out)]) == 0
+    assert out.exists()
+    assert "AVISO" in capsys.readouterr().err

@@ -1,0 +1,183 @@
+# Registro de fontes dos dados de referência (DEC-0024, DEC-0074).
+# Toda citação em data/ (chaves `source` ou `sources`) aponta para um `id` daqui.
+# kind: N norma ABNT · L-fed lei federal · L-mun lei municipal · F programa federal
+#       A acadêmico · P prática/popular · X proposta do agente (sem fonte externa)
+# Normas ABNT são pagas: os valores vêm de reproduções citadas em `note`; nenhum texto foi copiado.
+# Pesquisa completa: docs/research/Dados de referência para plantas.md
+sources:
+  - id: nbr15575-1-anexo
+    title: "ABNT NBR 15575-1:2013 — anexo informativo de mobiliário mínimo e circulação"
+    org: ABNT
+    year: 2013
+    url: https://autogestao.unmp.org.br/wp-content/uploads/2014/09/Anexo-G_NBR-15575_1_Requisitos-Gerais.pdf
+    kind: N
+    accessed: "2026-11-11"
+    note: "Cópia do Anexo G (ed. 2013) publicada pela UNMP; anexo informativo. A norma não fixa área mínima de cômodo."
+  - id: mcmv-725-2023
+    title: "Portaria MCID nº 725/2023, compilada até a Portaria 335/2026 (MCMV)"
+    org: Ministério das Cidades
+    year: 2026
+    url: https://www.gov.br/cidades/pt-br/acesso-a-informacao/institucional/base-juridica/portarias/2023/Port.MCIDn725_2023COMPILADA.pdf
+    kind: F
+    accessed: "2026-11-11"
+    note: "Obrigatória só para empreendimentos do programa."
+  - id: mcmv-espec-2017
+    title: "Especificação Mínima CAIXA para UH PMCMV, versão 07"
+    org: CAIXA
+    year: 2017
+    url: https://autogestao.unmp.org.br/wp-content/uploads/2014/09/Espec_Min_CAIXA_UH_Fase3_-v07.pdf
+    kind: F
+    accessed: "2026-11-11"
+    note: "Possivelmente superada pela Portaria 725/2023; conferir (lacuna de prioridade alta)."
+  - id: bh-11834-2025
+    title: "Lei municipal de Belo Horizonte nº 11.834/2025 (áreas mínimas, multifamiliar)"
+    org: Prefeitura de Belo Horizonte
+    year: 2025
+    url: https://www.legisweb.com.br/legislacao/?id=475174
+    kind: L-mun
+    accessed: "2026-11-11"
+    note: "Vale só em BH e só para multifamiliar; nota dos dormitórios aparece como VETADO."
+  - id: poa-lc284
+    title: "Código de Edificações de Porto Alegre — LC 284/1992 e compilação 2022"
+    org: Prefeitura de Porto Alegre
+    year: 2022
+    url: https://prefeitura.poa.br/sites/default/files/usu_img/planejamento_urbano/Legislacao/LC_284.pdf
+    kind: L-mun
+    accessed: "2026-11-11"
+  - id: df-seduh
+    title: "Anexos da Lei 6.138/2018 e Decreto 39.272/2018 (Código de Obras do DF)"
+    org: SEDUH-DF
+    year: 2018
+    url: https://www.seduh.df.gov.br/documents/8133848/9838674/ANEXOS-Lei-n%25C2%25BA-6138-e-Decreto-n%25C2%25BA-39.272-2.pdf
+    kind: L-mun
+    accessed: "2026-11-11"
+    note: "Define permanência prolongada vs. transitória."
+  - id: codigo-civil
+    title: "Código Civil (Lei 10.406/2002), arts. 1.299–1.303"
+    org: Presidência da República
+    year: 2002
+    url: https://www.planalto.gov.br/ccivil_03/leis/2002/l10406compilada.htm
+    kind: L-fed
+    accessed: "2026-11-11"
+  - id: nbr9050-secundaria
+    title: "ABNT NBR 9050 (acessibilidade) — reprodução em cartilha da PBH"
+    org: Prefeitura de Belo Horizonte
+    year: 2015
+    url: https://prefeitura.pbh.gov.br/sites/default/files/estrutura-de-governo/politica-urbana/Cartilha-Acessibilidade%20%282%29.pdf
+    kind: N
+    accessed: "2026-11-11"
+  - id: logsdon-2019
+    title: "Logsdon et al. — dimensionamento de ambientes residenciais (Arquitetura Revista)"
+    org: Arquitetura Revista / Redalyc
+    year: 2019
+    url: https://www.redalyc.org/journal/1936/193660602001/193660602001.pdf
+    kind: A
+    accessed: "2026-11-11"
+  - id: giro-2021
+    title: "Giro — monografia UFMG sobre áreas mínimas em habitação social"
+    org: UFMG
+    year: 2021
+    url: https://repositorio.ufmg.br//bitstreams/19f8fb18-7cd4-49a9-bb0a-7bd3b9e2bedb/download
+    kind: A
+    accessed: "2026-11-11"
+    note: "Dormitório de casal de 7,62 m² resultante num MCMV real (Araucária-PR)."
+  - id: planner5d
+    title: "Planner 5D — guias de tamanho de quarto, banheiro, closet e lavanderia"
+    org: Planner 5D
+    url: https://planner5d.com/blog/pt/tamanho-padrao-de-quarto/
+    kind: P
+    accessed: "2026-11-11"
+    note: "Fonte popular de qualidade baixa; usada só onde não há melhor."
+  - id: gbc-projeteee-2018
+    title: "Memorial descritivo — Prêmio Projeteee (GBC Brasil)"
+    org: GBC Brasil
+    year: 2018
+    url: https://gbcbrasil.org.br/wp-content/uploads/2018/05/Memorial_Descritivo_-2.pdf
+    kind: P
+    accessed: "2026-11-11"
+    note: "Boa prática: áreas íntimas e de estar a norte/leste; serviço a sul/oeste."
+  - id: myside-vaga
+    title: "MySide — tamanho de vaga de garagem"
+    org: MySide
+    url: https://myside.com.br/guia-imoveis/tamanho-de-vaga-de-garagem
+    kind: P
+    accessed: "2026-11-11"
+  - id: ibge-sinapi-2026-09
+    title: "Indicadores SINAPI — setembro de 2026"
+    org: IBGE
+    year: 2026
+    url: https://ftp.ibge.gov.br/Precos_Custos_e_Indices_da_Construcao_Civil/Fasciculo_Indicadores_IBGE/sinapi_202609caderno.pdf
+    kind: F
+    accessed: "2026-11-11"
+  - id: sinapi-orcamentor
+    title: "Composições SINAPI (média nacional) via espelho Orçamentor"
+    org: Caixa / IBGE (espelho Orçamentor)
+    year: 2026
+    url: https://orcamentor.com/composicao/87529/
+    kind: F
+    accessed: "2026-11-11"
+    note: "Espelho não oficial; conferir na planilha da Caixa por UF. Licença de reuso do SINAPI não confirmada."
+  - id: sinduscon-pr-2026-09
+    title: "Tabela CUB/m² — setembro de 2026"
+    org: Sinduscon-PR
+    year: 2026
+    url: https://sindusconpr.com.br/wp-content/uploads/2026/10/2026-9-Tabela-CUB-m2.pdf
+    kind: F
+    accessed: "2026-11-11"
+    note: "CUB segue a NBR 12721; tipo F aqui por ser referência setorial oficial de custo."
+  - id: abrafati-nbr15079
+    title: "Cartilha sobre mudanças normativas — ABNT NBR 15079:2019 (tintas)"
+    org: ABRAFATI
+    year: 2024
+    url: https://abrafati.com.br/wp-content/uploads/2024/12/Cartilha-sobre-Mudancas-Normativas.pdf
+    kind: N
+    accessed: "2026-11-11"
+  - id: varejo-tintas-2026
+    title: "Amostra de varejo — tintas acrílicas 18 L (Casa Toni, Bela Tintas, Magazine Luiza)"
+    org: varejo
+    year: 2026
+    url: https://www.casatoni.com.br/tintas/acrilicos
+    kind: P
+    accessed: "2026-11-11"
+    note: "Páginas sem data nem UF garantidas."
+  - id: agente
+    title: "Proposta do agente (sem fonte externa)"
+    org: PyGridPlan
+    kind: X
+    accessed: "2026-11-11"
+    note: "Valor derivado ou assumido pelo agente; precisa de fonte antes de virar referência."
+  - id: varejo-leroy-porcelanato
+    title: "Leroy Merlin — porcelanatos (faixa de preço)"
+    org: Leroy Merlin
+    year: 2026
+    url: https://www.leroymerlin.com.br/porcelanatos/melhor-preco
+    kind: P
+    accessed: "2026-11-11"
+  - id: varejo-bloco-2026
+    title: "Preço do milheiro de bloco cerâmico (Lar Pontual; Telhanorte)"
+    org: varejo
+    year: 2026
+    url: https://larpontual.com.br/portal/preco-do-milheiro-de-tijolo
+    kind: P
+    accessed: "2026-11-11"
+  - id: varejo-cimento-2026
+    title: "Reforme Construa — preço do cimento saco 50 kg por cidade"
+    org: Reforme Construa
+    year: 2026
+    url: https://www.reformeconstrua.com.br/precos/cimento-saco-50kg
+    kind: P
+    accessed: "2026-11-11"
+  - id: varejo-cabo-2026
+    title: "Telhanorte — cabo flexível 2,5 mm² 100 m (Cobrecom)"
+    org: Telhanorte
+    year: 2026
+    url: https://www.telhanorte.com.br/-cabo-flexivel-750-volts-2-5-mm2-100-metros-cobrecom-256013/p
+    kind: P
+    accessed: "2026-11-11"
+  - id: varejo-loucas-2026
+    title: "Telhanorte — bacias para caixa acoplada"
+    org: Telhanorte
+    year: 2026
+    url: https://www.telhanorte.com.br/loucas/vasos-sanitarios-e-assentos/bacias-para-caixas-acopladas
+    kind: P
+    accessed: "2026-11-11"

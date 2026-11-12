@@ -1,0 +1,26 @@
+# Preços de insumos em R$. Cada registro tem mês de referência, abrangência e fonte (DEC-0075).
+# sinapi = referência oficial (média nacional via espelho; conferir por UF) · varejo = amostra indicativa.
+# Nunca usar preço zerado: o SINAPI de out–nov/2025 saiu zerado e foi retificado.
+version: "0.1"
+updated: "2026-11-11"
+prices:
+  - {item: tinta_latex_premium, class: alto, unit: L, price: 32.19, scope: BR-media, reference_month: "2026-09", source_type: sinapi, source: sinapi-orcamentor}
+  - {item: massa_corrida_pva, unit: kg, price: 3.99, scope: BR-media, reference_month: "2026-09", source_type: sinapi, source: sinapi-orcamentor}
+  - {item: porcelanato_60x60, class: media, unit: m2, price: 63.05, scope: BR-media, reference_month: "2026-09", source_type: sinapi, source: sinapi-orcamentor}
+  - {item: argamassa_colante_ac3, unit: kg, price: 2.30, scope: BR-media, reference_month: "2026-09", source_type: sinapi, source: sinapi-orcamentor}
+  - {item: cimento_cp, unit: kg, price: 0.72, scope: BR-media, reference_month: "2026-09", source_type: sinapi, source: sinapi-orcamentor}
+  - {item: bloco_ceramico_9x19x19, unit: un, price: 0.78, scope: BR-media, reference_month: "2024-08", source_type: sinapi, source: sinapi-orcamentor}
+  - {item: tinta_latex_economica, class: economica, unit: L, price_range: [12, 14], scope: varejo-online, reference_month: "2026", source_type: varejo, source: varejo-tintas-2026}
+  - {item: tinta_latex_standard, class: media, unit: L, price_range: [25, 29], scope: varejo-online, reference_month: "2026", source_type: varejo, source: varejo-tintas-2026}
+  - {item: tinta_latex_premium, class: alto, unit: L, price_range: [32, 57], scope: varejo-online, reference_month: "2026", source_type: varejo, source: varejo-tintas-2026}
+  - {item: porcelanato, unit: m2, price_range: [29, 244], scope: varejo-online, reference_month: "2026", source_type: varejo, source: varejo-leroy-porcelanato}
+  - {item: bloco_ceramico_9x19x19, unit: un, price_range: [0.65, 1.25], scope: varejo-online, reference_month: "2026", source_type: varejo, source: varejo-bloco-2026}
+  - {item: cimento_cp_saco_50kg, unit: un, price_range: [32, 48], scope: "varejo (Contagem-MG R$ 32 a Belém-PA R$ 46)", reference_month: "2026", source_type: varejo, source: varejo-cimento-2026}
+  - {item: cabo_flexivel_2_5mm_100m, unit: un, price: 250, scope: varejo-online, reference_month: "2026", source_type: varejo, source: varejo-cabo-2026}
+  - {item: bacia_caixa_acoplada, unit: un, price_range: [358.90, 1199.90], scope: "varejo (Deca Izy a Deca Vogue Plus)", reference_month: "2026", source_type: varejo, source: varejo-loucas-2026}
+benchmarks:
+  # verificação de ordem de grandeza do total; nunca para orçar por quantidade
+  - {name: "custo médio nacional SINAPI", unit: R$/m2, total: 1999.73, materials: 1127.17, labor: 872.56, reference_month: "2026-09", source: ibge-sinapi-2026-09}
+  - {name: "CUB R1-B Paraná", unit: R$/m2, total: 2681.59, reference_month: "2026-09", source: sinduscon-pr-2026-09}
+  - {name: "CUB R1-N Paraná", unit: R$/m2, total: 3365.21, reference_month: "2026-09", source: sinduscon-pr-2026-09}
+  - {name: "CUB R1-A Paraná", unit: R$/m2, total: 4109.51, reference_month: "2026-09", source: sinduscon-pr-2026-09}

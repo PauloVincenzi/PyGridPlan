@@ -60,6 +60,7 @@ class Site(_Frozen):
     depth_mm: int = Field(gt=0)
     setbacks: Setbacks = Setbacks()
     attached_sides: frozenset[Side] = frozenset()
+    north: Literal["front", "back", "left", "right"] | None = None  # lado do lote voltado ao norte
 
 
 class Room(_Frozen):

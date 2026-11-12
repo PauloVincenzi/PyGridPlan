@@ -37,7 +37,7 @@ def test_useful_area_sala(basic_house):
 
 
 def test_useful_dims_banheiro_all_interior(basic_house):
-    assert useful_dims_mm(_room(basic_house, "banheiro"), basic_house) == (1300, 2400)
+    assert useful_dims_mm(_room(basic_house, "banheiro"), basic_house) == (1500, 2400)
 
 
 def test_partially_shared_side_uses_external_thickness():
