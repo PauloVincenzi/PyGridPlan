@@ -1,0 +1,25 @@
+{
+  "site": {
+    "width_mm": 10000,
+    "depth_mm": 25000,
+    "setbacks": {"front": 4000, "back": 2000, "left": 1500, "right": 1500},
+    "north": "back"
+  },
+  "rooms": [
+    {"id": "sala", "type": "sala", "target_area_m2": 16},
+    {"id": "cozinha", "type": "cozinha", "target_area_m2": 10},
+    {"id": "lavanderia", "type": "lavanderia"},
+    {"id": "circulacao", "type": "circulacao"},
+    {"id": "quarto1", "type": "quarto", "target_area_m2": 12},
+    {"id": "quarto2", "type": "quarto", "target_area_m2": 10},
+    {"id": "banheiro", "type": "banheiro"},
+    {"id": "closet", "type": "closet"}
+  ],
+  "relations": [
+    {"a": "cozinha", "b": "sala", "kind": "near", "intensity": 4},
+    {"a": "lavanderia", "b": "cozinha", "kind": "near", "intensity": 4},
+    {"a": "closet", "b": "quarto1", "kind": "near", "intensity": 5},
+    {"a": "banheiro", "b": "circulacao", "kind": "near", "intensity": 3},
+    {"a": "sala", "b": "quarto2", "kind": "far", "intensity": 2}
+  ]
+}
