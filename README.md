@@ -12,7 +12,7 @@ Gerador inteligente de **plantas baixas residenciais**, que roda **offline**. Vo
 
 ## Estado atual
 
-✅ **M0 (fundação) concluído:** modelo da planta, catálogo de cômodos, validador geométrico e exportação DXF, com 40 testes. Próximo: M1 (gerador CP-SAT). Design: [docs/design/mvp.md](docs/design/mvp.md) · Plano: [docs/plans/m0-foundation.md](docs/plans/m0-foundation.md).
+✅ **M0 (fundação) concluído** · ✅ **D1 (dados de referência) concluída** · 🔄 **M1 (gerador CP-SAT) em andamento.** Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
 Histórico completo de decisões: [DECISOES.md](DECISOES.md).
 
 ## Stack prevista
@@ -39,7 +39,10 @@ PyGridPlan/
 │   └── server/              comandos e eventos             🔜 M2
 ├── web/                     SOFTWARE — interface TypeScript 🔜 M2
 │
-├── data/                    DADOS — referência curada       ✅ room_types.yaml
+├── data/                    DADOS — referência curada       ✅ D1
+│   ├── sources.yaml         registro de fontes (fonte única das citações)
+│   ├── room_types.yaml      catálogo de cômodos com fonte por valor
+│   └── costs/               consumo SINAPI, preços datados, classes de acabamento
 ├── tests/                   testes                          ✅ 40 testes
 │   └── fixtures/            DADOS — casos de teste
 ├── out/                     DADOS — gerados (fora do git)
@@ -47,6 +50,7 @@ PyGridPlan/
 └── docs/
     ├── design/              design do MVP + mockups         ✅
     ├── plans/               um plano por marco              ✅
+    ├── research/            pesquisas (relatório + notas)   ✅ D1
     └── theory/              fundamentação teórica          🔜
 ```
 

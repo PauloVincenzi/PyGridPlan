@@ -73,6 +73,7 @@ Status: Proposta | Aprovada | Aprovada (detalhe a definir) | Substituída por DE
 | `tests/` | testes; `tests/fixtures/` guarda os casos de referência |
 | `docs/design/` | documentos de design e `mockups/` aprovados |
 | `docs/plans/` | planos de implementação, um por marco |
+| `docs/research/` | pesquisas: relatório `<título>.md` + `notes/<título>/` (skill `deep-research`) |
 | `docs/theory/` | fundamentação teórica |
 | `out/` | saídas geradas (DXF, projetos salvos), fora do git |
 | `.superpowers/`, `.playwright-mcp/` | rascunhos das ferramentas do agente, fora do git; não guardar nada importante ali |
@@ -82,6 +83,7 @@ Status: Proposta | Aprovada | Aprovada (detalhe a definir) | Substituída por DE
 - Os locais acima **substituem os padrões das skills** (ex.: `docs/superpowers/specs/` → `docs/design/`, `docs/superpowers/plans/` → `docs/plans/`).
 - Um mockup aprovado é copiado de `.superpowers/` para `docs/design/mockups/`.
 - Não criar pastas vazias nem arquivos "para o futuro": cada pasta nasce com seu primeiro arquivo.
+- **Coleta de dados em trilhas `Dn`** (DEC-0074): inventário → pesquisa em `docs/research/` → promoção para `data/` só do que uma fase lê, com fonte por valor (`data/sources.yaml`) → teste de registro → DECISOES.md. Processo detalhado em `data/README.md`. Nunca inventar valores; sem fonte, o campo fica vazio.
 - O **README.md** mantém sempre atualizada a estrutura macro (software e dados, com paths e o marco de cada pasta). Toda pasta nova ou mudança de estrutura atualiza o README na mesma rodada.
 
 ## Skills e plugins
