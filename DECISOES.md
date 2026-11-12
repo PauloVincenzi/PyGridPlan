@@ -944,3 +944,59 @@ Status: Aprovada.
 
 - Responsável: revisar as propostas do Agente na DEC-0074 (passagem de escritório e home theater, anexos privativos, suíte como relação, `exterior`, closet de 1,30 m) e o perfil "piso nacional" (banheiro de 1,50 m).
 - Agente: executar as tarefas do M1.
+
+### Log da sessão — continuação 8
+
+9. **Responsável:** pediu para continuar a tarefa. **Agente:** executou o M1 em modo nativo, com TDD.
+   - **Tarefas 1 a 4:** pendências do M0, pedido, acesso, nota e diversidade.
+   - **Tarefa 5 (CP-SAT):** medições levaram o tempo-limite padrão a 0,5 unidade determinística e ao uso de `interleave_search`, sem o qual 8 threads davam resultados diferentes a cada execução.
+   - **Revisão intermediária** (subagente): 4 problemas importantes, corrigidos com teste vermelho → verde. Eram passagem real ≥ 0,90 m, diversidade sem "falsos diferentes" por relação diagonal, lado mínimo universal de 1,10 m e vão entre cômodos de 0 ou ≥ 0,90 m.
+   - **Tarefa 6:** o perfil mostrou 6 de 10 soluções rejeitadas por ilhas de acesso. A restrição de **fluxo de conectividade** levou a 0 rejeições e K=4 em ~20 s.
+   - **Tarefa 7:** comando `generate`, SVG e página de comparação. A execução real revelou uma quebra no console cp1252 do Windows, corrigida com teste.
+   - **Revisão final** (subagente): 2 problemas importantes e 1 menor reclassificado, todos corrigidos com teste. Eram mínimos do lavabo vindos de lei municipal, traceback para pedido inválido e falha silenciosa com nenhuma alternativa.
+   - Registrou DEC-0077 e DEC-0078.
+
+### Decisões — continuação 8
+
+**DEC-0077 — Declaração: M1 concluído**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (conferência visual a cargo do Responsável) · Categoria: Processo / Arquitetura
+Decisão: o M1 está **concluído** segundo a DEC-0069, com a conferência visual do responsável pendente:
+- 7 de 7 tarefas feitas;
+- 103 testes passando e `pyright` sem erros;
+- revisão intermediária e revisão final independentes, sem críticos e com os importantes corrigidos;
+- conferência visual do agente em `report.html`;
+- README e DECISOES atualizados.
+
+Entrega: a partir de um pedido em JSON, gera K plantas **válidas** (geometria + acesso), **realmente diferentes** (≥ 15% dos pares com posição relativa trocada) e **reprodutíveis** por semente, com nota decomposta em 6 critérios, em JSON, DXF e HTML.
+
+Por que é suficiente para o M2: a interface vai consumir exatamente o modelo de pedido, `generate_alternatives`, a nota decomposta e o SVG.
+
+Decisões de execução que mudaram o plano (rulings):
+- tempo-limite de 0,5 unidade determinística, com `interleave_search`;
+- fluxo de conectividade dos cômodos atravessáveis;
+- lado mínimo universal de 1,10 m;
+- vão de 0 ou ≥ 0,90 m entre cômodos;
+- diversidade só por "troca de lado";
+- a CLI imprime o tempo total.
+
+Desempenho real com 8 cômodos: K=4 levou 19,9 s, 59,6 s e 33,3 s em três execuções (mesmas plantas). A variação vem da carga da máquina, e a meta de ~20 s só é atingida com a máquina livre.
+
+Limites de qualidade observados (vão para o M2 ou um M1.1):
+- silhueta recortada (compacidade 0,83–0,92);
+- a casa "flutua" no lote, sem preferência pelo recuo frontal;
+- a circulação vira uma célula de 1,10 × 1,10 m, e não um corredor;
+- rótulos se sobrepõem em cômodos pequenos.
+
+Pendências menores: estão listadas no ledger da execução e no relatório final da sessão.
+Status: Aprovada (aguarda a conferência visual do responsável e o merge).
+
+**DEC-0078 — Lavabo sem mínimos como padrão nacional**
+Data: 2026-11-11 · Sessão: S03 · Autor: Agente (achado da revisão final) · Categoria: Dados
+Corrige: DEC-0074 (valores do lavabo).
+Decisão: o lavabo perde `min_width_mm` (1,00 m) e `min_area_m2` (1,5 m²). Ambos vinham da lei de BH, válida só em BH e só para multifamiliar, o que viola a regra 4 do `data/README.md`. Fica só a faixa de conforto de 1,2–1,7 m² (P). Dois testes passam a barrar essa situação: fonte `L-mun` como mínimo padrão, e faixa de conforto abaixo do mínimo.
+Status: Aprovada.
+
+### Pendências abertas (S03) — atualização 8
+
+- Responsável: abrir `out/m1/report.html` e um `alt-N.dxf` (conferência visual do M1), fazer push, abrir o PR e o merge.
+- Responsável: revisar as propostas da DEC-0074 e os limites de qualidade da DEC-0077, e decidir se viram um M1.1 antes do M2.
