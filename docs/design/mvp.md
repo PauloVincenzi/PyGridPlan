@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.2 · Criado em: 2026-11-11 · Atualizado em: 2026-11-11 · Status: **conteúdo aprovado pelo responsável; seções 5.5 e 6.2 incluídas na S03 aguardam leitura**
+Versão: 1.3 · Criado em: 2026-11-11 · Atualizado em: 2026-11-12 · Status: **conteúdo aprovado; seção 20 (M1.1 e M1.2) aguarda aprovação do responsável**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -276,7 +276,9 @@ Cada marco entrega algo que roda e é testado:
 | Marco | Entrega |
 |---|---|
 | M0 | Esqueleto do repositório, modelo de dados, validador geométrico e exportador DXF (com uma planta escrita à mão) |
-| M1 | Gerador CP-SAT da etapa 1 com K alternativas diversas, pontuação decomposta, árvore de estados; tudo via linha de comando |
+| M1 | Gerador CP-SAT da etapa 1 com K alternativas diversas e pontuação decomposta; tudo via linha de comando (a árvore de estados foi para o M2, DEC-0076) |
+| M1.1 | Forma e implantação: bloco retangular sem vazios internos, paredes alinhadas, implantação previsível, encostar na divisa em lote pequeno, muro, áreas externas e esquema de 4 cores (seção 20) |
+| M1.2 | Dimensionamento pelo mobiliário: dados D2 de mobiliário mínimo e folgas, verificação "cabe?" e perfis de mínimo (seção 20) |
 | M2 | Servidor local e interface: malha, terreno com cotas, premissas, console ao vivo, faixa de decisões, escolha entre alternativas, salvar/abrir, exportar DXF |
 | M3 | Grafo de bolhas animado e A vs. B com resumo simétrico |
 | M4 | Etapa 2: portas (alcançabilidade) e janelas |
@@ -324,3 +326,40 @@ Cada pasta nasce quando o primeiro arquivo dela é criado; não se criam pastas 
 - Modelo e runtime do LLM local (seção 12).
 - Fontes de referência das medidas (Neufert, NBR 15575, outras) e como citá-las (DEC-0018).
 - Perguntas, ordem e escala do quiz de preferências (DEC-0032).
+
+## 20. Qualidade das plantas: M1.1 e M1.2 (S04, DEC-0080 a DEC-0083)
+
+Contexto: as 4 plantas do M1 são válidas, mas têm silhueta recortada, vãos internos sem uso, pouca parede "na mesma reta" e implantação aleatória no lote. **Não é um erro de código; é uma lacuna do modelo:** no M1, o solver só penalizava o perímetro da caixa envolvente e buscava o tamanho-alvo de cada cômodo isoladamente. Nada pedia um bloco cheio, alinhamento de paredes, cômodos iguais enfileirados ou uma posição definida no lote. O solver escolheu, entre milhões de arranjos válidos, um qualquer.
+
+### 20.1 M1.1 — Forma e implantação
+
+1. **Bloco cheio.** Novo critério `void_area` = área da caixa envolvente − soma das áreas dos cômodos, com peso alto. A planta tende ao retângulo cheio; formas em L e T continuam possíveis quando o programa ou o lote pedirem.
+2. **Sem vazio interno sem uso.** Um vazio cercado por cômodos dos quatro lados é **rejeitado**, a menos que o pedido peça um pátio ou jardim de inverno (aí o vazio vira área externa rotulada). Recortes na borda do bloco viram área externa.
+3. **Paredes na mesma reta.** Novo critério `alignment`, que premia cômodos vizinhos com faces na mesma linha (mesmo x, x2, y ou y2) e cômodos do mesmo tipo com a mesma profundidade e alinhados (ex.: 3 quartos enfileirados). É um critério **suave**: nunca passa por cima de uma relação ou área pedida pelo usuário.
+4. **Implantação previsível.** Por padrão, a casa encosta no **recuo frontal** (o quintal fica no fundo) e fica **centralizada na largura** do lote. **[decisão do Agente]**
+5. **Lote pequeno: encostar na divisa.** Sem `attached_sides` no pedido, se o programa não couber com os afastamentos laterais e de fundo, o gerador tenta de novo permitindo encostar: uma lateral, depois as duas, depois o fundo. A escolha aparece como **aviso**. Lado a menos de 1,5 m da divisa fica marcado **"sem janela"** (Código Civil, art. 1.301), regra que o M4 vai aplicar às aberturas. Com interface (M2), isso vira a pergunta de implantação da seção 6.2.
+6. **Muro.** Todo o perímetro do lote recebe muro (frente, fundos e laterais), por dentro da divisa, com espessura padrão de 150 mm **[decisão do Agente; valor a confirmar numa trilha de dados]**. Layer DXF novo: `A-MURO`. O portão entra com as aberturas (M4).
+7. **Áreas externas e cores.** Toda área do lote vira uma de **4 categorias**, com uma cor cada (DXF por layer, SVG e interface):
+   - **interna seca** (salas, quartos, closet, circulação, escritório…);
+   - **interna molhada** (banheiro, lavabo, cozinha, lavanderia), útil para a hidráulica;
+   - **externa construída** (varanda, garagem, área gourmet, calçadas, pátio);
+   - **externa verde** (quintal, jardim, o que sobra dentro do muro).
+
+   A zona (social, íntima, serviço) continua aparecendo no grafo de bolhas, não na cor da planta.
+8. **Permeabilidade.** Aviso quando a área verde ficar abaixo de 25% do lote. É a referência mais comum da D1 (Curitiba, ZR); a lei local manda.
+
+### 20.2 M1.2 — Dimensionamento pelo mobiliário
+
+Conclusão da D1, aceita pelo responsável: **a área mínima de um cômodo é consequência do mobiliário mínimo mais as circulações.**
+
+1. **Trilha D2 (dados):** mobiliário mínimo por tipo de cômodo (cama, guarda-roupa, sofá, mesa, pia, fogão, geladeira, louças, tanque, lavadora) e as folgas de uso. Fontes: anexo da NBR 15575-1, MCMV e fabricantes, registradas em `data/furniture.yaml`, com fonte por valor.
+2. **Verificação "cabe?":** para cada cômodo, um pequeno empacotamento (CP-SAT) testa se o mobiliário mínimo com as folgas cabe no retângulo útil e se sobra uma faixa de passagem até a porta. Ela roda como validação de cada alternativa e **deriva a largura e a área mínimas** de cada tipo.
+3. **Perfis de mínimo.** As fontes divergem, e isso não é problema: o usuário escolhe o perfil.
+   - **conservador** (padrão): o maior mínimo entre as fontes;
+   - **mediana**: a mediana das fontes;
+   - **personalizado**: o valor que o usuário informar.
+
+   O objetivo é o gerador nunca propor um cômodo em que o que foi pedido não cabe, **sem** precisar de dezenas de perguntas.
+4. **Itens pedidos** ("mesa para 6", "cama king", "pia de 2 m"): entram no conjunto de mobiliário daquele cômodo e aumentam os mínimos dele. É o pré-dimensionamento da seção 6.3, antecipado do M6.
+
+Ordem: **M1.1 → M1.2 → M2.** A interface só deve mostrar plantas que já pareçam plantas.
