@@ -71,7 +71,7 @@ def test_area_outline_is_useful_rectangle(doc):
 def test_room_texts(doc):
     texts = [t.dxf.text for t in doc.modelspace().query("TEXT[layer=='A-TEXTOS']")]
     assert len(texts) == 7
-    assert "Sala 15,02 m²" in texts
+    assert "Sala de estar 15,02 m²" in texts
 
 
 def test_lot_dimensions(doc):

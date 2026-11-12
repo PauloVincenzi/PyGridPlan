@@ -1,0 +1,17 @@
+# Classes de acabamento do projeto (DEC-0075): economica (dá pro gasto), media (já é boa),
+# alto (marcas consolidadas, alto padrão). Só a tinta tem classificação normativa direta.
+version: "0.1"
+updated: "2026-11-11"
+paint_nbr15079:
+  # rendimento teórico mínimo da látex fosca, m² por lata de 18 L (NBR 15079:2019, obrigatória desde 03/2021)
+  - {nbr_class: economica, project_class: economica, yield_m2_per_18l: 70, note: "só uso interno", source: abrafati-nbr15079}
+  - {nbr_class: standard, project_class: media, yield_m2_per_18l: 90, source: abrafati-nbr15079}
+  - {nbr_class: premium, project_class: alto, yield_m2_per_18l: 110, source: abrafati-nbr15079}
+  - {nbr_class: super_premium, project_class: alto, yield_m2_per_18l: 150, source: abrafati-nbr15079}
+proposed_classes:
+  # proposta do agente para itens sem classificação normativa; a definir por especificação e faixa de preço
+  floor:
+    economica: "cerâmica esmaltada PEI 4 + AC I/II"
+    media: "porcelanato 60x60 + AC III"
+    alto: "porcelanato retificado 90x90 ou maior"
+    source: agente

@@ -1,17 +1,184 @@
-# Catálogo de tipos de cômodo — fonte única de zona, passagem e mínimos.
-# Medidas em mm; área mínima em m². Valores provisórios até a curadoria com fontes (DEC-0024).
-version: "0.1"
+# Catálogo de tipos de cômodo — fonte única de zona, passagem, atributos e mínimos (DEC-0074).
+# Unidades: largura em mm; áreas em m². Cada valor numérico cita uma fonte de data/sources.yaml em `sources`.
+# Perfil padrão: "piso nacional" = o mais exigente entre NBR 15575-1 (anexo) e MCMV quando ambos existem.
+# Não há área mínima nacional por cômodo (a NBR não fixa): `min_area_m2` só existe quando há fonte;
+# `comfort_area_m2` alimenta a área-alvo do gerador. Pesquisa: docs/research/Dados de referência para plantas.md
+version: "0.2"
 updated: "2026-11-11"
 types:
-  - {id: sala,         name: Sala,         zone: social,  passage: traversable, min_width_mm: 2700, min_area_m2: 10.0, source: "provisório, sem fonte"}
-  - {id: cozinha,      name: Cozinha,      zone: servico, passage: traversable, min_width_mm: 1800, min_area_m2: 5.0,  source: "provisório, sem fonte"}
-  - {id: quarto,       name: Quarto,       zone: intima,  passage: private,     min_width_mm: 2400, min_area_m2: 8.0,  source: "provisório, sem fonte"}
-  - {id: banheiro,     name: Banheiro,     zone: intima,  passage: private,     min_width_mm: 1200, min_area_m2: 2.5,  source: "provisório, sem fonte"}
-  - {id: lavabo,       name: Lavabo,       zone: social,  passage: private,     min_width_mm: 900,  min_area_m2: 1.5,  source: "provisório, sem fonte"}
-  - {id: closet,       name: Closet,       zone: intima,  passage: private,     min_width_mm: 1000, min_area_m2: 2.0,  source: "provisório, sem fonte"}
-  - {id: lavanderia,   name: Lavanderia,   zone: servico, passage: traversable, min_width_mm: 1200, min_area_m2: 3.0,  source: "provisório, sem fonte"}
-  - {id: garagem,      name: Garagem,      zone: servico, passage: traversable, min_width_mm: 2500, min_area_m2: 12.5, source: "provisório, sem fonte"}
-  - {id: circulacao,   name: Circulação,   zone: social,  passage: traversable, min_width_mm: 900,                     source: "provisório, sem fonte"}
-  - {id: escritorio,   name: Escritório,   zone: social,  passage: traversable, min_width_mm: 2200, min_area_m2: 6.0,  source: "provisório, sem fonte"}
-  - {id: varanda,      name: Varanda,      zone: social,  passage: traversable, min_width_mm: 1200, min_area_m2: 3.0,  source: "provisório, sem fonte"}
-  - {id: home_theater, name: Home theater, zone: social,  passage: traversable, min_width_mm: 3000, min_area_m2: 12.0, source: "provisório, sem fonte"}
+  # --- social ---
+  - id: sala
+    name: Sala de estar
+    description: Estar (ou estar/jantar integrados).
+    zone: social
+    passage: traversable
+    sun: true
+    stay: prolonged
+    min_width_mm: 2400
+    comfort_area_m2: [10.5, 15.0]
+    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, stay: df-seduh}
+  - id: sala_jantar
+    name: Sala de jantar
+    zone: social
+    passage: traversable
+    stay: prolonged
+    min_width_mm: 2400
+    sources: {min_width_mm: nbr15575-1-anexo, stay: df-seduh}
+  - id: hall
+    name: Hall de entrada
+    zone: social
+    passage: traversable
+    stay: transient
+    min_width_mm: 1200
+    sources: {min_width_mm: mcmv-725-2023, stay: df-seduh}
+  - id: circulacao
+    name: Circulação
+    description: Corredor; 1,20 m recomendado acima de 4 m de comprimento (NBR 9050).
+    zone: social
+    passage: traversable
+    stay: transient
+    min_width_mm: 900
+    sources: {min_width_mm: nbr9050-secundaria, stay: df-seduh}
+  - id: lavabo
+    name: Lavabo
+    zone: social
+    passage: private
+    wet: true
+    stay: transient
+    min_width_mm: 1000
+    min_area_m2: 1.5
+    comfort_area_m2: [1.2, 1.7]
+    sources: {min_width_mm: bh-11834-2025, min_area_m2: bh-11834-2025, comfort_area_m2: planner5d}
+  - id: home_theater
+    name: Home theater
+    zone: social
+    passage: traversable
+    concentrated_use: true
+    stay: prolonged
+  - id: escritorio
+    name: Escritório / home office
+    zone: social
+    passage: traversable
+    concentrated_use: true
+    stay: prolonged
+    sources: {stay: poa-lc284}
+  - id: varanda
+    name: Varanda
+    zone: social
+    passage: traversable
+    exterior: true
+    min_width_mm: 800
+    min_area_m2: 1.5
+    sources: {min_width_mm: mcmv-725-2023, min_area_m2: mcmv-725-2023}
+  - id: area_gourmet
+    name: Área gourmet
+    zone: social
+    passage: traversable
+    wet: true
+    exterior: true
+  # --- íntima ---
+  - id: quarto
+    name: Quarto
+    description: Dormitório de casal ou duplo.
+    zone: intima
+    passage: private
+    sun: true
+    stay: prolonged
+    suite_access: [closet, banheiro]
+    min_width_mm: 2400
+    min_area_m2: 7.6
+    comfort_area_m2: [10.0, 14.0]
+    sources: {min_width_mm: mcmv-espec-2017, min_area_m2: giro-2021, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, suite_access: poa-lc284}
+  - id: quarto_solteiro
+    name: Quarto de solteiro
+    zone: intima
+    passage: private
+    sun: true
+    stay: prolonged
+    suite_access: [closet, banheiro]
+    min_width_mm: 2100
+    min_area_m2: 6.0
+    comfort_area_m2: [6.0, 8.0]
+    sources: {min_width_mm: logsdon-2019, min_area_m2: logsdon-2019, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018}
+  - id: closet
+    name: Closet
+    description: Quarto de vestir, anexo da suíte.
+    zone: intima
+    passage: private
+    stay: transient
+    suite_access: [banheiro]
+    min_width_mm: 1300
+    min_area_m2: 2.5
+    comfort_area_m2: [3.0, 4.0]
+    sources: {min_width_mm: agente, min_area_m2: planner5d, comfort_area_m2: planner5d, suite_access: poa-lc284}
+  - id: banheiro
+    name: Banheiro
+    zone: intima
+    passage: private
+    wet: true
+    stay: transient
+    min_width_mm: 1500
+    comfort_area_m2: [2.4, 4.2]
+    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023}
+  - id: rouparia
+    name: Rouparia
+    zone: intima
+    passage: private
+    stay: transient
+  - id: sala_intima
+    name: Sala íntima / TV
+    zone: intima
+    passage: traversable
+    stay: prolonged
+  - id: brinquedoteca
+    name: Brinquedoteca
+    zone: intima
+    passage: traversable
+    concentrated_use: true
+    stay: prolonged
+  # --- serviço ---
+  - id: cozinha
+    name: Cozinha
+    zone: servico
+    passage: traversable
+    wet: true
+    stay: prolonged
+    min_width_mm: 1800
+    comfort_area_m2: [3.6, 10.0]
+    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, stay: df-seduh}
+  - id: copa
+    name: Copa
+    zone: servico
+    passage: traversable
+    stay: prolonged
+    min_width_mm: 2400
+    sources: {min_width_mm: nbr15575-1-anexo}
+  - id: lavanderia
+    name: Área de serviço / lavanderia
+    zone: servico
+    passage: traversable
+    wet: true
+    stay: prolonged
+    min_width_mm: 1800
+    comfort_area_m2: [2.1, 5.4]
+    sources: {min_width_mm: mcmv-espec-2017, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, stay: df-seduh}
+  - id: despensa
+    name: Despensa
+    zone: servico
+    passage: private
+    stay: transient
+  - id: deposito
+    name: Depósito
+    zone: servico
+    passage: private
+    stay: transient
+    sources: {stay: df-seduh}
+  - id: garagem
+    name: Garagem (por vaga)
+    description: Vaga de projeto 2,50 × 5,00 m; códigos municipais pedem de 2,30 × 4,60 (POA) a 2,40 × 5,00 (Curitiba).
+    zone: servico
+    passage: traversable
+    stay: transient
+    min_width_mm: 2500
+    min_area_m2: 12.5
+    sources: {min_width_mm: myside-vaga, min_area_m2: myside-vaga, stay: df-seduh}
