@@ -18,6 +18,8 @@ from pygridplan.validation.access import MIN_PASSAGE_MM, check_access
 from pygridplan.validation.checks import Issue, check_recommendations, validate_geometry
 
 GRID = 100
+# vazio custa menos por m² que errar área: compacta movendo cômodos, não inflando (ledger M1.1)
+VOID_SCALE = 0.2
 MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
 DEFAULT_TIME_LIMIT = 0.5  # unidades determinísticas do CP-SAT; ~4–5 s de relógio no hardware de referência
 
@@ -126,6 +128,17 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     m.add_max_equality(bx2, [b.x2 for b in boxes])
     m.add_max_equality(by2, [b.y2 for b in boxes])
 
+    # implantação previsível (design 20.1, item 4): frente no recuo frontal; centralizada na largura,
+    # ou encostada no lado pedido
+    m.add(by1 == yr[0])
+    if "left" in att and "right" not in att:
+        m.add(bx1 == xr[0])
+    elif "right" in att and "left" not in att:
+        m.add(bx2 == xr[1])
+    elif not att & {"left", "right"}:
+        m.add((bx1 - xr[0]) - (xr[1] - bx2) <= 1)
+        m.add((xr[1] - bx2) - (bx1 - xr[0]) <= 1)
+
     def on_side(b: _Box, side: str) -> cp_model.IntVar:
         v = m.new_bool_var("")
         expr = {"front": (b.y, by1), "back": (b.y2, by2), "left": (b.x, bx1), "right": (b.x2, bx2)}[side]
@@ -196,12 +209,46 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
                 terms.append(coef / (2 * span) * (dx + dy))
     targets = [(k, room_target_m2(r, catalog)) for k, r in enumerate(reqs)]
     targets = [(k, t) for k, t in targets if t]
+    total_target_mm2 = sum(t for _, t in targets) * 1e6 or 1e6
     for k, t in targets:
         dev = m.new_int_var(0, 10**10, "")
         m.add_abs_equality(dev, area[k] - round(t * 1e6))
-        terms.append(-WEIGHTS["area_fit"] / len(targets) / (t * 1e6) * dev)
-    terms.append(-WEIGHTS["compactness"] / span * (bx2 - bx1 + by2 - by1))
+        terms.append(-WEIGHTS["area_fit"] / total_target_mm2 * dev)
     total_target = sum(t for _, t in targets) * 1e6 or 1.0
+    # bloco cheio (design 20.1, item 1): área da caixa envolvente sem cômodo, em unidades²
+    cells = (xr[1] - xr[0]) * (yr[1] - yr[0])
+    rect_area = []
+    for bx in boxes:
+        ra = m.new_int_var(0, cells, "")
+        m.add_multiplication_equality(ra, [bx.w, bx.h])
+        rect_area.append(ra)
+    bw, bh = m.new_int_var(0, xr[1] - xr[0], ""), m.new_int_var(0, yr[1] - yr[0], "")
+    m.add(bw == bx2 - bx1)
+    m.add(bh == by2 - by1)
+    box_area = m.new_int_var(0, cells, "")
+    m.add_multiplication_equality(box_area, [bw, bh])
+    terms.append(-WEIGHTS["compactness"] * VOID_SCALE / (total_target_mm2 / GRID**2) * (box_area - sum(rect_area)))
+    # paredes na mesma reta e cômodos iguais (design 20.1, item 3)
+    aligned = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            bi, bj = boxes[i], boxes[j]
+            eqs = []
+            for u, v in ((bi.x, bj.x), (bi.x2, bj.x2), (bi.y, bj.y), (bi.y2, bj.y2)):
+                q = m.new_bool_var("")
+                m.add(u == v).only_enforce_if(q)
+                eqs.append(q)
+            a_ij = m.new_bool_var("")
+            m.add_implication(a_ij, adj(i, j))
+            m.add_bool_or(eqs).only_enforce_if(a_ij)
+            aligned.append(a_ij)
+            if types[i].id == types[j].id:
+                e_ij = m.new_bool_var("")
+                m.add(bi.w == bj.w).only_enforce_if(e_ij)
+                m.add(bi.h == bj.h).only_enforce_if(e_ij)
+                aligned.append(e_ij)
+    if aligned:
+        terms.append(WEIGHTS["alignment"] / len(aligned) * sum(aligned))
     for k, r in enumerate(reqs):
         if types[k].id == CIRCULATION_TYPE:
             terms.append(-WEIGHTS["circulation"] / total_target * area[k])

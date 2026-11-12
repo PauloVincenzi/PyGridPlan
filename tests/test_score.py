@@ -55,3 +55,32 @@ def test_room_target_prefers_explicit_then_comfort_then_minimum():
     assert room_target_m2(RoomRequest(id="a", type="quarto"), c) == 10.0  # comfort_area_m2[0]
     assert room_target_m2(RoomRequest(id="a", type="garagem"), c) == pytest.approx(12.5 * 1.25)
     assert room_target_m2(RoomRequest(id="a", type="circulacao"), c) is None
+
+
+def _bedrooms(offset_mm=0):
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    rooms = tuple(Room(id=f"q{i}", type="quarto",
+                       rect=Rect(x=1000 + i * 3000, y=1000 + (offset_mm if i == 2 else 0), w=3000, h=4000))
+                  for i in range(3))
+    return Plan(site=Site(width_mm=20000, depth_mm=20000), rooms=rooms)
+
+
+def test_alignment_value_on_hand_plan():
+    aligned = _bedrooms()
+    assert _criteria(score_plan(aligned, _request_for(aligned), load_catalog()))["alignment"].value == pytest.approx(1.0)
+    shifted = _bedrooms(offset_mm=500)
+    assert _criteria(score_plan(shifted, _request_for(shifted), load_catalog()))["alignment"].value < 1.0
+
+
+def test_alignment_inactive_without_pairs():
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    plan = Plan(site=Site(width_mm=20000, depth_mm=20000),
+                rooms=(Room(id="s", type="sala", rect=Rect(x=1000, y=1000, w=4000, h=4000)),))
+    assert "alignment" not in _criteria(score_plan(plan, _request_for(plan), load_catalog()))
+
+
+def test_target_never_below_minimum_width_square():
+    # lavanderia: conforto começa em 2,1 m², mas a largura mínima de 1,80 m já exige 3,24 m²
+    assert room_target_m2(RoomRequest(id="a", type="lavanderia"), load_catalog()) == pytest.approx(1.8 * 1.8)
