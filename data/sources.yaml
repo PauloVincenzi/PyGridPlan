@@ -181,3 +181,11 @@ sources:
     url: https://www.telhanorte.com.br/loucas/vasos-sanitarios-e-assentos/bacias-para-caixas-acopladas
     kind: P
     accessed: "2026-11-11"
+  - id: curitiba-15511-2019
+    title: "Lei municipal de Curitiba nº 15.511/2019 (zoneamento) — taxa de permeabilidade mínima"
+    org: Prefeitura de Curitiba
+    year: 2019
+    url: https://www.migalhas.com.br/arquivos/2020/7/29773EB9160F0E_PDF_Apresentacao.pdf
+    kind: L-mun
+    accessed: "2026-11-11"
+    note: "Referência municipal; usada só como aviso, nunca como regra nacional."

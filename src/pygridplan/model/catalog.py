@@ -6,7 +6,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from pygridplan.model.sources import DATA_DIR, DEFAULT_SOURCES_PATH, load_sources
+from pygridplan.model.sources import DATA_DIR, DEFAULT_SOURCES_PATH, check_sourced, load_sources
 
 DEFAULT_CATALOG_PATH = DATA_DIR / "room_types.yaml"
 SOURCED_FIELDS = ("min_width_mm", "min_area_m2", "comfort_area_m2")
@@ -30,6 +30,11 @@ class RoomType(BaseModel):
     min_area_m2: float | None = None
     comfort_area_m2: tuple[float, float] | None = None
     sources: dict[str, str] = {}  # campo -> id em data/sources.yaml
+
+    @property
+    def category(self) -> Literal["dry", "wet", "built"]:
+        """Categoria de cor da planta (design 20.1, item 7)."""
+        return "built" if self.exterior else ("wet" if self.wet else "dry")
 
     @model_validator(mode="after")
     def _comfort_ordered(self) -> "RoomType":
@@ -63,10 +68,5 @@ def load_catalog(path: Path = DEFAULT_CATALOG_PATH, sources_path: Path = DEFAULT
 
     known = load_sources(sources_path)
     for t in catalog.types.values():
-        for field in SOURCED_FIELDS:
-            if getattr(t, field) is not None and field not in t.sources:
-                raise ValueError(f"{t.id}.{field} sem fonte (DEC-0024)")
-        for field, source_id in t.sources.items():
-            if source_id not in known:
-                raise ValueError(f"{t.id}.{field}: fonte não registrada '{source_id}'")
+        check_sourced(t.id, {f: getattr(t, f) for f in SOURCED_FIELDS}, t.sources, known)
     return catalog

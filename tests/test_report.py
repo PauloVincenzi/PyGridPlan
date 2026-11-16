@@ -19,7 +19,7 @@ def _alternative(plan):
 def test_svg_has_one_rect_per_room_plus_lot(basic_house):
     svg = plan_to_svg(basic_house, load_catalog())
     assert svg.startswith("<svg")
-    assert svg.count("<rect") == len(basic_house.rooms) + 1
+    assert svg.count("<rect") == len(basic_house.rooms) + 2  # muro + área verde
     assert "Sala de estar" in svg
 
 
@@ -80,3 +80,19 @@ def test_cli_rejects_k_zero(tmp_path):
 
     with pytest.raises(SystemExit):
         main(["generate", str(BASIC_PROGRAM), str(tmp_path / "o"), "--k", "0"])
+
+
+def test_svg_paints_lot_green_and_draws_fence(basic_house):
+    from pygridplan.export.svg import CATEGORY_STYLE
+
+    svg = plan_to_svg(basic_house, load_catalog())
+    assert CATEGORY_STYLE["green"][0] in svg
+    assert CATEGORY_STYLE["wet"][0] in svg  # banheiro
+
+
+def test_report_has_category_legend(basic_house, tmp_path):
+    path = tmp_path / "report.html"
+    write_report([_alternative(basic_house)], load_catalog(), path)
+    html = path.read_text(encoding="utf-8")
+    assert all(label in html for label in ("Interna seca", "Interna molhada", "Externa construída", "Externa verde"))
+    assert "Alinhamento" in html

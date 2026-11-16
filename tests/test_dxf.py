@@ -125,3 +125,7 @@ def test_cli_prints_warnings(tmp_path, capsys):
     assert main(["export-dxf", str(plan), str(out)]) == 0
     assert out.exists()
     assert "AVISO" in capsys.readouterr().err
+
+
+def test_dxf_has_fence_layer_with_four_bands(doc):
+    assert len(doc.modelspace().query("HATCH[layer=='A-MURO']")) == 4

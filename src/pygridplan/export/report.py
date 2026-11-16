@@ -3,13 +3,14 @@
 from html import escape
 from pathlib import Path
 
-from pygridplan.export.svg import plan_to_svg
+from pygridplan.export.svg import CATEGORY_STYLE, plan_to_svg
 from pygridplan.generators.cpsat import Alternative
 from pygridplan.model.catalog import Catalog
 
 LABELS = {
     "relations": "Relações", "area_fit": "Áreas", "compactness": "Compacidade",
     "circulation": "Circulação", "solar": "Sol (norte)", "wet_grouping": "Áreas molhadas",
+    "alignment": "Alinhamento",
 }
 STYLE = """
 body{margin:0;background:#121211;color:#ecebe6;font:14px/1.5 system-ui,sans-serif;padding:24px}
@@ -17,6 +18,7 @@ h1{font-size:20px;margin:0 0 16px}.grid{display:grid;grid-template-columns:repea
 .alt{background:#1c1c1a;border:1px solid #2f2f2a;border-radius:8px;padding:12px}
 .alt h2{font-size:16px;margin:0 0 8px}.alt h2 b{color:#d97757}svg{width:100%;height:420px;background:#121211}
 table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}td{padding:2px 4px;border-top:1px solid #2f2f2a}
+.legend span{margin-right:16px}.legend i{display:inline-block;width:12px;height:12px;margin-right:6px;border-radius:2px;vertical-align:-1px}
 td.v{text-align:right;font-family:ui-monospace,monospace}.warn{color:#d98a7a;font-size:12px}
 """
 
@@ -38,10 +40,12 @@ def write_report(alternatives: list[Alternative], catalog: Catalog, path: Path) 
             f"<section class='alt'><h2>Alternativa {n} — nota <b>{_fmt(alt.score.total)}</b></h2>"
             f"{plan_to_svg(alt.plan, catalog)}<table>{rows}</table>{warns}</section>"
         )
+    legend = "".join(f"<span><i style='background:{c}'></i>{label}</span>" for c, _, label in CATEGORY_STYLE.values())
     html = (
         "<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
         f"<title>PyGridPlan — alternativas</title><style>{STYLE}</style></head><body>"
-        f"<h1>PyGridPlan — {len(alternatives)} alternativas</h1><div class='grid'>{''.join(cards)}</div></body></html>"
+        f"<h1>PyGridPlan — {len(alternatives)} alternativas</h1><p class='legend'>{legend}</p>"
+        f"<div class='grid'>{''.join(cards)}</div></body></html>"
     )
     Path(path).write_text(html, encoding="utf-8")

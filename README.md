@@ -12,7 +12,7 @@ Gerador inteligente de **plantas baixas residenciais**, que roda **offline**. Vo
 
 ## Estado atual
 
-✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** Próximo: M2 (interface). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
+✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** ✅ **M1.1 (forma e implantação):** casa no recuo frontal e centralizada, encosto automático em lote pequeno com marcação "sem janela", muro, 4 cores (interna seca/molhada, externa construída/verde), vazio fechado proibido; calibração área × forma pendente. Próximo: calibração e M1.2 (mobiliário). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
 Histórico completo de decisões: [DECISOES.md](DECISOES.md).
 
 ## Stack prevista
@@ -41,6 +41,7 @@ PyGridPlan/
 │
 ├── data/                    DADOS — referência curada       ✅ D1
 │   ├── sources.yaml         registro de fontes (fonte única das citações)
+│   ├── site_defaults.yaml   muro, distância de janela à divisa, permeabilidade de referência
 │   ├── room_types.yaml      catálogo de cômodos com fonte por valor
 │   └── costs/               consumo SINAPI, preços datados, classes de acabamento
 ├── tests/                   testes                          ✅ 40 testes

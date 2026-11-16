@@ -107,3 +107,11 @@ def useful_dims_mm(room: Room, plan: Plan) -> tuple[int, int]:
 def useful_area_mm2(room: Room, plan: Plan) -> int:
     w, h = useful_dims_mm(room, plan)
     return w * h
+
+
+SIDE_ON_LOT = {"left": "left", "right": "right", "bottom": "front", "top": "back"}
+
+
+def exterior_sides(room: Room, plan: Plan) -> set[str]:
+    """Lados do cômodo (no referencial do lote) com algum trecho de parede externa."""
+    return {SIDE_ON_LOT[side] for side in OPPOSITE if _exterior_parts(room, side, plan)}

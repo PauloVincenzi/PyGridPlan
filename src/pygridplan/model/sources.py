@@ -35,3 +35,13 @@ def load_sources(path: Path = DEFAULT_SOURCES_PATH) -> dict[str, Source]:
             raise ValueError(f"ID de fonte duplicado: {item['id']}")
         sources[item["id"]] = Source.model_validate(item)
     return sources
+
+
+def check_sourced(owner: str, values: dict[str, object], sources: dict[str, str], known: dict[str, Source]) -> None:
+    """DEC-0024: todo valor presente tem fonte, e toda fonte citada está registrada."""
+    for field, value in values.items():
+        if value is not None and field not in sources:
+            raise ValueError(f"{owner}.{field} sem fonte (DEC-0024)")
+    for field, source_id in sources.items():
+        if source_id not in known:
+            raise ValueError(f"{owner}.{field}: fonte não registrada '{source_id}'")

@@ -88,3 +88,58 @@ def test_solutions_are_globally_reachable(seed):
     request, catalog = load_request(BASIC_PROGRAM), load_catalog()
     plan = solve_layout(request, catalog, seed=seed, time_limit=TIME)
     assert check_access(plan, catalog) == []
+
+
+def test_house_on_front_setback_and_centered(solved):
+    _, _, plan = solved
+    assert min(r.rect.y for r in plan.rooms) == 4100  # recuo frontal 4 000 + meia parede 75, na grade
+    left = min(r.rect.x for r in plan.rooms) - 1600
+    right = 8400 - max(r.rect.x2 for r in plan.rooms)
+    assert abs(left - right) <= 100
+
+
+def test_attached_left_touches_left_bound():
+    request = load_request(BASIC_PROGRAM)
+    request = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset({"left"})})})
+    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    assert min(r.rect.x for r in plan.rooms) == 100
+
+
+@pytest.mark.xfail(reason="calibração área x forma pendente (DEC-0087): com a trava de área a compacidade "
+                          "caiu para ~0,89; meta do design 20.1 é bloco cheio", strict=False)
+def test_generated_house_is_compact(solved):
+    from pygridplan.scoring.score import score_plan
+
+    request, catalog, plan = solved
+    criteria = {c.name: c.value for c in score_plan(plan, request, catalog).criteria}
+    assert criteria["compactness"] >= 0.95
+    assert "enclosed_void" not in [i.code for i in validate_geometry(plan)]
+
+
+def test_three_bedrooms_tend_to_match():
+    types = ("sala", "cozinha", "banheiro", "circulacao", "quarto", "quarto", "quarto")
+    request = Request(site=Site(width_mm=12000, depth_mm=30000),
+                      rooms=tuple(RoomRequest(id=f"{t}{i}", type=t) for i, t in enumerate(types)))
+    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    dims = [tuple(sorted((r.rect.w, r.rect.h))) for r in plan.rooms if r.type == "quarto"]
+    assert len(set(dims)) < 3
+
+
+def test_rooms_without_target_do_not_inflate():
+    # hall e sala de jantar não têm área-alvo; não podem crescer para "encher" o bloco
+    types = ("sala", "cozinha", "banheiro", "quarto", "hall", "sala_jantar")
+    request = Request(site=Site(width_mm=20000, depth_mm=40000),
+                      rooms=tuple(RoomRequest(id=t, type=t) for t in types))
+    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    from pygridplan.model.walls import useful_area_mm2
+
+    for rid in ("hall", "sala_jantar"):
+        room = next(r for r in plan.rooms if r.id == rid)
+        assert useful_area_mm2(room, plan) / 1e6 < 8.0, rid
+
+
+def test_tiny_explicit_target_stays_feasible():
+    # alvo pedido abaixo do mínimo da sala (largura 2,40 m): a trava de 1,8 x alvo não pode inviabilizar
+    rooms = (RoomRequest(id="sala", type="sala", target_area_m2=2.0), RoomRequest(id="cozinha", type="cozinha"))
+    plan = solve_layout(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(), time_limit=TIME)
+    assert plan is not None

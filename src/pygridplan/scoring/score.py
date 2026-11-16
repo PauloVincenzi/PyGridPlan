@@ -9,7 +9,8 @@ from pygridplan.model.walls import useful_area_mm2
 from pygridplan.validation.access import MIN_PASSAGE_MM, passages
 
 # fonte única dos pesos: a nota e o objetivo do solver usam estes valores
-WEIGHTS = {"relations": 3.0, "area_fit": 2.0, "compactness": 1.0, "circulation": 1.0, "solar": 1.0, "wet_grouping": 0.5}
+WEIGHTS = {"relations": 3.0, "area_fit": 2.0, "compactness": 3.0, "circulation": 1.0, "solar": 1.0,
+           "wet_grouping": 0.5, "alignment": 1.0}
 DEFAULT_TARGET_FACTOR = 1.25
 CIRCULATION_TYPE = "circulacao"
 
@@ -36,9 +37,11 @@ def room_target_m2(room: RoomRequest, catalog: Catalog) -> float | None:
     t = catalog.get(room.type)
     if t.id == CIRCULATION_TYPE:
         return None
-    if t.comfort_area_m2:
-        return t.comfort_area_m2[0]
-    return t.min_area_m2 * DEFAULT_TARGET_FACTOR if t.min_area_m2 else None
+    target = t.comfort_area_m2[0] if t.comfort_area_m2 else (
+        t.min_area_m2 * DEFAULT_TARGET_FACTOR if t.min_area_m2 else None)
+    if target and t.min_width_mm:  # um alvo abaixo do quadrado da largura mínima é inalcançável
+        target = max(target, (t.min_width_mm / 1000) ** 2)
+    return target
 
 
 def bounding_box(plan: Plan) -> Rect:
@@ -97,6 +100,27 @@ def score_plan(plan: Plan, request: Request, catalog: Catalog) -> Score:
         grouped = [w for w in wet if any(frozenset((w, o)) in adjacent for o in wet if o != w)]
         values["wet_grouping"] = len(grouped) / len(wet)
 
+    alignment = _alignment(plan, adjacent)
+    if alignment is not None:
+        values["alignment"] = alignment
+
     criteria = tuple(Criterion(name=n, value=v, weight=WEIGHTS[n]) for n, v in values.items())
     total = sum(c.value * c.weight for c in criteria) / sum(c.weight for c in criteria)
     return Score(total=total, criteria=criteria)
+
+
+def _alignment(plan: Plan, adjacent: set[frozenset[str]]) -> float | None:
+    """Vizinhos com faces na mesma reta + cômodos do mesmo tipo com as mesmas dimensões (design 20.1)."""
+    rooms = plan.rooms
+    hits = total = 0
+    for i, a in enumerate(rooms):
+        for b in rooms[i + 1:]:
+            ra, rb = a.rect, b.rect
+            if frozenset((a.id, b.id)) in adjacent:
+                total += 1
+                side_by_side = ra.x2 == rb.x or rb.x2 == ra.x
+                hits += (ra.y == rb.y or ra.y2 == rb.y2) if side_by_side else (ra.x == rb.x or ra.x2 == rb.x2)
+            if a.type == b.type:
+                total += 1
+                hits += sorted((ra.w, ra.h)) == sorted((rb.w, rb.h))
+    return hits / total if total else None

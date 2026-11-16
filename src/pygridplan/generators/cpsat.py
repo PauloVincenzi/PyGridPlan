@@ -12,12 +12,17 @@ from pydantic import BaseModel, ConfigDict
 from pygridplan.model.catalog import Catalog
 from pygridplan.model.plan import Plan, Rect, Room
 from pygridplan.model.request import Request
+from pygridplan.model.site_defaults import SiteDefaults, load_site_defaults
 from pygridplan.scoring.diversity import Pattern, relative_pattern
 from pygridplan.scoring.score import CIRCULATION_TYPE, WEIGHTS, Score, room_target_m2, score_plan
 from pygridplan.validation.access import MIN_PASSAGE_MM, check_access
 from pygridplan.validation.checks import Issue, check_recommendations, validate_geometry
+from pygridplan.validation.site import check_site
 
 GRID = 100
+# vazio custa menos por m² que errar área: compacta movendo cômodos, não inflando (ledger M1.1)
+VOID_SCALE = 0.2
+MAX_TARGET_FACTOR = 1.8  # área aproximada (conservadora) <= 1,8 x alvo => útil real < 2 x alvo
 MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
 DEFAULT_TIME_LIMIT = 0.5  # unidades determinísticas do CP-SAT; ~4–5 s de relógio no hardware de referência
 
@@ -39,6 +44,12 @@ class _Box:
 
 def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limit: float = DEFAULT_TIME_LIMIT,
                  forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> Plan | None:
+    return _solve(request, catalog, seed=seed, time_limit=time_limit, forbidden=forbidden, min_diff=min_diff)[0]
+
+
+def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
+           forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> tuple[Plan | None, str]:
+    """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout"."""
     site = request.site
     ext = Plan(site=site).wall_ext_mm
     e, sb, att = ext // 2, site.setbacks, site.attached_sides
@@ -47,7 +58,7 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     yr = (math.ceil((sb.front + e) / GRID),
           (site.depth_mm - (0 if "back" in att else sb.back) - e) // GRID)
     if xr[1] <= xr[0] or yr[1] <= yr[0]:
-        return None
+        return None, "infeasible"
 
     m = cp_model.CpModel()
     reqs = request.rooms
@@ -126,6 +137,17 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     m.add_max_equality(bx2, [b.x2 for b in boxes])
     m.add_max_equality(by2, [b.y2 for b in boxes])
 
+    # implantação previsível (design 20.1, item 4): frente no recuo frontal; centralizada na largura,
+    # ou encostada no lado pedido
+    m.add(by1 == yr[0])
+    if "left" in att and "right" not in att:
+        m.add(bx1 == xr[0])
+    elif "right" in att and "left" not in att:
+        m.add(bx2 == xr[1])
+    else:  # nenhuma ou as duas laterais encostadas: centralizada na largura
+        m.add((bx1 - xr[0]) - (xr[1] - bx2) <= 1)
+        m.add((xr[1] - bx2) - (bx1 - xr[0]) <= 1)
+
     def on_side(b: _Box, side: str) -> cp_model.IntVar:
         v = m.new_bool_var("")
         expr = {"front": (b.y, by1), "back": (b.y2, by2), "left": (b.x, bx1), "right": (b.x2, bx2)}[side]
@@ -196,15 +218,57 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
                 terms.append(coef / (2 * span) * (dx + dy))
     targets = [(k, room_target_m2(r, catalog)) for k, r in enumerate(reqs)]
     targets = [(k, t) for k, t in targets if t]
+    total_target_mm2 = sum(t for _, t in targets) * 1e6 or 1e6
     for k, t in targets:
+        # trava: nunca muito acima do alvo, mas sempre com folga sobre o mínimo do próprio cômodo
+        side = max(types[k].min_width_mm or 0, side_min * GRID - ext)
+        floor = 2 * max((types[k].min_area_m2 or 0) * 1e6, side * side)
+        m.add(area[k] <= round(max(MAX_TARGET_FACTOR * t * 1e6, floor)))
         dev = m.new_int_var(0, 10**10, "")
         m.add_abs_equality(dev, area[k] - round(t * 1e6))
-        terms.append(-WEIGHTS["area_fit"] / len(targets) / (t * 1e6) * dev)
-    terms.append(-WEIGHTS["compactness"] / span * (bx2 - bx1 + by2 - by1))
+        # maior entre o relativo (protege cômodos pequenos) e o absoluto (protege os grandes)
+        coef = max(1 / (len(targets) * t * 1e6), 1 / total_target_mm2)
+        terms.append(-WEIGHTS["area_fit"] * coef * dev)
     total_target = sum(t for _, t in targets) * 1e6 or 1.0
-    for k, r in enumerate(reqs):
-        if types[k].id == CIRCULATION_TYPE:
-            terms.append(-WEIGHTS["circulation"] / total_target * area[k])
+    # bloco cheio (design 20.1, item 1): área da caixa envolvente sem cômodo, em unidades²
+    cells = (xr[1] - xr[0]) * (yr[1] - yr[0])
+    rect_area = []
+    for bx in boxes:
+        ra = m.new_int_var(0, cells, "")
+        m.add_multiplication_equality(ra, [bx.w, bx.h])
+        rect_area.append(ra)
+    bw, bh = m.new_int_var(0, xr[1] - xr[0], ""), m.new_int_var(0, yr[1] - yr[0], "")
+    m.add(bw == bx2 - bx1)
+    m.add(bh == by2 - by1)
+    box_area = m.new_int_var(0, cells, "")
+    m.add_multiplication_equality(box_area, [bw, bh])
+    terms.append(-WEIGHTS["compactness"] * VOID_SCALE / (total_target_mm2 / GRID**2) * (box_area - sum(rect_area)))
+    # paredes na mesma reta e cômodos iguais (design 20.1, item 3)
+    aligned = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            bi, bj = boxes[i], boxes[j]
+            eqs = []
+            for u, v in ((bi.x, bj.x), (bi.x2, bj.x2), (bi.y, bj.y), (bi.y2, bj.y2)):
+                q = m.new_bool_var("")
+                m.add(u == v).only_enforce_if(q)
+                eqs.append(q)
+            a_ij = m.new_bool_var("")
+            m.add_implication(a_ij, adj(i, j))
+            m.add_bool_or(eqs).only_enforce_if(a_ij)
+            aligned.append(a_ij)
+            if types[i].id == types[j].id:
+                e_ij = m.new_bool_var("")
+                m.add(bi.w == bj.w).only_enforce_if(e_ij)
+                m.add(bi.h == bj.h).only_enforce_if(e_ij)
+                aligned.append(e_ij)
+    if aligned:
+        terms.append(WEIGHTS["alignment"] / len(aligned) * sum(aligned))
+    # circulação e cômodos sem área-alvo: área custa mais que o vazio, senão incham para encher o bloco
+    with_target = {k for k, _ in targets}
+    for k in range(n):
+        if k not in with_target:
+            terms.append(-WEIGHTS["area_fit"] / total_target * area[k])
     sunny = [k for k in range(n) if types[k].sun]
     if site.north and sunny:
         terms += [WEIGHTS["solar"] / len(sunny) * on_side(boxes[k], site.north) for k in sunny]
@@ -218,14 +282,15 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     solver.parameters.max_deterministic_time = time_limit
     solver.parameters.num_workers = 8
     solver.parameters.interleave_search = True  # torna o paralelo reprodutível (mesma semente = mesma planta)
-    if solver.solve(m) not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        return None
+    status = solver.solve(m)
+    if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        return None, "infeasible" if status == cp_model.INFEASIBLE else "timeout"
     rooms = tuple(
         Room(id=r.id, type=r.type, rect=Rect(x=solver.value(b.x) * GRID, y=solver.value(b.y) * GRID,
                                              w=solver.value(b.w) * GRID, h=solver.value(b.h) * GRID))
         for r, b in zip(reqs, boxes)
     )
-    return Plan(site=site, rooms=rooms)
+    return Plan(site=site, rooms=rooms), "ok"
 
 
 class GenerationError(Exception):
@@ -240,29 +305,58 @@ class Alternative(BaseModel):
     warnings: tuple[Issue, ...]
 
 
+ATTACH_SEQUENCE = (("left",), ("left", "right"), ("left", "right", "back"))  # design 20.1, item 5
+SIDE_PT = {"left": "esquerda", "right": "direita", "back": "do fundo"}
+
+
+def _attach_if_needed(request: Request, catalog: Catalog, seed: int, time_limit: float,
+                      min_diff: int) -> tuple[Request, Plan | None, Issue | None]:
+    """Primeira resolução; sem lados encostados no pedido e sem solução, tenta encostar nas divisas."""
+    plan, status = _solve(request, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+    if status == "timeout":
+        raise GenerationError("A busca esgotou o tempo sem achar nenhuma planta: aumente --time-limit "
+                              "(isso não significa que o programa não cabe no terreno).")
+    if plan is not None or request.site.attached_sides:
+        return request, plan, None
+    for sides in ATTACH_SEQUENCE:
+        attached = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(sides)})})
+        plan, status = _solve(attached, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+        if plan is not None:
+            names = " e ".join(SIDE_PT[s] for s in sides)
+            note = Issue(code="attached", message=f"casa encostada na divisa {names}: não coube com os afastamentos")
+            return attached, plan, note
+    return request, None, None
+
+
 def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, seed: int = 0,
-                          time_limit: float = DEFAULT_TIME_LIMIT, max_attempts: int = 20) -> list[Alternative]:
+                          time_limit: float = DEFAULT_TIME_LIMIT, max_attempts: int = 20,
+                          defaults: SiteDefaults | None = None) -> list[Alternative]:
     """K plantas válidas e diferentes entre si; soluções rejeitadas são proibidas e o solver roda de novo."""
     if not any(catalog.get(r.type).passage == "traversable" for r in request.rooms):
         raise GenerationError("O programa precisa de ao menos um cômodo atravessável (ex.: sala) para a entrada.")
     pairs = math.comb(len(request.rooms), 2)
     min_diff = max(1, math.ceil(MIN_DIFF_FRACTION * pairs))
+    defaults = defaults or load_site_defaults()
     seen: list[Pattern] = []
     accepted: list[Alternative] = []
+    request, plan, attach_note = _attach_if_needed(request, catalog, seed, time_limit, min_diff)
+    if plan is None:
+        raise GenerationError(_no_fit_message(request, catalog))
     for attempt in range(max_attempts):
         if len(accepted) == k:
             break
-        plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
-                            forbidden=seen, min_diff=min_diff)
-        if plan is None:
-            if attempt == 0:
-                raise GenerationError(_no_fit_message(request, catalog))
-            break  # não há mais alternativas diferentes
+        if attempt > 0:
+            plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
+                                forbidden=seen, min_diff=min_diff)
+            if plan is None:
+                break  # não há mais alternativas diferentes
+        assert plan is not None
         seen.append(relative_pattern(plan))
         if validate_geometry(plan) or check_access(plan, catalog):
             continue
+        notes = ((attach_note,) if attach_note else ()) + tuple(check_recommendations(plan, catalog))
         accepted.append(Alternative(plan=plan, score=score_plan(plan, request, catalog),
-                                    warnings=tuple(check_recommendations(plan, catalog))))
+                                    warnings=notes + tuple(check_site(plan, defaults))))
     if not accepted:
         raise GenerationError(f"Nenhuma das {len(seen)} soluções encontradas gerou uma planta válida (acesso ou geometria). "
                               "Tente mais tempo de busca (--time-limit) ou revise o programa.")

@@ -63,3 +63,39 @@ def test_wall_overlap_between_close_rooms():
 def test_room_smaller_than_its_walls():
     plan = Plan(site=LOT, rooms=(Room(id="x", type="quadra_de_areia", rect=Rect(x=1000, y=1000, w=50, h=50)),))
     assert _codes(validate_geometry(plan)) == ["too_small"]
+
+
+def _ring(center_type=None):
+    """Anel 3x3 de cômodos de 1 000 mm, com ou sem cômodo no centro."""
+    rooms = [Room(id=f"r{cx}{cy}", type="sala", rect=Rect(x=1000 + cx * 1000, y=1000 + cy * 1000, w=1000, h=1000))
+             for cx in range(3) for cy in range(3) if (cx, cy) != (1, 1)]
+    if center_type:
+        rooms.append(Room(id="centro", type=center_type, rect=Rect(x=2000, y=2000, w=1000, h=1000)))
+    return Plan(site=LOT, rooms=tuple(rooms))
+
+
+def test_ring_with_hole_is_enclosed_void():
+    from pygridplan.validation.checks import enclosed_void_area_mm2
+
+    plan = _ring()
+    assert enclosed_void_area_mm2(plan) == 1_000_000
+    assert "enclosed_void" in _codes(validate_geometry(plan))
+
+
+def test_notch_open_to_border_is_not_a_void():
+    from pygridplan.validation.checks import enclosed_void_area_mm2
+
+    rooms = (Room(id="a", type="sala", rect=Rect(x=1000, y=1000, w=1000, h=3000)),
+             Room(id="b", type="sala", rect=Rect(x=2000, y=1000, w=1000, h=1000)),
+             Room(id="c", type="sala", rect=Rect(x=3000, y=1000, w=1000, h=3000)))  # U aberto para trás
+    assert enclosed_void_area_mm2(Plan(site=LOT, rooms=rooms)) == 0
+
+
+def test_requested_patio_is_not_a_void():
+    assert "enclosed_void" not in _codes(validate_geometry(_ring("patio")))
+
+
+def test_basic_house_has_no_void(basic_house):
+    from pygridplan.validation.checks import enclosed_void_area_mm2
+
+    assert enclosed_void_area_mm2(basic_house) == 0
