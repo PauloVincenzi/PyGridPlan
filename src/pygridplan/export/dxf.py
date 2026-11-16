@@ -7,14 +7,16 @@ from ezdxf.enums import TextEntityAlignment
 from ezdxf.filemanagement import new as new_drawing
 
 from pygridplan.model.catalog import Catalog
+from pygridplan.export.svg import CATEGORY_STYLE
 from pygridplan.model.plan import Plan
+from pygridplan.model.site_defaults import SiteDefaults, load_site_defaults
 from pygridplan.model.walls import Wall, derive_walls, useful_area_mm2, useful_bounds
 
 LAYERS = (
-    "A-TERRENO", "A-EIXOS", "A-PAREDES-EXT", "A-PAREDES-INT", "A-PORTAS", "A-JANELAS",
+    "A-TERRENO", "A-MURO", "A-EIXOS", "A-PAREDES-EXT", "A-PAREDES-INT", "A-PORTAS", "A-JANELAS",
     "A-MOBILIARIO", "A-COTAS", "A-TEXTOS", "A-AREAS", "A-AVISOS",
 )
-LAYER_COLORS = {"A-EIXOS": 1, "A-PAREDES-INT": 8, "A-AREAS": 9}  # ACI: vermelho, cinza, cinza claro; demais 7
+LAYER_COLORS = {"A-MURO": 8, "A-EIXOS": 1, "A-PAREDES-INT": 8, "A-AREAS": 9}  # ACI: vermelho, cinza, cinza claro; demais 7
 AXIS_LINETYPE = "CENTER"
 LTSCALE = 50  # traço-ponto legível em desenho em mm
 DIM_OFFSET_MM = 1000
@@ -49,7 +51,7 @@ def _wall_band(w: Wall, walls: list[Wall]) -> list[tuple[float, float]]:
     return _box(w.x1 - h, w.y1 - a, w.x1 + h, w.y2 + b)
 
 
-def export_dxf(plan: Plan, path: Path, catalog: Catalog) -> None:
+def export_dxf(plan: Plan, path: Path, catalog: Catalog, defaults: SiteDefaults | None = None) -> None:
     doc = new_drawing("R2010", setup=["linetypes"])
     doc.units = units.MM
     doc.header["$LTSCALE"] = LTSCALE
@@ -61,6 +63,10 @@ def export_dxf(plan: Plan, path: Path, catalog: Catalog) -> None:
     width, depth = plan.site.width_mm, plan.site.depth_mm
 
     msp.add_lwpolyline(_box(0, 0, width, depth), close=True, dxfattribs={"layer": "A-TERRENO"})
+    t = (defaults or load_site_defaults()).fence_thickness_mm  # muro por dentro da divisa, em 4 faixas
+    for band in (_box(0, 0, width, t), _box(0, depth - t, width, depth),
+                 _box(0, t, t, depth - t), _box(width - t, t, width, depth - t)):
+        msp.add_hatch(color=BYLAYER, dxfattribs={"layer": "A-MURO"}).paths.add_polyline_path(band, is_closed=True)
     walls = derive_walls(plan)
     for w in walls:
         layer = "A-PAREDES-EXT" if w.kind == "ext" else "A-PAREDES-INT"
@@ -69,7 +75,8 @@ def export_dxf(plan: Plan, path: Path, catalog: Catalog) -> None:
         msp.add_line((w.x1, w.y1), (w.x2, w.y2), dxfattribs={"layer": "A-EIXOS"})
     for room in plan.rooms:
         r = room.rect
-        msp.add_lwpolyline(_box(*useful_bounds(room, plan)), close=True, dxfattribs={"layer": "A-AREAS"})
+        msp.add_lwpolyline(_box(*useful_bounds(room, plan)), close=True,
+                           dxfattribs={"layer": "A-AREAS", "color": CATEGORY_STYLE[catalog.get(room.type).category][1]})
         area = f"{useful_area_mm2(room, plan) / 1e6:.2f}".replace(".", ",")
         text = msp.add_text(f"{catalog.get(room.type).name} {area} m²", height=200,
                             dxfattribs={"layer": "A-TEXTOS"})

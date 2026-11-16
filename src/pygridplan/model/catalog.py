@@ -31,6 +31,11 @@ class RoomType(BaseModel):
     comfort_area_m2: tuple[float, float] | None = None
     sources: dict[str, str] = {}  # campo -> id em data/sources.yaml
 
+    @property
+    def category(self) -> Literal["dry", "wet", "built"]:
+        """Categoria de cor da planta (design 20.1, item 7)."""
+        return "built" if self.exterior else ("wet" if self.wet else "dry")
+
     @model_validator(mode="after")
     def _comfort_ordered(self) -> "RoomType":
         if self.comfort_area_m2 and self.comfort_area_m2[0] > self.comfort_area_m2[1]:

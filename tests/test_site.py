@@ -56,3 +56,21 @@ def test_too_small_even_attached_raises():
     rooms = (RoomRequest(id="s", type="sala"), RoomRequest(id="q", type="quarto"))
     with pytest.raises(GenerationError):
         generate_alternatives(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME)
+
+
+def test_room_categories():
+    c = load_catalog()
+    assert (c.get("sala").category, c.get("banheiro").category, c.get("varanda").category) == ("dry", "wet", "built")
+
+
+def test_green_area_and_permeability_warning(basic_house):
+    from pygridplan.model.plan import Plan, Rect, Room
+    from pygridplan.model.site_defaults import load_site_defaults
+    from pygridplan.validation.site import check_site, green_area_mm2
+
+    defaults = load_site_defaults()
+    assert "permeability" not in [i.code for i in check_site(basic_house, defaults)]
+    assert green_area_mm2(basic_house, defaults) > 0.5 * 10000 * 25000
+    crowded = Plan(site=Site(width_mm=10000, depth_mm=10000),
+                   rooms=(Room(id="s", type="sala", rect=Rect(x=300, y=300, w=9400, h=9400)),))
+    assert "permeability" in [i.code for i in check_site(crowded, defaults)]

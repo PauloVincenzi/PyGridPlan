@@ -12,8 +12,26 @@ def _m(v: float) -> str:
     return f"{v / 1000:.2f}".replace(".", ",") + " m"
 
 
+def fence_area_mm2(plan: Plan, defaults: SiteDefaults) -> int:
+    w, d, t = plan.site.width_mm, plan.site.depth_mm, defaults.fence_thickness_mm
+    return w * d - (w - 2 * t) * (d - 2 * t)
+
+
+def green_area_mm2(plan: Plan, defaults: SiteDefaults) -> int:
+    """Lote menos muro menos cômodos (inclusive os externos construídos)."""
+    lot = plan.site.width_mm * plan.site.depth_mm
+    return lot - fence_area_mm2(plan, defaults) - sum(r.rect.area_mm2 for r in plan.rooms)
+
+
 def check_site(plan: Plan, defaults: SiteDefaults) -> list[Issue]:
     issues: list[Issue] = []
+    ratio = green_area_mm2(plan, defaults) / (plan.site.width_mm * plan.site.depth_mm)
+    if ratio < defaults.permeability_min:
+        issues.append(Issue(
+            code="permeability", recommended=defaults.permeability_min, actual=round(ratio, 3),
+            message=f"área verde {ratio:.0%} < {defaults.permeability_min:.0%} (referência de Curitiba, "
+                    "Lei 15.511/2019; confira a lei do seu município)".replace("%", " %"),
+        ))
     e, w, d = plan.wall_ext_mm // 2, plan.site.width_mm, plan.site.depth_mm
     for room in plan.rooms:
         r = room.rect
