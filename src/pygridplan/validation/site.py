@@ -36,7 +36,7 @@ def check_site(plan: Plan, defaults: SiteDefaults) -> list[Issue]:
     for room in plan.rooms:
         r = room.rect
         distance = {"left": r.x - e, "right": w - r.x2 - e, "front": r.y - e, "back": d - r.y2 - e}
-        for side in sorted(exterior_sides(room, plan)):
+        for side in sorted(exterior_sides(room, plan) - {"front"}):  # art. 1.301 trata do vizinho, não da rua
             if distance[side] < defaults.window_min_distance_mm:
                 issues.append(Issue(
                     code="no_window", room_ids=(room.id,),

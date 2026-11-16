@@ -44,6 +44,12 @@ class _Box:
 
 def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limit: float = DEFAULT_TIME_LIMIT,
                  forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> Plan | None:
+    return _solve(request, catalog, seed=seed, time_limit=time_limit, forbidden=forbidden, min_diff=min_diff)[0]
+
+
+def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
+           forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> tuple[Plan | None, str]:
+    """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout"."""
     site = request.site
     ext = Plan(site=site).wall_ext_mm
     e, sb, att = ext // 2, site.setbacks, site.attached_sides
@@ -52,7 +58,7 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     yr = (math.ceil((sb.front + e) / GRID),
           (site.depth_mm - (0 if "back" in att else sb.back) - e) // GRID)
     if xr[1] <= xr[0] or yr[1] <= yr[0]:
-        return None
+        return None, "infeasible"
 
     m = cp_model.CpModel()
     reqs = request.rooms
@@ -138,7 +144,7 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
         m.add(bx1 == xr[0])
     elif "right" in att and "left" not in att:
         m.add(bx2 == xr[1])
-    elif not att & {"left", "right"}:
+    else:  # nenhuma ou as duas laterais encostadas: centralizada na largura
         m.add((bx1 - xr[0]) - (xr[1] - bx2) <= 1)
         m.add((xr[1] - bx2) - (bx1 - xr[0]) <= 1)
 
@@ -276,14 +282,15 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     solver.parameters.max_deterministic_time = time_limit
     solver.parameters.num_workers = 8
     solver.parameters.interleave_search = True  # torna o paralelo reprodutível (mesma semente = mesma planta)
-    if solver.solve(m) not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        return None
+    status = solver.solve(m)
+    if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        return None, "infeasible" if status == cp_model.INFEASIBLE else "timeout"
     rooms = tuple(
         Room(id=r.id, type=r.type, rect=Rect(x=solver.value(b.x) * GRID, y=solver.value(b.y) * GRID,
                                              w=solver.value(b.w) * GRID, h=solver.value(b.h) * GRID))
         for r, b in zip(reqs, boxes)
     )
-    return Plan(site=site, rooms=rooms)
+    return Plan(site=site, rooms=rooms), "ok"
 
 
 class GenerationError(Exception):
@@ -305,12 +312,15 @@ SIDE_PT = {"left": "esquerda", "right": "direita", "back": "do fundo"}
 def _attach_if_needed(request: Request, catalog: Catalog, seed: int, time_limit: float,
                       min_diff: int) -> tuple[Request, Plan | None, Issue | None]:
     """Primeira resolução; sem lados encostados no pedido e sem solução, tenta encostar nas divisas."""
-    plan = solve_layout(request, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+    plan, status = _solve(request, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+    if status == "timeout":
+        raise GenerationError("A busca esgotou o tempo sem achar nenhuma planta: aumente --time-limit "
+                              "(isso não significa que o programa não cabe no terreno).")
     if plan is not None or request.site.attached_sides:
         return request, plan, None
     for sides in ATTACH_SEQUENCE:
         attached = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(sides)})})
-        plan = solve_layout(attached, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+        plan, status = _solve(attached, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
         if plan is not None:
             names = " e ".join(SIDE_PT[s] for s in sides)
             note = Issue(code="attached", message=f"casa encostada na divisa {names}: não coube com os afastamentos")

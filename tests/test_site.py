@@ -74,3 +74,30 @@ def test_green_area_and_permeability_warning(basic_house):
     crowded = Plan(site=Site(width_mm=10000, depth_mm=10000),
                    rooms=(Room(id="s", type="sala", rect=Rect(x=300, y=300, w=9400, h=9400)),))
     assert "permeability" in [i.code for i in check_site(crowded, defaults)]
+
+
+def test_timeout_does_not_trigger_auto_attach():
+    # sem tempo para achar solução não é "não coube": não pode encostar na divisa
+    with pytest.raises(GenerationError, match="esgotou"):
+        generate_alternatives(load_request(BASIC_PROGRAM), load_catalog(), time_limit=0.001)
+
+
+def test_front_side_never_flagged_no_window():
+    from pygridplan.model.plan import Plan, Rect, Room, Setbacks
+    from pygridplan.model.site_defaults import load_site_defaults
+    from pygridplan.validation.site import check_site
+
+    site = Site(width_mm=10000, depth_mm=10000, setbacks=Setbacks(front=0))
+    plan = Plan(site=site, rooms=(Room(id="s", type="sala", rect=Rect(x=3000, y=100, w=4000, h=4000)),))
+    assert not [i for i in check_site(plan, load_site_defaults()) if "frontal" in i.message]
+
+
+def test_both_sides_attached_is_centered():
+    from pygridplan.generators.cpsat import solve_layout
+
+    request = load_request(BASIC_PROGRAM)
+    site = request.site.model_copy(update={"attached_sides": frozenset({"left", "right"})})
+    plan = solve_layout(request.model_copy(update={"site": site}), load_catalog(), time_limit=TIME)
+    left = min(r.rect.x for r in plan.rooms) - 100
+    right = 9900 - max(r.rect.x2 for r in plan.rooms)
+    assert abs(left - right) <= 100
