@@ -249,9 +249,11 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
                 aligned.append(e_ij)
     if aligned:
         terms.append(WEIGHTS["alignment"] / len(aligned) * sum(aligned))
-    for k, r in enumerate(reqs):
-        if types[k].id == CIRCULATION_TYPE:
-            terms.append(-WEIGHTS["circulation"] / total_target * area[k])
+    # circulação e cômodos sem área-alvo: área custa mais que o vazio, senão incham para encher o bloco
+    with_target = {k for k, _ in targets}
+    for k in range(n):
+        if k not in with_target:
+            terms.append(-WEIGHTS["area_fit"] / total_target * area[k])
     sunny = [k for k in range(n) if types[k].sun]
     if site.north and sunny:
         terms += [WEIGHTS["solar"] / len(sunny) * on_side(boxes[k], site.north) for k in sunny]

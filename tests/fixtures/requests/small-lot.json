@@ -1,0 +1,16 @@
+{
+  "site": {
+    "width_mm": 7000,
+    "depth_mm": 15000,
+    "setbacks": {"front": 4000, "back": 2000, "left": 1500, "right": 1500},
+    "north": "back"
+  },
+  "rooms": [
+    {"id": "sala", "type": "sala"},
+    {"id": "cozinha", "type": "cozinha"},
+    {"id": "banheiro", "type": "banheiro"},
+    {"id": "circulacao", "type": "circulacao"},
+    {"id": "quarto1", "type": "quarto"},
+    {"id": "quarto2", "type": "quarto"}
+  ]
+}

@@ -121,3 +121,16 @@ def test_three_bedrooms_tend_to_match():
     plan = solve_layout(request, load_catalog(), time_limit=TIME)
     dims = [tuple(sorted((r.rect.w, r.rect.h))) for r in plan.rooms if r.type == "quarto"]
     assert len(set(dims)) < 3
+
+
+def test_rooms_without_target_do_not_inflate():
+    # hall e sala de jantar não têm área-alvo; não podem crescer para "encher" o bloco
+    types = ("sala", "cozinha", "banheiro", "quarto", "hall", "sala_jantar")
+    request = Request(site=Site(width_mm=20000, depth_mm=40000),
+                      rooms=tuple(RoomRequest(id=t, type=t) for t in types))
+    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    from pygridplan.model.walls import useful_area_mm2
+
+    for rid in ("hall", "sala_jantar"):
+        room = next(r for r in plan.rooms if r.id == rid)
+        assert useful_area_mm2(room, plan) / 1e6 < 8.0, rid
