@@ -134,3 +134,10 @@ def test_rooms_without_target_do_not_inflate():
     for rid in ("hall", "sala_jantar"):
         room = next(r for r in plan.rooms if r.id == rid)
         assert useful_area_mm2(room, plan) / 1e6 < 8.0, rid
+
+
+def test_tiny_explicit_target_stays_feasible():
+    # alvo pedido abaixo do mínimo da sala (largura 2,40 m): a trava de 1,8 x alvo não pode inviabilizar
+    rooms = (RoomRequest(id="sala", type="sala", target_area_m2=2.0), RoomRequest(id="cozinha", type="cozinha"))
+    plan = solve_layout(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(), time_limit=TIME)
+    assert plan is not None

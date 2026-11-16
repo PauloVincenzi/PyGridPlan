@@ -22,6 +22,7 @@ from pygridplan.validation.site import check_site
 GRID = 100
 # vazio custa menos por m² que errar área: compacta movendo cômodos, não inflando (ledger M1.1)
 VOID_SCALE = 0.2
+MAX_TARGET_FACTOR = 1.8  # área aproximada (conservadora) <= 1,8 x alvo => útil real < 2 x alvo
 MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
 DEFAULT_TIME_LIMIT = 0.5  # unidades determinísticas do CP-SAT; ~4–5 s de relógio no hardware de referência
 
@@ -213,9 +214,15 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
     targets = [(k, t) for k, t in targets if t]
     total_target_mm2 = sum(t for _, t in targets) * 1e6 or 1e6
     for k, t in targets:
+        # trava: nunca muito acima do alvo, mas sempre com folga sobre o mínimo do próprio cômodo
+        side = max(types[k].min_width_mm or 0, side_min * GRID - ext)
+        floor = 2 * max((types[k].min_area_m2 or 0) * 1e6, side * side)
+        m.add(area[k] <= round(max(MAX_TARGET_FACTOR * t * 1e6, floor)))
         dev = m.new_int_var(0, 10**10, "")
         m.add_abs_equality(dev, area[k] - round(t * 1e6))
-        terms.append(-WEIGHTS["area_fit"] / total_target_mm2 * dev)
+        # maior entre o relativo (protege cômodos pequenos) e o absoluto (protege os grandes)
+        coef = max(1 / (len(targets) * t * 1e6), 1 / total_target_mm2)
+        terms.append(-WEIGHTS["area_fit"] * coef * dev)
     total_target = sum(t for _, t in targets) * 1e6 or 1.0
     # bloco cheio (design 20.1, item 1): área da caixa envolvente sem cômodo, em unidades²
     cells = (xr[1] - xr[0]) * (yr[1] - yr[0])

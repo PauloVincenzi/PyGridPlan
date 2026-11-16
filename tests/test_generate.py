@@ -64,3 +64,15 @@ def test_all_attempts_rejected_raises(monkeypatch):
     monkeypatch.setattr(g, "check_access", lambda plan, catalog: ["rejeitada"])  # força rejeição
     with pytest.raises(GenerationError):
         g.generate_alternatives(_req("sala", "cozinha"), load_catalog(), k=1, time_limit=TIME, max_attempts=2)
+
+
+def test_no_room_inflates_past_double_its_target():
+    from pygridplan.model.walls import useful_area_mm2
+    from pygridplan.scoring.score import room_target_m2
+
+    request, catalog = load_request(BASIC_PROGRAM), load_catalog()
+    targets = {r.id: room_target_m2(r, catalog) for r in request.rooms}
+    for alt in generate_alternatives(request, catalog, k=4, time_limit=TIME):
+        for room in alt.plan.rooms:
+            if targets[room.id]:
+                assert useful_area_mm2(room, alt.plan) / 1e6 <= 2 * targets[room.id], room.id
