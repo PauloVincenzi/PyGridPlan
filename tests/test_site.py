@@ -49,7 +49,10 @@ def test_explicit_attached_sides_are_kept():
 
 
 def test_too_small_even_attached_raises():
-    site = Site(width_mm=3000, depth_mm=8000)
+    from pygridplan.model.plan import Setbacks
+
+    # mesmo encostando nas laterais e no fundo, sobram 2,8 x 3,9 m: sala e quarto não cabem
+    site = Site(width_mm=3000, depth_mm=8000, setbacks=Setbacks(front=4000, back=2000, left=1500, right=1500))
     rooms = (RoomRequest(id="s", type="sala"), RoomRequest(id="q", type="quarto"))
     with pytest.raises(GenerationError):
         generate_alternatives(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME)

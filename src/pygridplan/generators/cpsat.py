@@ -12,10 +12,12 @@ from pydantic import BaseModel, ConfigDict
 from pygridplan.model.catalog import Catalog
 from pygridplan.model.plan import Plan, Rect, Room
 from pygridplan.model.request import Request
+from pygridplan.model.site_defaults import SiteDefaults, load_site_defaults
 from pygridplan.scoring.diversity import Pattern, relative_pattern
 from pygridplan.scoring.score import CIRCULATION_TYPE, WEIGHTS, Score, room_target_m2, score_plan
 from pygridplan.validation.access import MIN_PASSAGE_MM, check_access
 from pygridplan.validation.checks import Issue, check_recommendations, validate_geometry
+from pygridplan.validation.site import check_site
 
 GRID = 100
 # vazio custa menos por m² que errar área: compacta movendo cômodos, não inflando (ledger M1.1)
@@ -289,29 +291,55 @@ class Alternative(BaseModel):
     warnings: tuple[Issue, ...]
 
 
+ATTACH_SEQUENCE = (("left",), ("left", "right"), ("left", "right", "back"))  # design 20.1, item 5
+SIDE_PT = {"left": "esquerda", "right": "direita", "back": "do fundo"}
+
+
+def _attach_if_needed(request: Request, catalog: Catalog, seed: int, time_limit: float,
+                      min_diff: int) -> tuple[Request, Plan | None, Issue | None]:
+    """Primeira resolução; sem lados encostados no pedido e sem solução, tenta encostar nas divisas."""
+    plan = solve_layout(request, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+    if plan is not None or request.site.attached_sides:
+        return request, plan, None
+    for sides in ATTACH_SEQUENCE:
+        attached = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(sides)})})
+        plan = solve_layout(attached, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+        if plan is not None:
+            names = " e ".join(SIDE_PT[s] for s in sides)
+            note = Issue(code="attached", message=f"casa encostada na divisa {names}: não coube com os afastamentos")
+            return attached, plan, note
+    return request, None, None
+
+
 def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, seed: int = 0,
-                          time_limit: float = DEFAULT_TIME_LIMIT, max_attempts: int = 20) -> list[Alternative]:
+                          time_limit: float = DEFAULT_TIME_LIMIT, max_attempts: int = 20,
+                          defaults: SiteDefaults | None = None) -> list[Alternative]:
     """K plantas válidas e diferentes entre si; soluções rejeitadas são proibidas e o solver roda de novo."""
     if not any(catalog.get(r.type).passage == "traversable" for r in request.rooms):
         raise GenerationError("O programa precisa de ao menos um cômodo atravessável (ex.: sala) para a entrada.")
     pairs = math.comb(len(request.rooms), 2)
     min_diff = max(1, math.ceil(MIN_DIFF_FRACTION * pairs))
+    defaults = defaults or load_site_defaults()
     seen: list[Pattern] = []
     accepted: list[Alternative] = []
+    request, plan, attach_note = _attach_if_needed(request, catalog, seed, time_limit, min_diff)
+    if plan is None:
+        raise GenerationError(_no_fit_message(request, catalog))
     for attempt in range(max_attempts):
         if len(accepted) == k:
             break
-        plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
-                            forbidden=seen, min_diff=min_diff)
-        if plan is None:
-            if attempt == 0:
-                raise GenerationError(_no_fit_message(request, catalog))
-            break  # não há mais alternativas diferentes
+        if attempt > 0:
+            plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
+                                forbidden=seen, min_diff=min_diff)
+            if plan is None:
+                break  # não há mais alternativas diferentes
+        assert plan is not None
         seen.append(relative_pattern(plan))
         if validate_geometry(plan) or check_access(plan, catalog):
             continue
+        notes = ((attach_note,) if attach_note else ()) + tuple(check_recommendations(plan, catalog))
         accepted.append(Alternative(plan=plan, score=score_plan(plan, request, catalog),
-                                    warnings=tuple(check_recommendations(plan, catalog))))
+                                    warnings=notes + tuple(check_site(plan, defaults))))
     if not accepted:
         raise GenerationError(f"Nenhuma das {len(seen)} soluções encontradas gerou uma planta válida (acesso ou geometria). "
                               "Tente mais tempo de busca (--time-limit) ou revise o programa.")
