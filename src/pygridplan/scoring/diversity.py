@@ -15,6 +15,11 @@ def relative_pattern(plan: Plan) -> Pattern:
     }
 
 
+def mirrored(pattern: Pattern) -> Pattern:
+    """Padrão da mesma planta espelhada na largura (esquerda e direita trocadas)."""
+    return {pair: (right, left, front, back) for pair, (left, right, front, back) in pattern.items()}
+
+
 def plan_distance(a: Plan, b: Plan) -> float:
     """Fração de pares cuja posição relativa mudou de verdade: nenhuma relação que valia
     numa planta vale na outra (estar "à direita e também atrás" não difere de "à direita")."""
