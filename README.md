@@ -12,7 +12,7 @@ Gerador inteligente de **plantas baixas residenciais**, que roda **offline**. Vo
 
 ## Estado atual
 
-✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** ✅ **M1.1 (forma e implantação):** casa no recuo frontal e centralizada, encosto automático em lote pequeno com marcação "sem janela", muro, 4 cores (interna seca/molhada, externa construída/verde), vazio fechado proibido; calibração área × forma pendente. Próximo: calibração e M1.2 (mobiliário). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
+✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** ✅ **M1.1 (forma e implantação):** casa no recuo frontal e centralizada, encosto automático em lote pequeno com marcação "sem janela", muro, 4 cores (interna seca/molhada, externa construída/verde), vazio fechado proibido. **Calibração do M1.1:** o gerador passou a usar uma malha de linhas de parede resolvida em duas fases (topologia, depois medidas); a casa sai em **bloco cheio** nos 5 pedidos de referência e a **circulação tem função** (quartos e banheiro abrem para ela). Relatório: [docs/plans/m1-1-calibration.md](docs/plans/m1-1-calibration.md). Próximo: M1.2 (mobiliário). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
 Histórico completo de decisões: [DECISOES.md](DECISOES.md).
 
 ## Stack prevista
@@ -44,8 +44,8 @@ PyGridPlan/
 │   ├── site_defaults.yaml   muro, distância de janela à divisa, permeabilidade de referência
 │   ├── room_types.yaml      catálogo de cômodos com fonte por valor
 │   └── costs/               consumo SINAPI, preços datados, classes de acabamento
-├── tests/                   testes                          ✅ 40 testes
-│   └── fixtures/            DADOS — casos de teste
+├── tests/                   testes (rápidos e `slow`, que rodam o solver) ✅
+│   └── fixtures/            DADOS — casos de teste e os 5 pedidos da bancada (`requests/`)
 ├── out/                     DADOS — gerados (fora do git)
 │
 └── docs/
@@ -82,7 +82,8 @@ O `pip install -e` instala as dependências e o próprio pacote de uma vez, em m
 **Testes:**
 
 ```bash
-pytest
+pytest -m "not slow"    # suíte rápida (~15 s): tudo menos o solver
+pytest                  # suíte completa: inclui os testes que rodam o solver (vários minutos)
 ```
 
 Checagem de tipos (opcional): `pyright`, instalado à parte com `npm install -g pyright`.
@@ -93,7 +94,7 @@ Checagem de tipos (opcional): `pyright`, instalado à parte com `npm install -g 
 # gerar 4 plantas alternativas a partir de um pedido (terreno + cômodos + relações)
 python -m pygridplan generate tests/fixtures/requests/basic-program.json out/m1
 #   → out/m1/alt-N.json, alt-N.dxf e report.html (comparação lado a lado)
-#   opções: --k 4  --seed 0  --time-limit 0.5
+#   opções: --k 4  --seed 0  --time-limit 4   (leva ~1 min para 4 plantas de 8 cômodos)
 
 # validar e exportar uma planta descrita em JSON para DXF
 python -m pygridplan export-dxf tests/fixtures/plans/basic-house.json out/basic-house.dxf
