@@ -1309,3 +1309,221 @@ Substitui: a parte sobre o teste `test_rooms_without_target_do_not_inflate` da D
 Decisão: o teste aceita hall e sala de jantar com menos que **2 × a largura mínima ao quadrado** (hall < 2,88 m²; sala de jantar < 11,52 m²). É um critério próprio do teste ("não inchou para encher o bloco") e **não** repete o teto dos cômodos com alvo (1,5 ×).
 Justificativa: com 1,5 ×, um hall de 1,4 × 2,0 m no eixo (2,4 m²) seria reprovado. Em relação ao limite original (< 8,0 m² para os dois), o hall fica mais rígido e a sala de jantar mais folgada. A maior sala de jantar medida tem 8,1 m².
 Status: Proposta (implementada; aguarda aprovação do responsável).
+
+---
+
+## Sessão S06 — 2026-11-19
+
+### Log da sessão (prompts e ações, em resumo)
+
+1. **Responsável:** autorizou os dois commits do branch `feat/m1-1-calibration` com push e pediu para encerrar o branch, ficando ele com o pull request. Fez a conferência visual das 16 plantas (`out/calibration/basic-program`, `small-lot`, `three-bedroom`, `large-house`), imaginando portas e trajetos, e pediu para incorporar as observações ao algoritmo e depois seguir a trilha D2. **Agente:** fez os commits `f0cb147` (feat) e `dee1018` (docs) e o push. Criou o branch `feat/m1-1-layout-rules` a partir dele.
+2. **Observações do responsável, em resumo:**
+   - **Circulação mal acessada:** pela área de serviço (programa básico, alternativa 2; 3 quartos, alternativa 3) ou só pela cozinha (lote pequeno, alternativas 3 e 4; 3 quartos, alternativa 1). A cozinha como ponte é aceitável quando ela é grande.
+   - **Banheiro sem nenhuma parede externa**, logo sem janela (3 quartos, alternativa 1). Por padrão, todo cômodo deve ter acesso ao exterior.
+   - **Buraco na forma do lote pequeno:** área perdida, que poderia virar um banheiro ou quarto maior, e obra mais difícil.
+   - **Alternativas espelhadas** no lote pequeno (1 e 2; 3 e 4).
+   - **Corredor longo demais**, indo até o fim da casa (3 quartos, alternativa 3; casa grande, alternativa 3). A porta não precisa ser centralizada, e o último quarto pode ser mais largo.
+   - **Escritório acessível só pelo closet ou pela área de serviço** (casa grande, alternativa 2).
+   - **Elogios:** programa básico, alternativas 1, 3 e 4; 3 quartos, alternativas 2 e 4; casa grande, alternativas 1, 3 e 4.
+3. **Responsável:** acrescentou que, nas casas maiores, uma **segunda porta para a área externa** pode ser muito interessante; até aqui ele tinha imaginado uma entrada única. **Agente:** registrou para o M4, com o apoio do MCMV encontrado na D2 (DEC-0102).
+4. **Agente:**
+   - **Regras novas no gerador:**
+     - zoneamento (DEC-0097);
+     - parede externa (DEC-0098);
+     - retângulo antes de recorte (DEC-0099);
+     - espelho proibido sempre (DEC-0100);
+     - limite de busca 20 (DEC-0101);
+     - preço da área sem alvo pela área real também na fase 1 (DEC-0103).
+   - **Testes:** 3 novos; cada um falha no gerador anterior e passa no novo.
+   - **Medições, por pedido** (casas em bloco cheio; nota e área de cada alternativa):
+
+     | Pedido | Notas | Área |
+     |---|---|---|
+     | Programa básico | 0,88–0,90 | 0,83–0,89 |
+     | Lote pequeno | 0,76–0,89 | 0,73–0,76 |
+     | 3 quartos | 0,89–0,94 | 0,78–0,90 |
+     | Casa grande | 0,85–0,89 | 0,78–0,87 |
+
+   - **Trilha D2:** pesquisa em 4 frentes (normas e programas, ergonomia e folgas, dimensões de mercado, portas/aberturas/circulação) e relatório (DEC-0105).
+5. **Agente:**
+   - **Suíte completa:** 150 passaram e 2 falharam.
+   - **Falha 1:** limite do teste de cômodo sem alvo (hall de 2,6 × 1,4 m, que não é inchaço). O teste voltou ao critério original do M1.1 (DEC-0104).
+   - **Falha 2:** casa grande com área 0,72, contra 0,75. Rodado sozinho, o caso passa. A investigação mostrou que o CP-SAT paralelo não é reprodutível quando para pelo limite de tempo (registrado na DEC-0101).
+   - **Processo órfão:** um `python.exe` (PID 29876), iniciado em 16/11 às 15:14, consumia CPU havia 8,9 h. O agente não o encerrou por conta própria e pediu ao responsável.
+
+### Decisões
+
+**DEC-0096 — Branch da calibração encerrado**
+Data: 2026-11-19 · Sessão: S06 · Autor: Responsável · Categoria: Processo
+Decisão: commits `f0cb147` e `dee1018` com push autorizado nesta rodada. O responsável abre o PR `feat/m1-1-calibration` → `main` com o texto entregue na S05.
+Status: Aprovada.
+
+**DEC-0097 — Zoneamento: a circulação e os cômodos de uso concentrado abrem para a área social**
+Data: 2026-11-19 · Sessão: S06 · Autor: Responsável (observação) / Agente (regra) · Categoria: Produto
+Decisão: com cômodo social no programa (zona social, atravessável, nem externo nem de uso concentrado), a circulação tem parede comum com pelo menos um deles. Escritório e home theater abrem para um cômodo social ou para a circulação.
+Justificativa: observação do responsável. Na D2, um estudo com 71% da amostra (82% nos anos 2000) mostra o setor social dando acesso ao íntimo e ao serviço separadamente.
+Consequências: é regra dura. O estudo sustenta penalidade, e o responsável aceita a cozinha grande como ponte. Pode virar critério suave se ficar rígida demais.
+Status: Proposta (implementada).
+
+**DEC-0098 — Todo cômodo de permanência tem parede externa**
+Data: 2026-11-19 · Sessão: S06 · Autor: Responsável (observação) / Agente (regra) · Categoria: Produto
+Decisão: todo cômodo com `stay` definido no catálogo, exceto a circulação, toca a borda da casa ou um recorte.
+Justificativa: o responsável pediu janela possível em todo cômodo, por padrão.
+Consequências: é mais rígido que a lei. Pela D2, closet, despensa e corredor não precisam de janela, e banheiro e lavabo aceitam ventilação indireta (duto ou poço). Fica pendente uma opção para liberar closet e banheiro com ventilação indireta.
+Status: Proposta (implementada).
+
+**DEC-0099 — Retângulo antes de recorte**
+Data: 2026-11-19 · Sessão: S06 · Autor: Responsável (observação) / Agente (regra) · Categoria: Arquitetura
+Decisão: o gerador tenta, em ordem e só passando adiante quando a anterior é provada inviável:
+1. retângulo com teto de área de 1,5 × o alvo;
+2. retângulo com teto de 2,0 ×;
+3. recortes de borda com teto de 1,5 ×.
+Justificativa: no lote pequeno, o retângulo com 1,5 × é inviável; com 2,0 × a casa sai em bloco cheio. Um teto de 2,0 × para todos foi medido e piorou a casa grande (área 0,69).
+Consequências: substitui o item da DEC-0093 sobre o teto único de 1,5 ×, que agora pode chegar a 2,0 × quando é o preço de não ter recorte. O lote pequeno ficou com área de 0,73–0,76, contra 0,89 com recorte: o responsável preferiu cômodos maiores a área perdida.
+Status: Proposta (implementada).
+
+**DEC-0100 — Espelho nunca é alternativa**
+Data: 2026-11-19 · Sessão: S06 · Autor: Responsável (observação) / Agente · Categoria: Produto
+Decisão: a planta espelhada de uma alternativa é proibida em todo lote, não só no simétrico.
+Substitui: o item "espelho" da DEC-0091.
+Status: Proposta (implementada).
+
+**DEC-0101 — Limite de busca 20 e reprodutibilidade limitada**
+Data: 2026-11-19 · Sessão: S06 · Autor: Agente · Categoria: Arquitetura
+Decisão: `DEFAULT_TIME_LIMIT` passa de 4 para 20 unidades determinísticas.
+Justificativa: com 4, a casa grande saía como "casa-corredor" (circulação de 14,7 m², relações 0,65). Com 20, saiu com circulação de 6,9 m² e relações 0,94. Pedidos pequenos param antes, ao provar o ótimo.
+Consequências:
+- 4 alternativas levam até ~2,5 min com a máquina carregada.
+- **Achado:** quando a busca para pelo limite, o CP-SAT paralelo não é reprodutível. O mesmo modelo deu objetivos de 4,21 a 4,85 em 3 execuções; com limite 6, as 3 execuções foram idênticas. "Mesma semente, mesma planta" vale só quando a busca prova o ótimo. Fica pendente investigar a causa ou trocar a estratégia.
+Status: Proposta (implementada; pendência aberta).
+
+**DEC-0102 — Segunda porta externa: regra para o M4**
+Data: 2026-11-19 · Sessão: S06 · Autor: Responsável (observação) · Categoria: Produto
+Decisão: as aberturas do M4 preveem uma porta de serviço (cozinha ou área de serviço para o exterior), além da entrada pela sala. A DEC-0098 já garante a parede externa desses cômodos.
+Justificativa: o MCMV (Portaria 725/2023, Anexo III, compilada até a 1.079/2026) exige duas portas de acesso na casa: uma na sala e uma de serviço.
+Status: Aprovada (detalhe a definir no M4).
+
+**DEC-0103 — Área sem alvo com preço pela área real nas duas fases**
+Data: 2026-11-19 · Sessão: S06 · Autor: Agente (achado menor da revisão independente da S05) · Categoria: Arquitetura
+Decisão: na fase 1, a circulação e os cômodos sem alvo pagam pela área real, e não pelo semiperímetro.
+Justificativa: o semiperímetro × 1 m só acertava para faixas de ~1 m de largura e subestimava salas sem alvo.
+Status: Proposta (implementada).
+
+**DEC-0104 — Teste de cômodo sem alvo volta ao critério original**
+Data: 2026-11-19 · Sessão: S06 · Autor: Agente · Categoria: Processo
+Substitui: DEC-0095.
+Decisão: `test_rooms_without_target_do_not_inflate` volta ao limite aprovado no M1.1: menos de 8,0 m² para o hall e a sala de jantar.
+Justificativa: o limite já tinha sido ajustado 2 vezes para acompanhar a malha, o que é sinal de critério errado. Na malha, o hall tem a largura da coluna vizinha (2,6 × 1,4 m = 3,2 m²), e isso não é inchaço. O critério original separa bem o defeito que o teste protege (sala de jantar de 20 m²).
+Status: Proposta (implementada).
+
+**DEC-0105 — Trilha D2: pesquisa concluída, promoção para `data/` no M1.2**
+Data: 2026-11-19 · Sessão: S06 · Autor: Agente · Categoria: Dados
+Decisão: relatório em `docs/research/Mobiliário mínimo e folgas por cômodo.md`, notas em `docs/research/notes/Mobiliário mínimo e folgas por cômodo/` (4 frentes). Nada foi promovido para `data/` ainda.
+Consequências: o relatório recomenda o que pode ser promovido para `data/furniture.yaml`:
+- **já:** valores do MCMV 725, os da NBR 15575-1 (anexo informativo) para dormitórios, cozinha, banheiro e área de serviço, e folgas de ergonomia lidas na íntegra;
+- **depois de conferir na fonte primária:** o resto.
+
+O relatório também corrige 6 pontos do relatório D1: a letra do anexo da NBR, o anexo do MCMV com as regras de porta, a compilação vigente, a cama de solteiro do MCMV, o colchão king e a ventilação. As notas de `nbr15575-1-anexo` e `mcmv-725-2023` em `data/sources.yaml` ficaram desatualizadas.
+Status: Proposta (a promoção depende do design do M1.2).
+
+### Pendências abertas (S06)
+
+- Responsável: abrir o PR de `feat/m1-1-calibration` e fazer o merge.
+- Responsável: encerrar o processo órfão `python.exe` (PID 29876), depois do que o agente roda a suíte completa de novo.
+- Responsável: conferir as plantas novas (`out/calibration/*/report.html`) e aprovar ou vetar as DEC-0097 a DEC-0105.
+- Reprodutibilidade do CP-SAT quando a busca para pelo limite (DEC-0101).
+- Opção de ventilação indireta para closet e banheiro (DEC-0098).
+- Área do lote pequeno (0,73–0,76) com o teto de 2,0 ×.
+- M1.2: design, promoção dos dados da D2 e verificação "cabe?".
+
+### Log da sessão — continuação (2026-11-21)
+
+6. **Responsável:**
+   - **Revisar as regras:** elas não devem ser mais rígidas que a lei. Closet e corredor não precisam de janela. O banheiro aceita duto ou claraboia, por escolha do usuário ou sugerido quando fica encaixado no meio da casa (comum em médio e alto padrão). O lavabo sem chuveiro não precisa de tanta rigidez. Normas impedem soluções cabíveis, e parte do projeto é permitir que o usuário personalize e adote boas soluções, às vezes fora da norma.
+   - **Circulação:** todos os ambientes sociais podem dar acesso. A cozinha grande pode, mas muito fluxo nela pode ser ruim. O mais natural é chegar aos quartos e ao banheiro pela sala de estar ou de jantar. Deixar amplo e flexível: nada do que ele dá como exemplo é verdade absoluta. O algoritmo deve construir da forma mais inteligente e dar opções ao usuário, que personaliza em tempo real.
+   - **Processo órfão:** autorizou encerrar o PID 29876.
+   - **Branches:** pediu para ser guiado sempre: em que branch trabalhar, adds e commits no branch certo, push com o remoto certo, e o momento do PR com título, texto e link.
+   - **Aberturas:** nas conferências ele já imagina portas e trajetos, que são informação de etapas futuras. Pediu para evitar que isso cause problemas agora e para guardar essas informações para as etapas de portas e janelas. Detalhou a interação em tempo real do M2 em diante: portas surgindo, sugestões em outra cor, aceitar tudo, retângulo da porta que gruda nos pontos sugeridos, porta em lugar não sugerido. Enfatizou que essa configurabilidade é fundamental no projeto.
+   - **Commits:** autorizou todos.
+   - **Pendência:** não teve tempo de conferir as plantas novas; fará isso no próximo prompt.
+
+   **Agente:**
+   - **Processo órfão:** o PID 29876 já não existia (a máquina foi reiniciada) e não há Python rodando.
+   - **Janelas em níveis, com fonte:** obrigatória (MCMV: sala e dormitórios), preferida (DF e Porto Alegre: cozinha, banheiro, lavabo, área de serviço, escritório) e nenhuma (closet, circulação e o resto). A preferida virou critério de nota (`ventilation`) com aviso de "duto, poço ou claraboia", e o pedido ganhou a opção `window_rule` (DEC-0106).
+   - **Zoneamento:** virou critério de nota (`zoning`), com `access_hub` no catálogo: salas valem 1, cozinha 0,5, área de serviço 0 (DEC-0107).
+   - **Princípio das regras flexíveis:** DEC-0108.
+   - **Design:** seção 22 revista e seção 23 nova, sobre aberturas e interação (DEC-0109).
+   - **Memórias:** registrou duas (guia de branches e regras flexíveis).
+   - **Testes:** 8 rápidos e 1 lento novos.
+   - **Medições, por pedido** (casas em bloco cheio; nota e área de cada alternativa):
+
+     | Pedido | Notas | Área |
+     |---|---|---|
+     | Programa básico | 0,90–0,92 | 0,79–0,89 |
+     | Lote pequeno | 0,82–0,92 | 0,73–0,76 |
+     | 3 quartos | 0,94–0,96 | 0,83–0,90 |
+     | Casa grande | 0,88–0,93 | 0,81–0,87 |
+
+     As notas não são comparáveis com as anteriores, porque há dois critérios novos. Na casa grande, a circulação caiu para 2,4–6,2 m² e as relações ficaram em 0,94–0,95.
+   - **Verificação:** suíte completa com 161 testes passando, sem falhas; `pyright` sem erros.
+
+### Decisões — continuação (2026-11-21)
+
+**DEC-0106 — Janelas em níveis, com fonte e rigor escolhido no pedido**
+Data: 2026-11-21 · Sessão: S06 · Autor: Responsável (diretriz) / Agente (modelagem) · Categoria: Produto / Dados
+Substitui: DEC-0098.
+Decisão: o campo `window_need` do catálogo (com fonte) define três níveis.
+- **`required`**: sala, quarto, quarto de solteiro. Fonte: MCMV 725, que veda janela de sala e dormitório para poço.
+- **`preferred`**: cozinha, banheiro, lavabo e área de serviço (fonte: DF) e escritório (fonte: Porto Alegre). Os códigos pedem abertura, mas aceitam duto ou meio mecânico para banheiro, lavabo e serviço.
+- **vazio**: o resto, incluindo closet e circulação.
+
+Comportamento padrão: `required` é restrição; `preferred` é critério de nota (`ventilation`, peso 1) com aviso "sem parede externa (duto, poço ou claraboia)". O pedido escolhe o rigor com `window_rule`: `default`, `strict` (toda janela obrigatória) ou `relaxed` (nenhuma obrigatória).
+Justificativa: a regra não fica mais rígida que a lei, e lei municipal não vira padrão nacional (data/README, regra 4). O usuário decide se um banheiro no meio da casa, com claraboia, é a melhor solução.
+Consequências: catálogo v0.3; notas de `mcmv-725-2023` e `df-seduh` atualizadas em `data/sources.yaml`.
+Status: Proposta (implementada).
+
+**DEC-0107 — Zoneamento como critério, com `access_hub` no catálogo**
+Data: 2026-11-21 · Sessão: S06 · Autor: Responsável (diretriz) / Agente (modelagem) · Categoria: Produto
+Substitui: DEC-0097.
+Decisão: o critério `zoning` (peso 2, igual no solver e na nota) dá a cada circulação e a cada cômodo de uso concentrado o maior `access_hub` entre os vizinhos com passagem:
+- sala, sala de jantar, hall e sala íntima valem 1;
+- cozinha e copa valem 0,5;
+- os demais valem 0.
+
+Para o escritório, a circulação também vale 1. Sem cômodo de acesso no programa, o critério não entra.
+Justificativa: o responsável quer flexibilidade (a cozinha grande pode ser ponte). Na D2, o estudo de zoneamento sustenta penalidade, não proibição.
+Consequências: `access_hub` é preferência de projeto [X], com fonte `agente`. No M2, o usuário ajusta pesos e valores em tempo real; o valor da cozinha pode crescer com a área dela.
+Status: Proposta (implementada).
+
+**DEC-0108 — Princípio: normas são referência, não teto**
+Data: 2026-11-21 · Sessão: S06 · Autor: Responsável · Categoria: Produto
+Decisão: nenhuma regra do gerador é mais rígida que a lei por padrão. O que a lei não exige, ou só alguns municípios exigem, vira critério de nota ou sugestão para o usuário avaliar, com opção de apertar ou afrouxar. As observações do responsável nas conferências são exemplos, não verdades absolutas: o algoritmo busca a solução mais inteligente e oferece opções personalizáveis em tempo real.
+Status: Aprovada.
+
+**DEC-0109 — Aberturas e interação em tempo real (M2 e M4)**
+Data: 2026-11-21 · Sessão: S06 · Autor: Responsável · Categoria: Interface / Produto
+Decisão:
+- O M1 decide cômodos, não portas: parede comum de 900 mm ou mais é passagem possível.
+- As observações de portas e trajetos feitas nas conferências ficam guardadas para as etapas de aberturas (design 23.2). A ordem é portas e passagens primeiro, janelas depois, pensando em iluminação e ventilação cruzada.
+- A interação do M2 em diante (design 23.3):
+  - portas surgindo com a parede sumindo na largura da porta;
+  - sugestões do algoritmo em outra cor;
+  - botão "aceitar tudo";
+  - retângulo da porta que acompanha o mouse e gruda nos pontos sugeridos;
+  - porta em ponto próximo ou não sugerido.
+- A configurabilidade em tempo real é fundamental no projeto.
+Status: Aprovada (detalhe no design do M2 e do M4).
+
+**DEC-0110 — Fluxo de branches guiado pelo agente**
+Data: 2026-11-21 · Sessão: S06 · Autor: Responsável · Categoria: Processo
+Decisão: em toda rodada com git, o agente diz em que branch se trabalha. Ele faz `git add`/`git commit` no branch certo e entrega o comando exato de push com o remoto (`origin`). Também avisa quando é hora do PR, com título, texto e link. Branches empilhados são explicados com a ordem de merge.
+Status: Aprovada.
+
+### Pendências abertas (S06) — atualização
+
+- **Responsável, no próximo prompt:** conferir as plantas novas (`out/calibration/basic-program`, `small-lot`, `three-bedroom`, `large-house`), comparando com as observações da S06 e com as plantas antigas, e listar as melhorias e as pioras.
+- Responsável: abrir e integrar o PR de `feat/m1-1-calibration`, e depois o de `feat/m1-1-layout-rules`.
+- Responsável: aprovar ou vetar as DEC-0099 a DEC-0101, DEC-0103 a DEC-0107.
+- Reprodutibilidade do CP-SAT quando a busca para pelo limite (DEC-0101). Nesta rodada a suíte passou inteira.
+- Área do lote pequeno (0,73–0,76) com o teto de 2,0 ×.
+- M1.2: design, promoção dos dados da D2 e verificação "cabe?".

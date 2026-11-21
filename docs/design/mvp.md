@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.4 · Criado em: 2026-11-11 · Atualizado em: 2026-11-16 · Status: **conteúdo aprovado até a seção 20; seção 21 (calibração do M1.1 e função da circulação) aguarda aprovação do responsável**
+Versão: 1.5 · Criado em: 2026-11-11 · Atualizado em: 2026-11-19 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06) aguarda aprovação do responsável**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -407,3 +407,96 @@ Sem circulação no programa, vale a regra antiga: o privativo abre para qualque
 - Compacidade de **0,97 a 1,00** nos 5 pedidos de referência (antes: 0,79 a 0,98) e área de 0,80 a 0,89 (antes: 0,60 a 0,96), sem cômodo acima de 1,5 vez o alvo.
 - **Tempo:** 1 a 15 s por resolução; 26 a 111 s para 4 alternativas (máquina livre). A meta da seção 8 (~5 s e ~20 s) **não é atingida**; fica como pendência para o M2, onde a transmissão de soluções parciais muda o que o usuário percebe.
 - No programa mínimo a área piorou (0,96 → 0,88): a malha alinha cômodos pequenos com os grandes e eles crescem até o teto. Detalhes no relatório.
+
+## 22. Regras da conferência visual do responsável (S06, DEC-0099 a DEC-0102 e DEC-0106 a DEC-0108)
+
+Contexto: o responsável conferiu as 16 plantas da calibração (4 pedidos × 4 alternativas), imaginando por onde as pessoas entrariam e circulariam. As regras abaixo traduzem as observações dele. **[Regras formuladas pelo Agente a partir das observações; aguardam aprovação.]**
+
+**Princípio (DEC-0108, do responsável):** norma e lei são **referência**, não teto. Nenhuma regra do gerador é mais rígida que a lei por padrão. O que a lei não exige, ou exige só em alguns municípios, vira **critério de nota** ou **sugestão** que o usuário avalia, e o usuário pode apertar ou afrouxar o rigor. O gerador deve achar a solução mais inteligente e oferecer opções, sem tratar nenhuma preferência como verdade absoluta.
+
+### 22.1 Zoneamento: por onde se chega à circulação (DEC-0107, substitui a DEC-0097)
+
+- É **critério de nota** (`zoning`, peso 2), não proibição.
+- Cada circulação e cada cômodo de uso concentrado (escritório, home theater) vale o maior `access_hub` entre os cômodos com que tem passagem:
+  - sala de estar, sala de jantar, hall e sala íntima valem **1**;
+  - cozinha e copa valem **0,5**: é aceitável, e o responsável aceita a cozinha grande como ponte;
+  - área de serviço e os demais valem **0**.
+- Para o escritório, a circulação também vale 1. Sem nenhum cômodo de acesso no programa, o critério não entra.
+- `access_hub` é preferência de projeto [X], registrada no catálogo.
+- **Futuro (M2):** o usuário ajusta essas preferências em tempo real; o valor da cozinha pode crescer com a área dela.
+
+### 22.2 Janelas em níveis (DEC-0106, substitui a DEC-0098)
+
+O catálogo diz, com fonte, quanto cada tipo precisa de janela para o exterior (`window_need`):
+
+| Nível | Tipos | Fonte | Comportamento padrão |
+|---|---|---|---|
+| obrigatória | sala, quarto, quarto de solteiro | MCMV 725: janela de sala e dormitório não pode dar para poço | restrição |
+| preferida | cozinha, banheiro, lavabo, área de serviço, escritório | códigos municipais (DF, Porto Alegre) pedem abertura, mas aceitam duto ou meio mecânico para banheiro, lavabo e serviço | critério de nota (`ventilation`, peso 1) e aviso |
+| nenhuma | closet, circulação, despensa, depósito, hall e o resto | nenhuma fonte exige | nada |
+
+- **Aviso:** um cômodo "preferida" sem parede externa recebe a sugestão "duto, poço ou claraboia" para o usuário avaliar. Um banheiro bem encaixado no meio de uma casa de médio ou alto padrão pode ser a melhor solução.
+- O lavabo sem chuveiro segue a mesma regra: abertura para uma área mais interna é aceitável.
+- **Rigor no pedido** (`window_rule`):
+  - `default`: a tabela acima;
+  - `strict`: toda janela pedida vira restrição;
+  - `relaxed`: nenhuma vira, e o usuário assume a solução.
+
+### 22.3 Retângulo antes de recorte (DEC-0099)
+
+- Observação: o "buraco" no lote pequeno é "área perdida que poderia ser um banheiro maior, quarto maior", e dificulta a obra.
+- O gerador tenta, em ordem:
+  1. retângulo cheio com o teto de área de 1,5 × o alvo;
+  2. retângulo cheio com teto de 2,0 ×;
+  3. só então recortes de borda (L, T, degrau).
+- Cada tentativa só roda se a anterior for **provada** inviável.
+
+### 22.4 Espelho nunca é alternativa (DEC-0100)
+
+Duas alternativas que são o espelho uma da outra pareceram repetidas ao responsável, mesmo com a casa encostada num lado só. O espelho passa a ser proibido sempre (substitui o item 3 da seção 21.3).
+
+### 22.5 Tempo de busca (DEC-0101)
+
+O limite da fase 1 passa a 20 unidades determinísticas. Pedidos pequenos param antes, ao provar o ótimo. A casa de 12 cômodos precisava do tempo extra: com o limite de 4, saía uma "casa-corredor" de 15 m de circulação, com nota 0,77; com 20, a nota sobe para 0,88 e a circulação cai para 6,9 m².
+
+**Reprodutibilidade limitada (achado da S06).** Quando a busca para pelo limite de tempo, sem provar o ótimo, o CP-SAT paralelo (8 estratégias intercaladas) pode devolver plantas diferentes em execuções diferentes, mesmo com o mesmo modelo, a mesma semente e os mesmos parâmetros. Na casa grande, o mesmo modelo deu objetivos de 4,21 a 4,85 em 3 execuções. Com limite 6, as execuções saíram idênticas. A promessa "mesma semente, mesma planta" vale, por enquanto, só para pedidos em que a busca prova o ótimo. Fica como pendência a investigar (uma estratégia só é reprodutível, mas pior).
+
+### 22.6 Segunda porta externa, para o M4 (DEC-0102)
+
+- Observação do responsável: as casas maiores ganham com uma segunda porta para a área externa.
+- O MCMV (Portaria 725/2023) exige duas portas de acesso na casa: uma na sala e outra de serviço, na cozinha ou na área de serviço.
+- A regra entra com as aberturas no M4. A regra 22.2 já favorece (como preferência) a parede externa da cozinha e da área de serviço, onde essa porta cabe.
+
+## 23. Aberturas e interação com o usuário (M2 e M4, DEC-0109)
+
+### 23.1 O que o M1 garante e o que fica para depois
+
+- O M1 decide **cômodos**, não portas. Uma parede comum de pelo menos 900 mm entre dois cômodos é uma **passagem possível**, não uma porta.
+- As regras de acesso (circulação, suíte, banheiro social, zoneamento) garantem que existam boas posições de porta. A escolha das portas fica para a etapa de aberturas.
+- Isso evita que preferências de porta "vazem" para o gerador de cômodos como restrições escondidas.
+
+### 23.2 Observações do responsável guardadas para as aberturas
+
+Nas conferências da S06, o responsável imaginou portas e trajetos. O que ele indicou entra como ponto de partida das etapas de aberturas:
+
+1. **Entrada principal pela sala** e, nas casas maiores, uma **segunda porta externa** de serviço pela cozinha ou área de serviço (DEC-0102; o MCMV exige duas portas de acesso).
+2. **Quartos e banheiro social pela circulação**, e a circulação pela sala. A cozinha como ponte é aceitável quando é grande.
+3. **A porta não precisa ser centralizada**: perto do canto, ela encurta o corredor. Um corredor não precisa ir até o fim da casa, e o último quarto pode ser mais largo e abrir no fim do corredor.
+4. **Escritório:** perto da sala, ele recebe visitas e clientes; perto dos quartos, fica mais íntimo. As duas opções são válidas e o usuário escolhe. Nunca só pelo closet ou pela área de serviço.
+5. **Banheiro de suíte versus social:** o mesmo banheiro pode abrir para o quarto (suíte) ou para a circulação (social). É uma escolha da etapa de portas, que o usuário deve poder alternar.
+6. **Ordem das etapas:** primeiro portas e passagens abertas (circulação interna); depois janelas, pensando em iluminação, ventilação e ventilação cruzada entre janelas e portas ou passagens.
+
+### 23.3 Interação em tempo real (fundamental no projeto)
+
+Pedido do responsável para o M2 e as etapas seguintes. A interação é o centro da experiência, não um detalhe de interface.
+
+- **Portas surgindo:** depois de escolher a planta, o usuário vê as portas e passagens aparecerem. A parede "some" visualmente na largura de cada porta.
+- **Sugestões do algoritmo** aparecem em outra cor em todas as posições recomendadas.
+- **Aceitar tudo:** um botão acata de uma vez todas as sugestões, sem clicar em cada uma.
+- **Colocar uma porta:**
+  - com o mouse sobre uma parede, aparece um retângulo na largura da porta, que acompanha o cursor;
+  - perto de um ponto sugerido, o retângulo **gruda** (snap) nele;
+  - ao clicar, a porta se abre em tempo real.
+
+  O usuário pode escolher o ponto sugerido, um ponto próximo ou um lugar que o algoritmo não sugeriu, criando passagens novas.
+- **Configuração em tempo real** também para a disposição dos cômodos e a escolha entre plantas (seções 4.3, 4.4 e 11). As preferências do usuário, como o rigor das janelas (22.2) e o peso do zoneamento (22.1), mudam a geração ao vivo.
