@@ -14,7 +14,7 @@ def _write(tmp_path, body):
 
 def test_default_catalog_loads():
     catalog = load_catalog()
-    assert catalog.version == "0.2"
+    assert catalog.version == "0.3"
     assert {"sala", "cozinha", "quarto", "banheiro", "closet", "circulacao", "lavanderia"} <= set(catalog.types)
 
 
@@ -106,3 +106,18 @@ def test_comfort_range_not_below_minimum():
 
 def test_patio_is_exterior():
     assert load_catalog().get("patio").exterior
+
+
+def test_window_need_follows_sources():
+    # design 22.2 (revisto na S06): janela obrigatória só com fonte federal; o resto é preferência
+    c = load_catalog()
+    assert c.get("sala").window_need == "required" and c.get("quarto").window_need == "required"
+    assert c.get("banheiro").window_need == "preferred" and c.get("lavabo").window_need == "preferred"
+    assert c.get("closet").window_need is None and c.get("circulacao").window_need is None
+
+
+def test_access_hub_ranks_living_rooms_over_kitchen():
+    # design 22.1 (revisto na S06): chegar à circulação pela sala é o natural; pela cozinha, aceitável
+    c = load_catalog()
+    assert c.get("sala").access_hub == 1.0 and c.get("cozinha").access_hub == 0.5
+    assert c.get("lavanderia").access_hub is None

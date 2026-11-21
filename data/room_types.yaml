@@ -3,8 +3,11 @@
 # Perfil padrão: "piso nacional" = o mais exigente entre NBR 15575-1 (anexo) e MCMV quando ambos existem.
 # Não há área mínima nacional por cômodo (a NBR não fixa): `min_area_m2` só existe quando há fonte;
 # `comfort_area_m2` alimenta a área-alvo do gerador. Pesquisa: docs/research/Dados de referência para plantas.md
-version: "0.2"
-updated: "2026-11-11"
+# `window_need` (D2): required só com fonte federal (MCMV: sala e dormitórios não ventilam por poço);
+# preferred = código municipal pede janela, mas duto, poço ou claraboia são aceitos em algum lugar (DEC-0106).
+# `access_hub` é preferência de projeto [X] (DEC-0107), não dado de norma.
+version: "0.3"
+updated: "2026-11-21"
 types:
   # --- social ---
   - id: sala
@@ -16,21 +19,25 @@ types:
     stay: prolonged
     min_width_mm: 2400
     comfort_area_m2: [10.5, 15.0]
-    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, stay: df-seduh}
+    window_need: required
+    access_hub: 1.0
+    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, stay: df-seduh, window_need: mcmv-725-2023, access_hub: agente}
   - id: sala_jantar
     name: Sala de jantar
     zone: social
     passage: traversable
     stay: prolonged
     min_width_mm: 2400
-    sources: {min_width_mm: nbr15575-1-anexo, stay: df-seduh}
+    access_hub: 1.0
+    sources: {min_width_mm: nbr15575-1-anexo, stay: df-seduh, access_hub: agente}
   - id: hall
     name: Hall de entrada
     zone: social
     passage: traversable
     stay: transient
     min_width_mm: 1200
-    sources: {min_width_mm: mcmv-725-2023, stay: df-seduh}
+    access_hub: 1.0
+    sources: {min_width_mm: mcmv-725-2023, stay: df-seduh, access_hub: agente}
   - id: circulacao
     name: Circulação
     description: Corredor; 1,20 m recomendado acima de 4 m de comprimento (NBR 9050).
@@ -46,7 +53,8 @@ types:
     wet: true
     stay: transient
     comfort_area_m2: [1.2, 1.7]
-    sources: {comfort_area_m2: planner5d}  # mínimos de BH (L-mun) não valem como padrão nacional (DEC-0078)
+    window_need: preferred
+    sources: {comfort_area_m2: planner5d, window_need: df-seduh}  # mínimos de BH (L-mun) não valem como padrão nacional (DEC-0078)
   - id: home_theater
     name: Home theater
     zone: social
@@ -59,7 +67,8 @@ types:
     passage: traversable
     concentrated_use: true
     stay: prolonged
-    sources: {stay: poa-lc284}
+    window_need: preferred
+    sources: {stay: poa-lc284, window_need: poa-lc284}
   - id: varanda
     name: Varanda
     zone: social
@@ -92,7 +101,8 @@ types:
     min_width_mm: 2400
     min_area_m2: 7.6
     comfort_area_m2: [10.0, 14.0]
-    sources: {min_width_mm: mcmv-espec-2017, min_area_m2: giro-2021, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, suite_access: poa-lc284}
+    window_need: required
+    sources: {min_width_mm: mcmv-espec-2017, min_area_m2: giro-2021, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, suite_access: poa-lc284, window_need: mcmv-725-2023}
   - id: quarto_solteiro
     name: Quarto de solteiro
     zone: intima
@@ -103,7 +113,8 @@ types:
     min_width_mm: 2100
     min_area_m2: 6.0
     comfort_area_m2: [6.0, 8.0]
-    sources: {min_width_mm: logsdon-2019, min_area_m2: logsdon-2019, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018}
+    window_need: required
+    sources: {min_width_mm: logsdon-2019, min_area_m2: logsdon-2019, comfort_area_m2: logsdon-2019, sun: gbc-projeteee-2018, window_need: mcmv-725-2023}
   - id: closet
     name: Closet
     description: Quarto de vestir, anexo da suíte.
@@ -123,7 +134,8 @@ types:
     stay: transient
     min_width_mm: 1500
     comfort_area_m2: [2.4, 4.2]
-    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023}
+    window_need: preferred
+    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, window_need: df-seduh}
   - id: rouparia
     name: Rouparia
     zone: intima
@@ -134,6 +146,8 @@ types:
     zone: intima
     passage: traversable
     stay: prolonged
+    access_hub: 1.0
+    sources: {access_hub: agente}
   - id: brinquedoteca
     name: Brinquedoteca
     zone: intima
@@ -149,14 +163,17 @@ types:
     stay: prolonged
     min_width_mm: 1800
     comfort_area_m2: [3.6, 10.0]
-    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, stay: df-seduh}
+    window_need: preferred
+    access_hub: 0.5
+    sources: {min_width_mm: mcmv-725-2023, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, stay: df-seduh, window_need: df-seduh, access_hub: agente}
   - id: copa
     name: Copa
     zone: servico
     passage: traversable
     stay: prolonged
     min_width_mm: 2400
-    sources: {min_width_mm: nbr15575-1-anexo}
+    access_hub: 0.5
+    sources: {min_width_mm: nbr15575-1-anexo, access_hub: agente}
   - id: lavanderia
     name: Área de serviço / lavanderia
     zone: servico
@@ -165,7 +182,8 @@ types:
     stay: prolonged
     min_width_mm: 1800
     comfort_area_m2: [2.1, 5.4]
-    sources: {min_width_mm: mcmv-espec-2017, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, stay: df-seduh}
+    window_need: preferred
+    sources: {min_width_mm: mcmv-espec-2017, comfort_area_m2: logsdon-2019, wet: mcmv-725-2023, stay: df-seduh, window_need: df-seduh}
   - id: despensa
     name: Despensa
     zone: servico
