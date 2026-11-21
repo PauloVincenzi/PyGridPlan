@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 from pygridplan.model.sources import DATA_DIR, DEFAULT_SOURCES_PATH, check_sourced, load_sources
 
 DEFAULT_CATALOG_PATH = DATA_DIR / "room_types.yaml"
-SOURCED_FIELDS = ("min_width_mm", "min_area_m2", "comfort_area_m2")
+SOURCED_FIELDS = ("min_width_mm", "min_area_m2", "comfort_area_m2", "window_need", "access_hub")
 
 
 class RoomType(BaseModel):
@@ -26,6 +26,10 @@ class RoomType(BaseModel):
     exterior: bool = False  # fora do envelope fechado (varanda, abrigo, gourmet)
     concentrated_use: bool = False  # atravessar custa mais (design 5.5)
     stay: Literal["prolonged", "transient"] | None = None  # permanência (iluminação/ventilação)
+    # janela para o exterior (design 22.2): obrigatória (fonte federal) ou preferida (duto, poço ou claraboia servem)
+    window_need: Literal["required", "preferred"] | None = None
+    # quão natural é chegar à circulação ou a um cômodo de uso concentrado passando por este (0–1; design 22.1)
+    access_hub: float | None = None
     min_width_mm: int | None = None
     min_area_m2: float | None = None
     comfort_area_m2: tuple[float, float] | None = None

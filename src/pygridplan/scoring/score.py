@@ -5,12 +5,12 @@ from pydantic import BaseModel, ConfigDict
 from pygridplan.model.catalog import Catalog
 from pygridplan.model.plan import Plan, Rect
 from pygridplan.model.request import RoomRequest, Request
-from pygridplan.model.walls import useful_area_mm2
+from pygridplan.model.walls import exterior_sides, useful_area_mm2
 from pygridplan.validation.access import MIN_PASSAGE_MM, passages
 
 # fonte única dos pesos: a nota e o objetivo do solver usam estes valores
 WEIGHTS = {"relations": 3.0, "area_fit": 2.0, "compactness": 3.0, "circulation": 1.0, "solar": 1.0,
-           "wet_grouping": 0.5, "alignment": 1.0}
+           "wet_grouping": 0.5, "alignment": 1.0, "zoning": 2.0, "ventilation": 1.0}
 DEFAULT_TARGET_FACTOR = 1.25
 CIRCULATION_TYPE = "circulacao"
 
@@ -101,6 +101,14 @@ def score_plan(plan: Plan, request: Request, catalog: Catalog) -> Score:
         grouped = [w for w in wet if any(frozenset((w, o)) in adjacent for o in wet if o != w)]
         values["wet_grouping"] = len(grouped) / len(wet)
 
+    zoning = zoning_value(plan, catalog, adjacent)
+    if zoning is not None:
+        values["zoning"] = zoning
+
+    needing = [r for r in plan.rooms if catalog.get(r.type).window_need]
+    if needing:
+        values["ventilation"] = sum(bool(exterior_sides(r, plan)) for r in needing) / len(needing)
+
     alignment = _alignment(plan, adjacent)
     if alignment is not None:
         values["alignment"] = alignment
@@ -129,6 +137,24 @@ def _circulation(plan: Plan, catalog: Catalog, adjacent: set[frozenset[str]],
             need.append(r.id)
     served = sum(any(frozenset((rid, hall)) in adjacent for hall in halls) for rid in need) / len(need) if need else 1.0
     return served * _clip(1 - sum(useful[hall] for hall in halls) / sum(useful.values()))
+
+
+def zoning_value(plan: Plan, catalog: Catalog, adjacent: set[frozenset[str]]) -> float | None:
+    """Zoneamento (design 22.1): por onde se chega à circulação e aos cômodos de uso concentrado.
+
+    Cada um vale o maior `access_hub` entre os vizinhos com passagem (sala 1, cozinha 0,5, área de serviço 0);
+    para os de uso concentrado, a circulação também vale 1. Sem cômodo de acesso no programa, não se aplica.
+    """
+    hub = {r.id: catalog.get(r.type).access_hub or 0.0 for r in plan.rooms}
+    halls = {r.id for r in plan.rooms if r.type == CIRCULATION_TYPE}
+    items = list(halls) + [r.id for r in plan.rooms if catalog.get(r.type).concentrated_use]
+    if not items or not any(hub.values()):
+        return None
+    credits = []
+    for item in items:
+        near = [o for o in hub if o != item and frozenset((item, o)) in adjacent]
+        credits.append(max([1.0 if o in halls and item not in halls else hub[o] for o in near], default=0.0))
+    return sum(credits) / len(credits)
 
 
 def _alignment(plan: Plan, adjacent: set[frozenset[str]]) -> float | None:

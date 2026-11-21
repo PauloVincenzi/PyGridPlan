@@ -14,13 +14,13 @@ sources:
     accessed: "2026-11-11"
     note: "Cópia do Anexo G (ed. 2013) publicada pela UNMP; anexo informativo. A norma não fixa área mínima de cômodo."
   - id: mcmv-725-2023
-    title: "Portaria MCID nº 725/2023, compilada até a Portaria 335/2026 (MCMV)"
+    title: "Portaria MCID nº 725/2023, compilada até a Portaria 1.079/2026 (MCMV)"
     org: Ministério das Cidades
     year: 2026
     url: https://www.gov.br/cidades/pt-br/acesso-a-informacao/institucional/base-juridica/portarias/2023/Port.MCIDn725_2023COMPILADA.pdf
     kind: F
-    accessed: "2026-11-11"
-    note: "Obrigatória só para empreendimentos do programa."
+    accessed: "2026-11-19"
+    note: "Obrigatória só para empreendimentos do programa. Anexo III: portas 0,80 × 2,10 e duas portas de acesso na casa; Anexo II 4.III.b: janelas de sala e dormitório não podem dar para poço (trilha D2)."
   - id: mcmv-espec-2017
     title: "Especificação Mínima CAIXA para UH PMCMV, versão 07"
     org: CAIXA
@@ -51,7 +51,7 @@ sources:
     url: https://www.seduh.df.gov.br/documents/8133848/9838674/ANEXOS-Lei-n%25C2%25BA-6138-e-Decreto-n%25C2%25BA-39.272-2.pdf
     kind: L-mun
     accessed: "2026-11-11"
-    note: "Define permanência prolongada vs. transitória."
+    note: "Define permanência prolongada vs. transitória. Sala, dormitórios e cozinha: abertura 1/8 do piso; área de serviço, banheiro e lavabo: 1/10, admitindo ventilação mecânica (trilha D2)."
   - id: codigo-civil
     title: "Código Civil (Lei 10.406/2002), arts. 1.299–1.303"
     org: Presidência da República

@@ -12,7 +12,7 @@ Gerador inteligente de **plantas baixas residenciais**, que roda **offline**. Vo
 
 ## Estado atual
 
-✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** ✅ **M1.1 (forma e implantação):** casa no recuo frontal e centralizada, encosto automático em lote pequeno com marcação "sem janela", muro, 4 cores (interna seca/molhada, externa construída/verde), vazio fechado proibido. **Calibração do M1.1:** o gerador passou a usar uma malha de linhas de parede resolvida em duas fases (topologia, depois medidas); a casa sai em **bloco cheio** nos 5 pedidos de referência e a **circulação tem função** (quartos e banheiro abrem para ela). Relatório: [docs/plans/m1-1-calibration.md](docs/plans/m1-1-calibration.md). Próximo: M1.2 (mobiliário). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
+✅ **M0 (fundação)** · ✅ **D1 (dados de referência)** · ✅ **M1 (gerador CP-SAT): gera K plantas válidas e diferentes, com nota por critério, em JSON, DXF e HTML (103 testes).** ✅ **M1.1 (forma e implantação):** casa no recuo frontal e centralizada, encosto automático em lote pequeno com marcação "sem janela", muro, 4 cores (interna seca/molhada, externa construída/verde), vazio fechado proibido. **Calibração do M1.1:** o gerador passou a usar uma malha de linhas de parede resolvida em duas fases (topologia, depois medidas); a casa sai em **bloco cheio** nos 5 pedidos de referência e a **circulação tem função** (quartos e banheiro abrem para ela). Relatório: [docs/plans/m1-1-calibration.md](docs/plans/m1-1-calibration.md). **Regras da conferência visual (S06):** retângulo antes de recorte, espelho não é alternativa, janelas em níveis com fonte (obrigatória/preferida, com rigor escolhido no pedido) e zoneamento como critério de nota; norma é referência, não teto (design, seções 22 e 23). ✅ **D2 (mobiliário e folgas):** pesquisa concluída, promoção para `data/` no M1.2. Próximo: M1.2 (mobiliário). Design: [docs/design/mvp.md](docs/design/mvp.md) · Planos: [docs/plans/](docs/plans/) · Pesquisa: [docs/research/](docs/research/) · Dados: [data/README.md](data/README.md).
 Histórico completo de decisões: [DECISOES.md](DECISOES.md).
 
 ## Stack prevista
@@ -51,7 +51,7 @@ PyGridPlan/
 └── docs/
     ├── design/              design do MVP + mockups         ✅
     ├── plans/               um plano por marco              ✅
-    ├── research/            pesquisas (relatório + notas)   ✅ D1
+    ├── research/            pesquisas (relatório + notas)   ✅ D1, D2
     └── theory/              fundamentação teórica          🔜
 ```
 

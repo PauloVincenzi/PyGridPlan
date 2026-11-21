@@ -29,6 +29,9 @@ class Request(_Frozen):
     site: Site
     rooms: tuple[RoomRequest, ...] = Field(min_length=1)
     relations: tuple[Relation, ...] = ()
+    # rigor das janelas (design 22.2): "default" = obrigatória só onde a fonte é federal (sala, dormitório);
+    # "strict" = toda janela pedida é obrigatória; "relaxed" = nenhuma é (o usuário assume a solução)
+    window_rule: Literal["default", "strict", "relaxed"] = "default"
 
     @model_validator(mode="after")
     def _consistent(self) -> "Request":
