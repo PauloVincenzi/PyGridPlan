@@ -1,0 +1,31 @@
+{
+  "site": {
+    "width_mm": 15000,
+    "depth_mm": 30000,
+    "setbacks": {"front": 5000, "back": 3000, "left": 1500, "right": 1500},
+    "north": "back"
+  },
+  "rooms": [
+    {"id": "sala", "type": "sala", "target_area_m2": 20},
+    {"id": "jantar", "type": "sala_jantar", "target_area_m2": 12},
+    {"id": "cozinha", "type": "cozinha", "target_area_m2": 12},
+    {"id": "lavanderia", "type": "lavanderia"},
+    {"id": "escritorio", "type": "escritorio", "target_area_m2": 9},
+    {"id": "circulacao", "type": "circulacao"},
+    {"id": "suite", "type": "quarto", "target_area_m2": 14},
+    {"id": "closet", "type": "closet"},
+    {"id": "banho_suite", "type": "banheiro"},
+    {"id": "quarto2", "type": "quarto"},
+    {"id": "quarto3", "type": "quarto"},
+    {"id": "banheiro", "type": "banheiro"}
+  ],
+  "relations": [
+    {"a": "jantar", "b": "sala", "kind": "near", "intensity": 5},
+    {"a": "cozinha", "b": "jantar", "kind": "near", "intensity": 4},
+    {"a": "lavanderia", "b": "cozinha", "kind": "near", "intensity": 4},
+    {"a": "closet", "b": "suite", "kind": "near", "intensity": 5},
+    {"a": "banho_suite", "b": "closet", "kind": "near", "intensity": 4},
+    {"a": "banheiro", "b": "circulacao", "kind": "near", "intensity": 3},
+    {"a": "escritorio", "b": "suite", "kind": "far", "intensity": 2}
+  ]
+}

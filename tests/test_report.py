@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from pygridplan.__main__ import main
 from pygridplan.export.report import write_report
 from pygridplan.export.svg import plan_to_svg
@@ -31,24 +33,27 @@ def test_report_has_one_svg_per_alternative(basic_house, tmp_path):
     assert "Compacidade" in html
 
 
+@pytest.mark.slow
 def test_cli_generate_writes_files(tmp_path, capsys):
     out = tmp_path / "m1"
-    assert main(["generate", str(BASIC_PROGRAM), str(out), "--k", "2", "--time-limit", "0.5"]) == 0
+    assert main(["generate", str(BASIC_PROGRAM), str(out), "--k", "2"]) == 0
     for name in ("alt-1.json", "alt-1.dxf", "alt-2.json", "alt-2.dxf", "report.html"):
         assert (out / name).exists(), name
     assert len(load_plan(out / "alt-1.json").rooms) == 8
     assert "alt-1" in capsys.readouterr().out
 
 
+@pytest.mark.slow
 def test_cli_generate_reports_error(tmp_path, capsys):
     request = {"site": {"width_mm": 5000, "depth_mm": 5000},
                "rooms": [{"id": "s", "type": "sala"}, {"id": "q1", "type": "quarto"}, {"id": "q2", "type": "quarto"}]}
     path = tmp_path / "big.json"
     path.write_text(json.dumps(request), encoding="utf-8")
-    assert main(["generate", str(path), str(tmp_path / "o"), "--time-limit", "0.5"]) == 1
+    assert main(["generate", str(path), str(tmp_path / "o")]) == 1
     assert "caber" in capsys.readouterr().err
 
 
+@pytest.mark.slow
 def test_cli_survives_windows_cp1252_console(tmp_path):
     import os
     import subprocess
@@ -60,7 +65,7 @@ def test_cli_survives_windows_cp1252_console(tmp_path):
     path.write_text(json.dumps(request), encoding="utf-8")
     env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
     run = subprocess.run([sys.executable, "-m", "pygridplan", "generate", str(path), str(tmp_path / "o"),
-                          "--k", "1", "--time-limit", "0.5"], capture_output=True, env=env)
+                          "--k", "1"], capture_output=True, env=env)
     assert b"Traceback" not in run.stderr
     assert run.returncode == 0
 

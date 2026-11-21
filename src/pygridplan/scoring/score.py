@@ -84,8 +84,9 @@ def score_plan(plan: Plan, request: Request, catalog: Catalog) -> Score:
         values["area_fit"] = _clip(1 - sum(fits) / len(fits))
 
     values["compactness"] = sum(r.rect.area_mm2 for r in plan.rooms) / box.area_mm2
-    circulation = sum(useful[r.id] for r in plan.rooms if r.type == CIRCULATION_TYPE)
-    values["circulation"] = _clip(1 - circulation / sum(useful.values()))
+    circulation = _circulation(plan, catalog, adjacent, useful)
+    if circulation is not None:
+        values["circulation"] = circulation
 
     sunny = [r for r in plan.rooms if catalog.get(r.type).sun]
     if request.site.north and sunny:
@@ -107,6 +108,27 @@ def score_plan(plan: Plan, request: Request, catalog: Catalog) -> Score:
     criteria = tuple(Criterion(name=n, value=v, weight=WEIGHTS[n]) for n, v in values.items())
     total = sum(c.value * c.weight for c in criteria) / sum(c.weight for c in criteria)
     return Score(total=total, criteria=criteria)
+
+
+def _circulation(plan: Plan, catalog: Catalog, adjacent: set[frozenset[str]],
+                 useful: dict[str, float]) -> float | None:
+    """Função x economia da circulação (design 21.2); sem cômodo de circulação o critério não se aplica.
+
+    Função: fração dos privativos da zona íntima que abrem para a circulação. Quem abre para a própria
+    suíte (closet, banheiro de suíte) não entra na conta. Economia: 1 − área de circulação / área útil total.
+    """
+    halls = [r.id for r in plan.rooms if r.type == CIRCULATION_TYPE]
+    if not halls:
+        return None
+    need = []
+    for r in plan.rooms:
+        kind = catalog.get(r.type)
+        in_suite = any(r.type in catalog.get(o.type).suite_access and frozenset((r.id, o.id)) in adjacent
+                       for o in plan.rooms)
+        if kind.passage == "private" and kind.zone == "intima" and not in_suite:
+            need.append(r.id)
+    served = sum(any(frozenset((rid, hall)) in adjacent for hall in halls) for rid in need) / len(need) if need else 1.0
+    return served * _clip(1 - sum(useful[hall] for hall in halls) / sum(useful.values()))
 
 
 def _alignment(plan: Plan, adjacent: set[frozenset[str]]) -> float | None:

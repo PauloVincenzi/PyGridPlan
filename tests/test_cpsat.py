@@ -1,6 +1,6 @@
 import pytest
 
-from pygridplan.generators.cpsat import solve_layout
+from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT as TIME, solve_layout
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import Site
 from pygridplan.model.request import Request, RoomRequest, load_request
@@ -8,7 +8,7 @@ from pygridplan.scoring.diversity import plan_distance, relative_pattern
 from pygridplan.validation.checks import check_recommendations, validate_geometry
 from test_request import BASIC_PROGRAM
 
-TIME = 0.5
+pytestmark = pytest.mark.slow  # roda o solver: fora da suíte rápida (pytest -m "not slow")
 
 
 @pytest.fixture(scope="module")
@@ -105,8 +105,6 @@ def test_attached_left_touches_left_bound():
     assert min(r.rect.x for r in plan.rooms) == 100
 
 
-@pytest.mark.xfail(reason="calibração área x forma pendente (DEC-0087): com a trava de área a compacidade "
-                          "caiu para ~0,89; meta do design 20.1 é bloco cheio", strict=False)
 def test_generated_house_is_compact(solved):
     from pygridplan.scoring.score import score_plan
 
@@ -133,13 +131,84 @@ def test_rooms_without_target_do_not_inflate():
     plan = solve_layout(request, load_catalog(), time_limit=TIME)
     from pygridplan.model.walls import useful_area_mm2
 
-    for rid in ("hall", "sala_jantar"):
+    # "não inchou" = menos que o dobro do menor cômodo possível (largura mínima ao quadrado); critério
+    # próprio deste teste (DEC-0095). Antes da correção do M1.1 a sala de jantar chegava a 20 m²; na malha o
+    # hall sai com 1,4 x 2,0 m no eixo (2,4 m²) por acompanhar as linhas dos vizinhos
+    for rid, min_width_m in (("hall", 1.2), ("sala_jantar", 2.4)):
         room = next(r for r in plan.rooms if r.id == rid)
-        assert useful_area_mm2(room, plan) / 1e6 < 8.0, rid
+        assert useful_area_mm2(room, plan) / 1e6 < 2 * min_width_m**2, rid
+
+
+def test_intimate_rooms_open_to_the_circulation(solved):
+    # a circulação tem função (design 21.2): quartos e banheiro abrem para ela ou para a própria suíte
+    from pygridplan.validation.access import MIN_PASSAGE_MM, passages
+
+    _, catalog, plan = solved
+    touching = {frozenset(pair) for pair, length in passages(plan).items() if length >= MIN_PASSAGE_MM}
+    kinds = {r.id: catalog.get(r.type) for r in plan.rooms}
+    for room in plan.rooms:
+        if kinds[room.id].passage == "private" and kinds[room.id].zone == "intima":
+            hosts = [o.id for o in plan.rooms if frozenset((room.id, o.id)) in touching
+                     and (o.type == "circulacao" or room.type in kinds[o.id].suite_access)]
+            assert hosts, room.id
+
+
+def test_circulation_is_a_narrow_strip_linking_rooms(solved):
+    from pygridplan.validation.access import MIN_PASSAGE_MM, passages
+
+    _, _, plan = solved
+    hall = next(r for r in plan.rooms if r.type == "circulacao")
+    assert min(hall.rect.w, hall.rect.h) <= 1500
+    linked = [pair for pair, length in passages(plan).items() if hall.id in pair and length >= MIN_PASSAGE_MM]
+    assert len(linked) >= 2
+
+
+def test_entrance_is_not_through_the_circulation(solved):
+    _, catalog, plan = solved
+    front = min(r.rect.y for r in plan.rooms)
+    assert any(r.rect.y == front and r.type != "circulacao" and catalog.get(r.type).passage == "traversable"
+               for r in plan.rooms)
+
+
+def test_rooms_are_not_too_elongated(solved):
+    _, _, plan = solved
+    for r in plan.rooms:
+        if r.type != "circulacao":
+            assert max(r.rect.w, r.rect.h) <= 2.5 * min(r.rect.w, r.rect.h), r.id
+
+
+REQUESTS = BASIC_PROGRAM.parent
+
+
+@pytest.mark.parametrize("name,attached", [("one-bedroom", ()), ("small-lot", ("left",)), ("basic-program", ()),
+                                           ("three-bedroom", ()), ("large-house", ())])
+def test_benchmark_requests_give_full_block_with_sane_areas(name, attached):
+    # metas da calibração (DEC-0087/0089): bloco cheio, áreas perto do alvo, planta válida
+    from pygridplan.scoring.score import score_plan
+    from pygridplan.validation.access import check_access
+
+    request, catalog = load_request(REQUESTS / f"{name}.json"), load_catalog()
+    request = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(attached)})})
+    plan = solve_layout(request, catalog, time_limit=TIME)
+    assert plan is not None
+    assert validate_geometry(plan) == [] and check_access(plan, catalog) == []
+    criteria = {c.name: c.value for c in score_plan(plan, request, catalog).criteria}
+    assert criteria["compactness"] >= 0.95
+    assert criteria["area_fit"] >= 0.75
 
 
 def test_tiny_explicit_target_stays_feasible():
-    # alvo pedido abaixo do mínimo da sala (largura 2,40 m): a trava de 1,8 x alvo não pode inviabilizar
+    # alvo pedido abaixo do mínimo da sala (largura 2,40 m): a janela de área (0,7 a 1,5 x) não pode inviabilizar
     rooms = (RoomRequest(id="sala", type="sala", target_area_m2=2.0), RoomRequest(id="cozinha", type="cozinha"))
     plan = solve_layout(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(), time_limit=TIME)
     assert plan is not None
+
+
+def test_unreachable_target_explains_requested_areas():
+    # alvo pedido maior que o lote: a mensagem soma os pisos de área que o gerador exige, não só os mínimos
+    from pygridplan.generators.cpsat import GenerationError, generate_alternatives
+
+    rooms = (RoomRequest(id="sala", type="sala", target_area_m2=500), RoomRequest(id="cozinha", type="cozinha"))
+    with pytest.raises(GenerationError, match="áreas pedidas"):
+        generate_alternatives(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(),
+                              time_limit=TIME)

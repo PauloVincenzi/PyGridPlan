@@ -43,3 +43,11 @@ def test_left_to_right_is_a_real_difference():
     a = _plan(Rect(x=0, y=0, w=1000, h=1000), Rect(x=2000, y=0, w=1000, h=1000))
     b = _plan(Rect(x=2000, y=0, w=1000, h=1000), Rect(x=0, y=0, w=1000, h=1000))
     assert plan_distance(a, b) == 1.0
+
+
+def test_mirrored_pattern_matches_the_mirrored_plan():
+    from pygridplan.scoring.diversity import mirrored
+
+    plan = _plan(Rect(x=0, y=0, w=1000, h=1000), Rect(x=1000, y=0, w=2000, h=1000), Rect(x=0, y=1000, w=3000, h=1000))
+    flipped = _plan(Rect(x=2000, y=0, w=1000, h=1000), Rect(x=0, y=0, w=2000, h=1000), Rect(x=0, y=1000, w=3000, h=1000))
+    assert mirrored(relative_pattern(plan)) == relative_pattern(flipped)

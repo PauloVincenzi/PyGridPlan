@@ -1,6 +1,9 @@
-"""Gerador CP-SAT da etapa 1: posição e tamanho dos cômodos na grade (design 8).
+"""Gerador CP-SAT da etapa 1: posição e tamanho dos cômodos (design 8 e 21).
 
-Variáveis em unidades de grade (GRID mm). Formulação fixada em docs/plans/m1-cpsat-generator.md (Tarefa 5).
+Formulação por malha de linhas de parede (docs/plans/m1-1-calibration.md): cada cômodo ocupa um bloco de
+células de uma malha cujas linhas têm posição variável, em múltiplos de GRID mm. Cômodos e recortes de
+borda cobrem a malha exatamente, então a casa sai em bloco cheio e com paredes alinhadas por construção.
+Resolve em duas fases: topologia (objetivo combinatório) e medidas (topologia fixa, objetivo exato).
 """
 
 import math
@@ -9,37 +12,76 @@ from collections.abc import Sequence
 from ortools.sat.python import cp_model
 from pydantic import BaseModel, ConfigDict
 
-from pygridplan.model.catalog import Catalog
+from pygridplan.model.catalog import Catalog, RoomType
 from pygridplan.model.plan import Plan, Rect, Room
 from pygridplan.model.request import Request
 from pygridplan.model.site_defaults import SiteDefaults, load_site_defaults
-from pygridplan.scoring.diversity import Pattern, relative_pattern
+from pygridplan.scoring.diversity import Pattern, mirrored, relative_pattern
 from pygridplan.scoring.score import CIRCULATION_TYPE, WEIGHTS, Score, room_target_m2, score_plan
 from pygridplan.validation.access import MIN_PASSAGE_MM, check_access
 from pygridplan.validation.checks import Issue, check_recommendations, validate_geometry
 from pygridplan.validation.site import check_site
 
 GRID = 100
-# vazio custa menos por m² que errar área: compacta movendo cômodos, não inflando (ledger M1.1)
-VOID_SCALE = 0.2
-MAX_TARGET_FACTOR = 1.8  # área aproximada (conservadora) <= 1,8 x alvo => útil real < 2 x alvo
+# constantes de calibração (DEC-0089 a DEC-0091; medições em docs/plans/m1-1-calibration.md)
+MAX_LINES = 6  # faixas da malha em cada eixo
+MAX_VOIDS = 2  # recortes de borda (casa em L, T ou degrau); vazio fechado é impossível
+MAX_TARGET_FACTOR = 1.5  # área aproximada (conservadora) <= 1,5 x alvo (ou x o menor cômodo possível, se o alvo for menor que ele)
+MIN_TARGET_FACTOR = 0.7  # e nunca abaixo de 0,7 x alvo: quem pediu 10 m² não recebe 4 m²
+MAX_ASPECT = 2.5  # lado maior <= 2,5 x lado menor (menos circulação e áreas externas)
+CORRIDOR_MAX_WIDTH_MM = 1500  # circulação é faixa: lado menor (no eixo) até 1,50 m
+AREA_WINDOW = (0.8, 1.25)  # fase 1: prêmio por ficar perto do alvo (o piso e o teto duros vêm à parte)
+VOID_FIXED, VOID_CELL = 0.6, 0.05  # fase 1: custo de existir um recorte e por célula dele (x peso da compacidade)
+VOID_SCALE = 1.0  # fase 2: o vazio custa o peso inteiro da compacidade por área
+LINE_PRICE = 0.02  # fase 1: por faixa de malha usada (menos linhas = paredes mais alinhadas)
+UNTARGETED_PRICE = 2.0  # área de circulação e de cômodo sem alvo (x peso da área)
 MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
-DEFAULT_TIME_LIMIT = 0.5  # unidades determinísticas do CP-SAT; ~4–5 s de relógio no hardware de referência
+DEFAULT_TIME_LIMIT = 4.0  # fase 1, em unidades determinísticas do CP-SAT; ~10 s de relógio no hardware de referência
+POLISH_TIME = 0.3  # fase 2
 
 
-class _Box:
-    """Variáveis de um cômodo."""
+class _Cell:
+    """Bloco de células [c1, c2) x [r1, r2) da malha; os cômodos têm também as coordenadas reais."""
 
-    def __init__(self, m: cp_model.CpModel, name: str, xr: tuple[int, int], yr: tuple[int, int],
-                 min_side: int):
-        self.x = m.new_int_var(*xr, f"x_{name}")
-        self.y = m.new_int_var(*yr, f"y_{name}")
-        self.x2 = m.new_int_var(*xr, f"x2_{name}")
-        self.y2 = m.new_int_var(*yr, f"y2_{name}")
-        self.w = m.new_int_var(min_side, xr[1] - xr[0], f"w_{name}")
-        self.h = m.new_int_var(min_side, yr[1] - yr[0], f"h_{name}")
-        self.ix = m.new_interval_var(self.x, self.w, self.x2, f"ix_{name}")
-        self.iy = m.new_interval_var(self.y, self.h, self.y2, f"iy_{name}")
+    def __init__(self, m: cp_model.CpModel, name: str, X: list[cp_model.IntVar], Y: list[cp_model.IntVar],
+                 xr: tuple[int, int], yr: tuple[int, int], present: cp_model.IntVar | None = None):
+        P, Q = len(X) - 1, len(Y) - 1
+        lo = 1 if present is None else 0
+        self.c1, self.c2 = m.new_int_var(0, P, f"c1_{name}"), m.new_int_var(0, P, f"c2_{name}")
+        self.r1, self.r2 = m.new_int_var(0, Q, f"r1_{name}"), m.new_int_var(0, Q, f"r2_{name}")
+        cw, rh = m.new_int_var(lo, P, f"cw_{name}"), m.new_int_var(lo, Q, f"rh_{name}")
+        m.add(self.c2 == self.c1 + cw)
+        m.add(self.r2 == self.r1 + rh)
+        self.cells = m.new_int_var(0, P * Q, f"n_{name}")
+        m.add_multiplication_equality(self.cells, [cw, rh])
+        if present is None:
+            self.ic = m.new_interval_var(self.c1, cw, self.c2, f"ic_{name}")
+            self.ir = m.new_interval_var(self.r1, rh, self.r2, f"ir_{name}")
+            self.x, self.x2 = m.new_int_var(*xr, f"x_{name}"), m.new_int_var(*xr, f"x2_{name}")
+            self.y, self.y2 = m.new_int_var(*yr, f"y_{name}"), m.new_int_var(*yr, f"y2_{name}")
+            m.add_element(self.c1, X, self.x)
+            m.add_element(self.c2, X, self.x2)
+            m.add_element(self.r1, Y, self.y)
+            m.add_element(self.r2, Y, self.y2)
+        else:  # recorte opcional: ausente fica na origem, com tamanho zero
+            self.ic = m.new_optional_interval_var(self.c1, cw, self.c2, present, f"ic_{name}")
+            self.ir = m.new_optional_interval_var(self.r1, rh, self.r2, present, f"ir_{name}")
+            m.add(cw >= 1).only_enforce_if(present)
+            m.add(rh >= 1).only_enforce_if(present)
+            for var in (self.c1, self.c2, self.r1, self.r2):
+                m.add(var == 0).only_enforce_if(~present)
+
+
+def _social_bath_pairs(types: Sequence[RoomType]) -> list[tuple[int, int]]:
+    """Pares (banheiro, cômodo) que tornam um banheiro social (design 21.2, item 3): basta um deles existir.
+
+    Banheiro da zona íntima abre para a circulação (ou, sem circulação, para um atravessável); o lavabo,
+    da zona social, para qualquer atravessável. Abrir só para um quarto não conta.
+    """
+    trav = [j for j, t in enumerate(types) if t.passage == "traversable"]
+    circ = [j for j in trav if types[j].id == CIRCULATION_TYPE]
+    return [(i, j) for i, t in enumerate(types) if t.passage == "private" and t.wet
+            for j in (circ if circ and t.zone == "intima" else trav)]
 
 
 def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limit: float = DEFAULT_TIME_LIMIT,
@@ -50,6 +92,21 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
 def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
            forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> tuple[Plan | None, str]:
     """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout"."""
+    plan, status, topology = _phase(request, catalog, seed, time_limit, forbidden, min_diff, None)
+    if plan is None:
+        return None, status
+    polished = _phase(request, catalog, seed, POLISH_TIME, forbidden, min_diff, topology)[0]
+    return polished or plan, "ok"
+
+
+def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, forbidden: Sequence[Pattern],
+           min_diff: int, topology: list[int] | None) -> tuple[Plan | None, str, list[int]]:
+    """Uma fase do gerador; devolve (planta, situação, índices da malha).
+
+    Sem `topology` (fase 1): escolhe quem fica onde, com objetivo combinatório (janelas de área, relações,
+    recortes). Com `topology` (fase 2): os índices ficam fixos e só as linhas se movem, com o objetivo exato.
+    """
+    topo_phase = topology is None
     site = request.site
     ext = Plan(site=site).wall_ext_mm
     e, sb, att = ext // 2, site.setbacks, site.attached_sides
@@ -58,84 +115,35 @@ def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
     yr = (math.ceil((sb.front + e) / GRID),
           (site.depth_mm - (0 if "back" in att else sb.back) - e) // GRID)
     if xr[1] <= xr[0] or yr[1] <= yr[0]:
-        return None, "infeasible"
+        return None, "infeasible", []
+    W, H = xr[1] - xr[0], yr[1] - yr[0]
 
     m = cp_model.CpModel()
     reqs = request.rooms
     types = [catalog.get(r.type) for r in reqs]
     n = len(reqs)
-    door = math.ceil(MIN_PASSAGE_MM / GRID)
-    # vão entre cômodos: 0 (encostados) ou >= uma passagem; evita paredes sobrepostas e frestas inúteis
-    gap_min = math.ceil(max(ext, MIN_PASSAGE_MM) / GRID)
+    # linhas de parede distam >= uma passagem: em toda parede comum cabe uma porta, e não há frestas nem
+    # paredes quase alinhadas
+    gap = math.ceil(max(ext, MIN_PASSAGE_MM) / GRID)
     # lado mínimo universal: cabe uma porta entre as paredes (despensa, depósito, tipos sem mínimo)
     side_min = math.ceil((MIN_PASSAGE_MM + ext) / GRID)
+    P, Q = max(1, min(MAX_LINES, n, W // gap)), max(1, min(MAX_LINES, n, H // gap))
 
-    boxes = []
-    for r, t in zip(reqs, types):
-        min_side = math.ceil(((t.min_width_mm or 0) + ext) / GRID)
-        boxes.append(_Box(m, r.id, xr, yr, max(min_side, side_min)))
-    m.add_no_overlap_2d([b.ix for b in boxes], [b.iy for b in boxes])
-
-    # área útil aproximada (conservadora: meia parede externa em todos os lados), em mm²
-    area = []
-    for b, t in zip(boxes, types):
-        uw = m.new_int_var(0, (xr[1] - xr[0]) * GRID, "")
-        uh = m.new_int_var(0, (yr[1] - yr[0]) * GRID, "")
-        m.add(uw == b.w * GRID - ext)
-        m.add(uh == b.h * GRID - ext)
-        a = m.new_int_var(0, (xr[1] - xr[0]) * (yr[1] - yr[0]) * GRID * GRID, "")
-        m.add_multiplication_equality(a, [uw, uh])
-        if t.min_area_m2:
-            m.add(a >= round(t.min_area_m2 * 1e6))
-        area.append(a)
-
-    # posições relativas reificadas (o Pattern) e vão entre paredes
-    rel: dict[tuple[int, int], tuple] = {}
-    for i in range(n):
-        for j in range(i + 1, n):
-            bi, bj = boxes[i], boxes[j]
-            lits = []
-            for lo, hi in ((bi.x2, bj.x), (bj.x2, bi.x), (bi.y2, bj.y), (bj.y2, bi.y)):
-                b = m.new_bool_var("")
-                m.add(lo <= hi).only_enforce_if(b)
-                m.add(lo > hi).only_enforce_if(~b)
-                touch = m.new_bool_var("")
-                m.add(hi == lo).only_enforce_if(touch)
-                m.add(hi - lo >= gap_min).only_enforce_if([b, ~touch])
-                lits.append(b)
-            m.add_bool_or(lits)
-            rel[(i, j)] = tuple(lits)
-
-    adj_cache: dict[tuple[int, int], cp_model.IntVar] = {}
-
-    def adj(i: int, j: int) -> cp_model.IntVar:
-        """Booleano: i e j compartilham parede >= MIN_PASSAGE_MM (só a implicação adj => contato)."""
-        key = (min(i, j), max(i, j))
-        if key not in adj_cache:
-            bi, bj = boxes[key[0]], boxes[key[1]]
-            subs = []
-            for same, (a1, a2, b1, b2) in (
-                ((bi.x2, bj.x), (bi.y, bi.y2, bj.y, bj.y2)), ((bj.x2, bi.x), (bi.y, bi.y2, bj.y, bj.y2)),
-                ((bi.y2, bj.y), (bi.x, bi.x2, bj.x, bj.x2)), ((bj.y2, bi.y), (bi.x, bi.x2, bj.x, bj.x2)),
-            ):
-                s = m.new_bool_var("")
-                m.add(same[0] == same[1]).only_enforce_if(s)
-                # sobreposição >= door: os dois lados também precisam ter >= door
-                for lo, hi in ((a1, b2), (b1, a2), (a1, a2), (b1, b2)):
-                    m.add(lo + door <= hi).only_enforce_if(s)
-                subs.append(s)
-            v = m.new_bool_var("")
-            m.add_bool_or(subs).only_enforce_if(v)
-            adj_cache[key] = v
-        return adj_cache[key]
-
-    # caixa envolvente e frente da casa
-    bx1, by1 = m.new_int_var(*xr, ""), m.new_int_var(*yr, "")
-    bx2, by2 = m.new_int_var(*xr, ""), m.new_int_var(*yr, "")
-    m.add_min_equality(bx1, [b.x for b in boxes])
-    m.add_min_equality(by1, [b.y for b in boxes])
-    m.add_max_equality(bx2, [b.x2 for b in boxes])
-    m.add_max_equality(by2, [b.y2 for b in boxes])
+    # malha: linhas X[0..P] e Y[0..Q]; só as p (q) primeiras faixas são usadas, as demais ficam em posição canônica
+    X = [m.new_int_var(xr[0], xr[1] + P * gap, f"X{k}") for k in range(P + 1)]
+    Y = [m.new_int_var(yr[0], yr[1] + Q * gap, f"Y{k}") for k in range(Q + 1)]
+    p, q = m.new_int_var(1, P, "p"), m.new_int_var(1, Q, "q")
+    for lines, count in ((X, p), (Y, q)):
+        for k in range(1, len(lines)):
+            used = m.new_bool_var("")
+            m.add(count >= k).only_enforce_if(used)
+            m.add(count < k).only_enforce_if(~used)
+            m.add(lines[k] - lines[k - 1] >= gap).only_enforce_if(used)
+            m.add(lines[k] - lines[k - 1] == gap).only_enforce_if(~used)
+    bx1, by1 = X[0], Y[0]
+    bx2, by2 = m.new_int_var(*xr, "bx2"), m.new_int_var(*yr, "by2")
+    m.add_element(p, X, bx2)
+    m.add_element(q, Y, by2)
 
     # implantação previsível (design 20.1, item 4): frente no recuo frontal; centralizada na largura,
     # ou encostada no lado pedido
@@ -148,32 +156,147 @@ def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
         m.add((bx1 - xr[0]) - (xr[1] - bx2) <= 1)
         m.add((xr[1] - bx2) - (bx1 - xr[0]) <= 1)
 
-    def on_side(b: _Box, side: str) -> cp_model.IntVar:
-        v = m.new_bool_var("")
-        expr = {"front": (b.y, by1), "back": (b.y2, by2), "left": (b.x, bx1), "right": (b.x2, bx2)}[side]
-        m.add(expr[0] == expr[1]).only_enforce_if(v)
-        return v
+    targets = {k: t for k, r in enumerate(reqs) if (t := room_target_m2(r, catalog))}
+    total_target_mm2 = sum(targets.values()) * 1e6 or 1e6
+    cells = [_Cell(m, r.id, X, Y, xr, yr) for r in reqs]
+    w, h, area, rect_area = [], [], [], []
+    limits: dict[int, tuple[int, float]] = {}
+    for k, (c, t) in enumerate(zip(cells, types)):
+        m.add(c.c2 <= p)
+        m.add(c.r2 <= q)
+        min_side = max(math.ceil(((t.min_width_mm or 0) + ext) / GRID), side_min)
+        max_w, max_h = max(W, min_side), max(H, min_side)
+        if k in targets:
+            # trava: nunca muito acima do alvo, mas sempre com folga sobre o mínimo do próprio cômodo
+            side = max(t.min_width_mm or 0, side_min * GRID - ext)
+            smallest = max((t.min_area_m2 or 0) * 1e6, side * side)
+            cap = round(MAX_TARGET_FACTOR * max(targets[k] * 1e6, smallest))
+            limits[k] = (cap, smallest)
+            longest = int((cap / (min_side * GRID - ext) + ext) // GRID)  # lado máximo que respeita a trava
+            max_w, max_h = max(min(max_w, longest), min_side), max(min(max_h, longest), min_side)
+        wk, hk = m.new_int_var(min_side, max_w, ""), m.new_int_var(min_side, max_h, "")
+        m.add(wk == c.x2 - c.x)
+        m.add(hk == c.y2 - c.y)
+        if t.id == CIRCULATION_TYPE:  # circulação é faixa estreita, não cômodo de enchimento
+            narrow = m.new_bool_var("")
+            m.add(wk <= CORRIDOR_MAX_WIDTH_MM // GRID).only_enforce_if(narrow)
+            m.add(hk <= CORRIDOR_MAX_WIDTH_MM // GRID).only_enforce_if(~narrow)
+        elif not t.exterior:
+            m.add(10 * wk <= round(MAX_ASPECT * 10) * hk)
+            m.add(10 * hk <= round(MAX_ASPECT * 10) * wk)
+        ra = m.new_int_var(min_side * min_side, max_w * max_h, "")
+        m.add_multiplication_equality(ra, [wk, hk])
+        # área útil aproximada (conservadora: meia parede externa em todos os lados), em mm²
+        a = GRID * GRID * ra - GRID * ext * (wk + hk) + ext * ext
+        if t.min_area_m2:
+            m.add(a >= round(t.min_area_m2 * 1e6))
+        if k in limits:
+            m.add(a <= limits[k][0])
+            m.add(a >= min(round(MIN_TARGET_FACTOR * targets[k] * 1e6), limits[k][0]))
+        w.append(wk)
+        h.append(hk)
+        area.append(a)
+        rect_area.append(ra)
 
-    # acesso local (condição necessária; a global é checada depois por check_access)
+    voids = []
+    for v in range(MAX_VOIDS):
+        present = m.new_bool_var(f"void{v}")
+        c = _Cell(m, f"void{v}", X, Y, xr, yr, present)
+        m.add(c.c2 <= p)
+        m.add(c.r2 <= q)
+        edge = [m.new_bool_var("") for _ in range(4)]  # recorte só na borda: nunca um vazio fechado
+        m.add(c.c1 == 0).only_enforce_if(edge[0])
+        m.add(c.c2 == p).only_enforce_if(edge[1])
+        m.add(c.r1 == 0).only_enforce_if(edge[2])
+        m.add(c.r2 == q).only_enforce_if(edge[3])
+        m.add_bool_or(edge).only_enforce_if(present)
+        voids.append((present, c))
+    for (first, _), (second, _) in zip(voids, voids[1:]):
+        m.add_implication(second, first)  # simetria: o segundo recorte só existe se o primeiro existir
+
+    every = cells + [c for _, c in voids]
+    m.add_no_overlap_2d([c.ic for c in every], [c.ir for c in every])
+    pq = m.new_int_var(1, P * Q, "pq")
+    m.add_multiplication_equality(pq, [p, q])
+    m.add(sum(c.cells for c in every) == pq)  # cômodos + recortes cobrem a malha exatamente
+
+    def at(var: cp_model.IntVar, value: cp_model.IntVar | int) -> cp_model.IntVar:
+        """Booleano que implica var == value."""
+        b = m.new_bool_var("")
+        m.add(var == value).only_enforce_if(b)
+        return b
+
+    side_cache: dict[tuple[int, str], cp_model.IntVar] = {}
+
+    def on_side(i: int, side: str) -> cp_model.IntVar:
+        if (i, side) not in side_cache:
+            c = cells[i]
+            var, value = {"front": (c.r1, 0), "back": (c.r2, q), "left": (c.c1, 0), "right": (c.c2, p)}[side]
+            side_cache[(i, side)] = at(var, value)
+        return side_cache[(i, side)]
+
+    # a malha é a caixa envolvente dos cômodos (a frente vem da entrada); cada linha interna usada é face
+    # de algum bloco, senão a mesma planta teria várias representações
+    for side in ("left", "right", "back"):
+        m.add_bool_or([on_side(i, side) for i in range(n)])
+    for k in range(1, P):
+        m.add_bool_or([at(c.c1, k) for c in every] + [at(p, kk) for kk in range(1, k + 1)])
+    for k in range(1, Q):
+        m.add_bool_or([at(c.r1, k) for c in every] + [at(q, kk) for kk in range(1, k + 1)])
+
+    adj_cache: dict[tuple[int, int], cp_model.IntVar] = {}
+
+    def adj(i: int, j: int) -> cp_model.IntVar:
+        """Booleano que implica parede comum: como as linhas distam >= uma passagem, qualquer trecho comum serve."""
+        key = (min(i, j), max(i, j))
+        if key not in adj_cache:
+            ci, cj = cells[key[0]], cells[key[1]]
+            subs = []
+            for same, (a1, a2, b1, b2) in (
+                ((ci.c2, cj.c1), (ci.r1, ci.r2, cj.r1, cj.r2)), ((cj.c2, ci.c1), (ci.r1, ci.r2, cj.r1, cj.r2)),
+                ((ci.r2, cj.r1), (ci.c1, ci.c2, cj.c1, cj.c2)), ((cj.r2, ci.r1), (ci.c1, ci.c2, cj.c1, cj.c2)),
+            ):
+                s = m.new_bool_var("")
+                m.add(same[0] == same[1]).only_enforce_if(s)
+                m.add(a1 < b2).only_enforce_if(s)
+                m.add(b1 < a2).only_enforce_if(s)
+                subs.append(s)
+            v = m.new_bool_var("")
+            m.add_bool_or(subs).only_enforce_if(v)
+            adj_cache[key] = v
+        return adj_cache[key]
+
+    # acesso local (condição necessária; a global é checada depois por check_access). A circulação tem
+    # função (design 21.2): a entrada da casa não é por ela, ela liga pelo menos dois cômodos, e os
+    # privativos da zona íntima abrem para ela (ou para a própria suíte), não para a sala ou a cozinha
     trav = [i for i in range(n) if types[i].passage == "traversable"]
-    front = {i: on_side(boxes[i], "front") for i in trav}
-    m.add_bool_or([front[i] for i in trav])
+    circ = [i for i in trav if types[i].id == CIRCULATION_TYPE]
+    entry = [i for i in trav if i not in circ] or trav
+    m.add_bool_or([on_side(i, "front") for i in entry])
     for i in range(n):
         if types[i].passage == "traversable":
-            m.add_bool_or([adj(i, j) for j in trav if j != i] + [front[i]])
+            m.add_bool_or([adj(i, j) for j in trav if j != i] + ([on_side(i, "front")] if i in entry else []))
         else:
-            hosts = [j for j in range(n) if j != i and (j in trav or types[i].id in types[j].suite_access)]
-            m.add_bool_or([adj(i, j) for j in hosts])
+            suite = [j for j in range(n) if j != i and types[i].id in types[j].suite_access]
+            access = circ if circ and types[i].zone == "intima" else trav
+            m.add_bool_or([adj(i, j) for j in dict.fromkeys(access + suite)])
+    if n >= 3:
+        for c in circ:
+            m.add(sum(adj(c, j) for j in range(n) if j != c) >= 2)
+    social_baths = _social_bath_pairs(types)
+    if social_baths:
+        m.add_bool_or([adj(i, j) for i, j in social_baths])
 
     # conectividade global dos atravessáveis (fluxo de uma única entrada na frente): sem isso o solver
     # cria "ilhas" e check_access rejeita a planta
     if len(trav) > 1:
         big = len(trav) - 1
-        root = {i: m.new_bool_var("") for i in trav}
+        root = {i: m.new_bool_var("") for i in entry}
         m.add_exactly_one(root.values())
         flow: dict[tuple[int, int], cp_model.IntVar] = {}
         for i in trav:
-            m.add_implication(root[i], front[i])
+            if i in root:
+                m.add_implication(root[i], on_side(i, "front"))
             for j in trav:
                 if i != j:
                     f = m.new_int_var(0, big, "")
@@ -182,10 +305,19 @@ def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
         for i in trav:
             inflow = sum(flow[(j, i)] for j in trav if j != i)
             outflow = sum(flow[(i, j)] for j in trav if j != i)
-            m.add(inflow - outflow == 1 - len(trav) * root[i])
+            m.add(inflow - outflow == 1 - len(trav) * (root[i] if i in root else 0))
 
     # diversidade: diferir dos padrões proibidos em pelo menos min_diff pares
     ids = [r.id for r in reqs]
+    rel: dict[tuple[int, int], list[cp_model.IntVar]] = {}
+    for i in range(n if forbidden else 0):
+        for j in range(i + 1, n):
+            ci, cj = cells[i], cells[j]
+            for lo, hi in ((ci.c2, cj.c1), (cj.c2, ci.c1), (ci.r2, cj.r1), (cj.r2, ci.r1)):
+                b = m.new_bool_var("")
+                m.add(lo <= hi).only_enforce_if(b)
+                m.add(lo > hi).only_enforce_if(~b)
+                rel.setdefault((i, j), []).append(b)
     for pattern in forbidden:
         diffs = []
         for (i, j), lits in rel.items():
@@ -213,84 +345,80 @@ def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
                 terms.append(coef * adj(i, j))
             else:
                 dx, dy = m.new_int_var(0, 4 * int(span), ""), m.new_int_var(0, 4 * int(span), "")
-                m.add_abs_equality(dx, boxes[i].x + boxes[i].x2 - boxes[j].x - boxes[j].x2)
-                m.add_abs_equality(dy, boxes[i].y + boxes[i].y2 - boxes[j].y - boxes[j].y2)
+                m.add_abs_equality(dx, cells[i].x + cells[i].x2 - cells[j].x - cells[j].x2)
+                m.add_abs_equality(dy, cells[i].y + cells[i].y2 - cells[j].y - cells[j].y2)
                 terms.append(coef / (2 * span) * (dx + dy))
-    targets = [(k, room_target_m2(r, catalog)) for k, r in enumerate(reqs)]
-    targets = [(k, t) for k, t in targets if t]
-    total_target_mm2 = sum(t for _, t in targets) * 1e6 or 1e6
-    for k, t in targets:
-        # trava: nunca muito acima do alvo, mas sempre com folga sobre o mínimo do próprio cômodo
-        side = max(types[k].min_width_mm or 0, side_min * GRID - ext)
-        floor = 2 * max((types[k].min_area_m2 or 0) * 1e6, side * side)
-        m.add(area[k] <= round(max(MAX_TARGET_FACTOR * t * 1e6, floor)))
-        dev = m.new_int_var(0, 10**10, "")
-        m.add_abs_equality(dev, area[k] - round(t * 1e6))
-        # maior entre o relativo (protege cômodos pequenos) e o absoluto (protege os grandes)
-        coef = max(1 / (len(targets) * t * 1e6), 1 / total_target_mm2)
-        terms.append(-WEIGHTS["area_fit"] * coef * dev)
-    total_target = sum(t for _, t in targets) * 1e6 or 1.0
-    # bloco cheio (design 20.1, item 1): área da caixa envolvente sem cômodo, em unidades²
-    cells = (xr[1] - xr[0]) * (yr[1] - yr[0])
-    rect_area = []
-    for bx in boxes:
-        ra = m.new_int_var(0, cells, "")
-        m.add_multiplication_equality(ra, [bx.w, bx.h])
-        rect_area.append(ra)
-    bw, bh = m.new_int_var(0, xr[1] - xr[0], ""), m.new_int_var(0, yr[1] - yr[0], "")
-    m.add(bw == bx2 - bx1)
-    m.add(bh == by2 - by1)
-    box_area = m.new_int_var(0, cells, "")
-    m.add_multiplication_equality(box_area, [bw, bh])
-    terms.append(-WEIGHTS["compactness"] * VOID_SCALE / (total_target_mm2 / GRID**2) * (box_area - sum(rect_area)))
-    # paredes na mesma reta e cômodos iguais (design 20.1, item 3)
-    aligned = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            bi, bj = boxes[i], boxes[j]
-            eqs = []
-            for u, v in ((bi.x, bj.x), (bi.x2, bj.x2), (bi.y, bj.y), (bi.y2, bj.y2)):
-                q = m.new_bool_var("")
-                m.add(u == v).only_enforce_if(q)
-                eqs.append(q)
-            a_ij = m.new_bool_var("")
-            m.add_implication(a_ij, adj(i, j))
-            m.add_bool_or(eqs).only_enforce_if(a_ij)
-            aligned.append(a_ij)
-            if types[i].id == types[j].id:
-                e_ij = m.new_bool_var("")
-                m.add(bi.w == bj.w).only_enforce_if(e_ij)
-                m.add(bi.h == bj.h).only_enforce_if(e_ij)
-                aligned.append(e_ij)
-    if aligned:
-        terms.append(WEIGHTS["alignment"] / len(aligned) * sum(aligned))
-    # circulação e cômodos sem área-alvo: área custa mais que o vazio, senão incham para encher o bloco
-    with_target = {k for k, _ in targets}
+    for k, t in targets.items():
+        cap, smallest = limits[k]
+        if topo_phase:  # o desvio de área (um produto) fica para a fase 2; aqui, estar dentro das janelas
+            lo_f, hi_f = AREA_WINDOW
+            hi = min(cap, round(max(hi_f * t * 1e6, 1.25 * smallest)))
+            inside = m.new_bool_var("")
+            m.add(area[k] >= min(round(lo_f * t * 1e6), hi)).only_enforce_if(inside)
+            m.add(area[k] <= hi).only_enforce_if(inside)
+            # metade do peso da área (calibrado na bancada; uma segunda janela, folgada, era inerte com o piso duro)
+            terms.append(WEIGHTS["area_fit"] / len(targets) / 2 * inside)
+        else:
+            dev = m.new_int_var(0, 10**10, "")
+            m.add_abs_equality(dev, area[k] - round(t * 1e6))
+            # maior entre o relativo (protege cômodos pequenos) e o absoluto (protege os grandes)
+            coef = max(1 / (len(targets) * t * 1e6), 1 / total_target_mm2)
+            terms.append(-WEIGHTS["area_fit"] * coef * dev)
+    # bloco cheio (design 20.1, item 1): recortes custam caro
+    if topo_phase:
+        for present, c in voids:
+            terms.append(-WEIGHTS["compactness"] * (VOID_FIXED * present + VOID_CELL * c.cells))
+        terms.append(-LINE_PRICE * (p + q))
+    else:
+        bw, bh = m.new_int_var(0, W, ""), m.new_int_var(0, H, "")
+        m.add(bw == bx2 - bx1)
+        m.add(bh == by2 - by1)
+        box_area = m.new_int_var(0, W * H, "")
+        m.add_multiplication_equality(box_area, [bw, bh])
+        terms.append(-WEIGHTS["compactness"] * VOID_SCALE / (total_target_mm2 / GRID**2) * (box_area - sum(rect_area)))
+    # cômodos iguais (mesmo tipo e mesmo alvo) com as mesmas medidas (design 20.1, item 3)
+    twins = [(i, j) for i in range(n) for j in range(i + 1, n)
+             if types[i].id == types[j].id and targets.get(i) == targets.get(j)]
+    for i, j in twins:
+        same = m.new_bool_var("")
+        m.add(w[i] == w[j]).only_enforce_if(same)
+        m.add(h[i] == h[j]).only_enforce_if(same)
+        terms.append(WEIGHTS["alignment"] / len(twins) * same)
+    # circulação e cômodos sem área-alvo: área custa, senão incham para encher o bloco
+    price = UNTARGETED_PRICE * WEIGHTS["area_fit"] / total_target_mm2
     for k in range(n):
-        if k not in with_target:
-            terms.append(-WEIGHTS["area_fit"] / total_target * area[k])
+        if k not in targets:
+            # fase 1: semiperímetro como substituto linear da área (1 m de corredor ~ 1 m²)
+            terms.append(-price * (GRID * 1000 * (w[k] + h[k]) if topo_phase else area[k]))
     sunny = [k for k in range(n) if types[k].sun]
     if site.north and sunny:
-        terms += [WEIGHTS["solar"] / len(sunny) * on_side(boxes[k], site.north) for k in sunny]
+        terms += [WEIGHTS["solar"] / len(sunny) * on_side(k, site.north) for k in sunny]
     wet = [k for k in range(n) if types[k].wet]
     wet_pairs = [(a, b) for x, a in enumerate(wet) for b in wet[x + 1:]]
     terms += [WEIGHTS["wet_grouping"] / len(wet_pairs) * adj(a, b) for a, b in wet_pairs]
     m.maximize(sum(terms))
 
+    index_vars = [p, q] + [v for c in every for v in (c.c1, c.c2, c.r1, c.r2)]
+    for var, value in zip(index_vars, topology or ()):
+        m.add(var == value)
+
     solver = cp_model.CpSolver()
     solver.parameters.random_seed = seed
     solver.parameters.max_deterministic_time = time_limit
     solver.parameters.num_workers = 8
-    solver.parameters.interleave_search = True  # torna o paralelo reprodutível (mesma semente = mesma planta)
+    # reprodutível (mesma semente = mesma planta): oito estratégias de busca rodam lado a lado e vale a melhor
+    solver.parameters.interleave_search = True
     status = solver.solve(m)
+    if status == cp_model.MODEL_INVALID:  # erro de programação, não "sem tempo"
+        raise RuntimeError(f"modelo CP-SAT inválido: {m.validate()}")
     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
-        return None, "infeasible" if status == cp_model.INFEASIBLE else "timeout"
+        return None, "infeasible" if status == cp_model.INFEASIBLE else "timeout", []
     rooms = tuple(
-        Room(id=r.id, type=r.type, rect=Rect(x=solver.value(b.x) * GRID, y=solver.value(b.y) * GRID,
-                                             w=solver.value(b.w) * GRID, h=solver.value(b.h) * GRID))
-        for r, b in zip(reqs, boxes)
+        Room(id=r.id, type=r.type, rect=Rect(x=solver.value(c.x) * GRID, y=solver.value(c.y) * GRID,
+                                             w=solver.value(wk) * GRID, h=solver.value(hk) * GRID))
+        for r, c, wk, hk in zip(reqs, cells, w, h)
     )
-    return Plan(site=site, rooms=rooms), "ok"
+    return Plan(site=site, rooms=rooms), "ok", [solver.value(v) for v in index_vars]
 
 
 class GenerationError(Exception):
@@ -323,7 +451,8 @@ def _attach_if_needed(request: Request, catalog: Catalog, seed: int, time_limit:
         plan, status = _solve(attached, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
         if plan is not None:
             names = " e ".join(SIDE_PT[s] for s in sides)
-            note = Issue(code="attached", message=f"casa encostada na divisa {names}: não coube com os afastamentos")
+            note = Issue(code="attached", message=f"casa encostada na divisa {names}: o programa, com as áreas "
+                                                  "pedidas, não coube com os afastamentos")
             return attached, plan, note
     return request, None, None
 
@@ -342,12 +471,16 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
     request, plan, attach_note = _attach_if_needed(request, catalog, seed, time_limit, min_diff)
     if plan is None:
         raise GenerationError(_no_fit_message(request, catalog))
+    # num lote simétrico na largura, a planta espelhada não é uma alternativa de verdade
+    site = request.site
+    symmetric = site.north not in ("left", "right") and len(site.attached_sides & {"left", "right"}) != 1
     for attempt in range(max_attempts):
         if len(accepted) == k:
             break
         if attempt > 0:
+            forbidden = seen + [mirrored(s) for s in seen] if symmetric else seen
             plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
-                                forbidden=seen, min_diff=min_diff)
+                                forbidden=forbidden, min_diff=min_diff)
             if plan is None:
                 break  # não há mais alternativas diferentes
         assert plan is not None
@@ -366,7 +499,11 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
 def _no_fit_message(request: Request, catalog: Catalog) -> str:
     site, sb = request.site, request.site.setbacks
     buildable = (site.width_mm - sb.left - sb.right) * (site.depth_mm - sb.front - sb.back) / 1e6
-    needed = sum(catalog.get(r.type).min_area_m2 or 0 for r in request.rooms)
-    return (f"Nenhuma planta coube no terreno: os mínimos somam ≈ {needed:.1f} m² de área útil, "
-            f"a área edificável (terreno menos recuos) é ≈ {buildable:.1f} m², e as larguras mínimas "
-            "e passagens também precisam caber. Tente menos cômodos, recuos menores ou mais tempo de busca.")
+    needed = 0.0  # o gerador exige de cada cômodo o maior entre o mínimo do tipo e 0,7 x a área-alvo
+    for r in request.rooms:
+        target = room_target_m2(r, catalog)
+        needed += max(catalog.get(r.type).min_area_m2 or 0, MIN_TARGET_FACTOR * target if target else 0)
+    return (f"Nenhuma planta coube no terreno: os mínimos e as áreas pedidas somam ≈ {needed:.1f} m² de área útil "
+            f"(cada cômodo com pelo menos {MIN_TARGET_FACTOR:.0%} do alvo), a área edificável (terreno menos "
+            f"recuos) é ≈ {buildable:.1f} m², e as larguras mínimas e passagens também precisam caber. "
+            "Tente menos cômodos, áreas menores, recuos menores ou mais tempo de busca.")

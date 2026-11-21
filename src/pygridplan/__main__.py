@@ -1,6 +1,6 @@
 """CLI:
 python -m pygridplan export-dxf PLANO.json SAIDA.dxf
-python -m pygridplan generate PEDIDO.json PASTA [--k 4] [--seed 0] [--time-limit 0.5]
+python -m pygridplan generate PEDIDO.json PASTA [--k 4] [--seed 0] [--time-limit 4]
 """
 
 import argparse

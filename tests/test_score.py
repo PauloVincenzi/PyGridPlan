@@ -84,3 +84,33 @@ def test_alignment_inactive_without_pairs():
 def test_target_never_below_minimum_width_square():
     # lavanderia: conforto começa em 2,1 m², mas a largura mínima de 1,80 m já exige 3,24 m²
     assert room_target_m2(RoomRequest(id="a", type="lavanderia"), load_catalog()) == pytest.approx(1.8 * 1.8)
+
+
+def _hall_plan(second_bedroom_on_hall: bool):
+    """Sala na frente, corredor atrás dela, quarto a no corredor; quarto b no corredor ou só na sala."""
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    b = Rect(x=4000, y=5000, w=3000, h=3000) if second_bedroom_on_hall else Rect(x=7000, y=1000, w=3000, h=3000)
+    rooms = (Room(id="sala", type="sala", rect=Rect(x=1000, y=1000, w=6000, h=3000)),
+             Room(id="hall", type="circulacao", rect=Rect(x=1000, y=4000, w=6000, h=1000)),
+             Room(id="a", type="quarto", rect=Rect(x=1000, y=5000, w=3000, h=3000)),
+             Room(id="b", type="quarto", rect=b))
+    return Plan(site=Site(width_mm=20000, depth_mm=20000), rooms=rooms)
+
+
+def test_circulation_rewards_bedrooms_opening_to_the_hall():
+    def value(plan):
+        economy = 1 - useful_area_mm2(plan.rooms[1], plan) / sum(useful_area_mm2(r, plan) for r in plan.rooms)
+        return _criteria(score_plan(plan, _request_for(plan), load_catalog()))["circulation"].value / economy
+
+    assert value(_hall_plan(True)) == pytest.approx(1.0)  # os dois quartos abrem para o corredor
+    assert value(_hall_plan(False)) == pytest.approx(0.5)  # o quarto b só abre para a sala
+
+
+def test_circulation_inactive_without_circulation_room():
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    plan = Plan(site=Site(width_mm=20000, depth_mm=20000),
+                rooms=(Room(id="s", type="sala", rect=Rect(x=1000, y=1000, w=4000, h=4000)),
+                       Room(id="q", type="quarto", rect=Rect(x=5000, y=1000, w=3000, h=4000))))
+    assert "circulation" not in _criteria(score_plan(plan, _request_for(plan), load_catalog()))
