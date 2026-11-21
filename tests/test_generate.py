@@ -94,3 +94,52 @@ def test_no_room_shrinks_far_below_its_target():
         for room in alt.plan.rooms:
             if targets[room.id]:
                 assert useful_area_mm2(room, alt.plan) / 1e6 >= 0.7 * targets[room.id], room.id
+
+
+OFFICE_PROGRAM = Request(
+    site=Site(width_mm=14000, depth_mm=30000),
+    rooms=tuple(RoomRequest(id=t, type=t) for t in
+                ("sala", "cozinha", "lavanderia", "escritorio", "circulacao", "quarto", "banheiro")),
+)
+
+
+@pytest.fixture(scope="module")
+def office_alternatives():
+    return generate_alternatives(OFFICE_PROGRAM, load_catalog(), k=2)
+
+
+def _touching(plan):
+    from pygridplan.validation.access import MIN_PASSAGE_MM, passages
+
+    return {frozenset(pair) for pair, length in passages(plan).items() if length >= MIN_PASSAGE_MM}
+
+
+def test_rooms_with_required_window_have_an_exterior_wall(office_alternatives):
+    # design 22.2 (revisto na S06): sala e quartos sempre; banheiro, cozinha e escritório só preferem
+    from pygridplan.model.walls import exterior_sides
+
+    catalog = load_catalog()
+    for alt in office_alternatives:
+        for room in alt.plan.rooms:
+            if catalog.get(room.type).window_need == "required":
+                assert exterior_sides(room, alt.plan), room.id
+        flagged = {w.room_ids[0] for w in alt.warnings if w.code == "no_exterior_wall"}
+        assert flagged == {r.id for r in alt.plan.rooms
+                           if catalog.get(r.type).window_need and not exterior_sides(r, alt.plan)}
+
+
+def test_strict_window_rule_gives_every_window_room_an_exterior_wall():
+    from pygridplan.model.walls import exterior_sides
+
+    catalog = load_catalog()
+    request = OFFICE_PROGRAM.model_copy(update={"window_rule": "strict"})
+    for alt in generate_alternatives(request, catalog, k=1):
+        assert all(exterior_sides(r, alt.plan) for r in alt.plan.rooms if catalog.get(r.type).window_need)
+
+
+def test_circulation_and_office_are_reached_from_the_living_room(office_alternatives):
+    # design 22.1: preferência (não proibição); com espaço sobrando, a melhor alternativa segue a preferência
+    for alt in office_alternatives[:1]:
+        touching = _touching(alt.plan)
+        assert frozenset(("circulacao", "sala")) in touching
+        assert touching & {frozenset(("escritorio", "sala")), frozenset(("escritorio", "circulacao"))}

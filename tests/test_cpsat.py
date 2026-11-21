@@ -131,12 +131,10 @@ def test_rooms_without_target_do_not_inflate():
     plan = solve_layout(request, load_catalog(), time_limit=TIME)
     from pygridplan.model.walls import useful_area_mm2
 
-    # "não inchou" = menos que o dobro do menor cômodo possível (largura mínima ao quadrado); critério
-    # próprio deste teste (DEC-0095). Antes da correção do M1.1 a sala de jantar chegava a 20 m²; na malha o
-    # hall sai com 1,4 x 2,0 m no eixo (2,4 m²) por acompanhar as linhas dos vizinhos
-    for rid, min_width_m in (("hall", 1.2), ("sala_jantar", 2.4)):
+    # critério original do M1.1 (DEC-0104 desfaz a DEC-0095): antes da correção a sala de jantar chegava a 20 m²
+    for rid in ("hall", "sala_jantar"):
         room = next(r for r in plan.rooms if r.id == rid)
-        assert useful_area_mm2(room, plan) / 1e6 < 2 * min_width_m**2, rid
+        assert useful_area_mm2(room, plan) / 1e6 < 8.0, rid
 
 
 def test_intimate_rooms_open_to_the_circulation(solved):

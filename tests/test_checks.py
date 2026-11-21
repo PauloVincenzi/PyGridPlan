@@ -99,3 +99,18 @@ def test_basic_house_has_no_void(basic_house):
     from pygridplan.validation.checks import enclosed_void_area_mm2
 
     assert enclosed_void_area_mm2(basic_house) == 0
+
+
+def test_interior_bathroom_gets_a_duct_or_skylight_suggestion_but_closet_does_not():
+    from pygridplan.validation.checks import check_ventilation
+
+    site = Site(width_mm=20000, depth_mm=20000)
+    rooms = (Room(id="s", type="sala", rect=Rect(x=1000, y=1000, w=9000, h=3000)),
+             Room(id="q1", type="quarto", rect=Rect(x=1000, y=4000, w=3000, h=2000)),
+             Room(id="b", type="banheiro", rect=Rect(x=4000, y=4000, w=2000, h=2000)),
+             Room(id="cl", type="closet", rect=Rect(x=6000, y=4000, w=2000, h=2000)),
+             Room(id="q2", type="quarto", rect=Rect(x=8000, y=4000, w=2000, h=2000)),
+             Room(id="c", type="cozinha", rect=Rect(x=1000, y=6000, w=9000, h=3000)))
+    issues = check_ventilation(Plan(site=site, rooms=rooms), load_catalog())
+    assert [i.room_ids for i in issues] == [("b",)]
+    assert "claraboia" in issues[0].message

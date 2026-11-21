@@ -4,7 +4,7 @@ from pydantic import BaseModel, ConfigDict
 
 from pygridplan.model.catalog import Catalog
 from pygridplan.model.plan import Plan, Rect
-from pygridplan.model.walls import useful_area_mm2, useful_dims_mm
+from pygridplan.model.walls import exterior_sides, useful_area_mm2, useful_dims_mm
 
 
 class Issue(BaseModel):
@@ -120,4 +120,16 @@ def check_recommendations(plan: Plan, catalog: Catalog) -> list[Issue]:
                 message=f"{r.id}: área útil {area:.2f} m² < {t.min_area_m2:.2f} m² recomendados",
                 room_ids=(r.id,), recommended=t.min_area_m2, actual=round(area, 2),
             ))
+    return issues
+
+
+def check_ventilation(plan: Plan, catalog: Catalog) -> list[Issue]:
+    """Cômodo que pede janela e ficou sem parede externa (design 22.2): sugestão para o usuário avaliar."""
+    issues = []
+    for r in plan.rooms:
+        need = catalog.get(r.type).window_need
+        if need and not exterior_sides(r, plan):
+            how = "duto, poço ou claraboia" if need == "preferred" else "nenhuma janela possível; reveja a implantação"
+            issues.append(Issue(code="no_exterior_wall", message=f"{r.id}: sem parede externa ({how})",
+                                room_ids=(r.id,)))
     return issues

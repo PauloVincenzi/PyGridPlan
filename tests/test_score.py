@@ -114,3 +114,42 @@ def test_circulation_inactive_without_circulation_room():
                 rooms=(Room(id="s", type="sala", rect=Rect(x=1000, y=1000, w=4000, h=4000)),
                        Room(id="q", type="quarto", rect=Rect(x=5000, y=1000, w=3000, h=4000))))
     assert "circulation" not in _criteria(score_plan(plan, _request_for(plan), load_catalog()))
+
+
+def _hub_plan(host_type: str):
+    """Corredor que só encosta num cômodo do tipo `host_type` (além do quarto); há uma sala longe dele."""
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    rooms = (Room(id="host", type=host_type, rect=Rect(x=1000, y=1000, w=6000, h=3000)),
+             Room(id="hall", type="circulacao", rect=Rect(x=1000, y=4000, w=6000, h=1000)),
+             Room(id="q", type="quarto", rect=Rect(x=1000, y=5000, w=3000, h=3000)),
+             Room(id="sala_longe", type="sala", rect=Rect(x=12000, y=1000, w=4000, h=3000)))
+    return Plan(site=Site(width_mm=20000, depth_mm=20000), rooms=rooms)
+
+
+@pytest.mark.parametrize("host,expected", [("sala", 1.0), ("cozinha", 0.5), ("lavanderia", 0.0)])
+def test_zoning_credit_depends_on_who_gives_access_to_the_hall(host, expected):
+    plan = _hub_plan(host)
+    assert _criteria(score_plan(plan, _request_for(plan), load_catalog()))["zoning"].value == pytest.approx(expected)
+
+
+def test_ventilation_criterion_counts_rooms_with_exterior_wall():
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    # banheiro no meio, cercado: sem parede externa; a sala e o quarto têm
+    rooms = (Room(id="s", type="sala", rect=Rect(x=1000, y=1000, w=9000, h=3000)),
+             Room(id="q1", type="quarto", rect=Rect(x=1000, y=4000, w=3000, h=2000)),
+             Room(id="b", type="banheiro", rect=Rect(x=4000, y=4000, w=2000, h=2000)),
+             Room(id="q2", type="quarto", rect=Rect(x=6000, y=4000, w=4000, h=2000)),
+             Room(id="c", type="cozinha", rect=Rect(x=1000, y=6000, w=9000, h=3000)))
+    plan = Plan(site=Site(width_mm=20000, depth_mm=20000), rooms=rooms)
+    assert _criteria(score_plan(plan, _request_for(plan), load_catalog()))["ventilation"].value == pytest.approx(4 / 5)
+
+
+def test_zoning_does_not_apply_without_any_access_room():
+    from pygridplan.model.plan import Plan, Rect, Room, Site
+
+    rooms = (Room(id="l", type="lavanderia", rect=Rect(x=1000, y=1000, w=6000, h=3000)),
+             Room(id="hall", type="circulacao", rect=Rect(x=1000, y=4000, w=6000, h=1000)))
+    plan = Plan(site=Site(width_mm=20000, depth_mm=20000), rooms=rooms)
+    assert "zoning" not in _criteria(score_plan(plan, _request_for(plan), load_catalog()))

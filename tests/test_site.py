@@ -115,3 +115,17 @@ def test_every_alternative_has_a_bathroom_on_the_circulation():
     for alt in generate_alternatives(load_request(SMALL_LOT), load_catalog(), k=4, time_limit=TIME):
         touching = {frozenset(pair) for pair, length in passages(alt.plan).items() if length >= MIN_PASSAGE_MM}
         assert frozenset(("banheiro", "circulacao")) in touching
+
+
+@pytest.mark.slow
+def test_small_lot_is_a_full_rectangle_without_mirrored_alternatives():
+    # observação do responsável na S06: o "buraco" no lote pequeno é área perdida; e espelho não é alternativa
+    from pygridplan.scoring.diversity import mirrored, relative_pattern
+    from pygridplan.scoring.score import bounding_box
+
+    alts = generate_alternatives(load_request(SMALL_LOT), load_catalog(), k=2)
+    for alt in alts:
+        box = bounding_box(alt.plan)
+        assert sum(r.rect.area_mm2 for r in alt.plan.rooms) == box.area_mm2
+    if len(alts) == 2:
+        assert relative_pattern(alts[1].plan) != mirrored(relative_pattern(alts[0].plan))

@@ -19,14 +19,16 @@ from pygridplan.model.site_defaults import SiteDefaults, load_site_defaults
 from pygridplan.scoring.diversity import Pattern, mirrored, relative_pattern
 from pygridplan.scoring.score import CIRCULATION_TYPE, WEIGHTS, Score, room_target_m2, score_plan
 from pygridplan.validation.access import MIN_PASSAGE_MM, check_access
-from pygridplan.validation.checks import Issue, check_recommendations, validate_geometry
+from pygridplan.validation.checks import Issue, check_recommendations, check_ventilation, validate_geometry
 from pygridplan.validation.site import check_site
 
 GRID = 100
 # constantes de calibração (DEC-0089 a DEC-0091; medições em docs/plans/m1-1-calibration.md)
 MAX_LINES = 6  # faixas da malha em cada eixo
-MAX_VOIDS = 2  # recortes de borda (casa em L, T ou degrau); vazio fechado é impossível
 MAX_TARGET_FACTOR = 1.5  # área aproximada (conservadora) <= 1,5 x alvo (ou x o menor cômodo possível, se o alvo for menor que ele)
+# tentativas em ordem (design 22.3): retângulo cheio; retângulo com cômodos maiores; só então recortes de borda
+# (casa em L, T ou degrau; vazio fechado é impossível). Cada uma só roda se a anterior for provada inviável.
+SHAPE_ATTEMPTS = ((0, MAX_TARGET_FACTOR), (0, 2.0), (2, MAX_TARGET_FACTOR))  # (recortes, teto de área)
 MIN_TARGET_FACTOR = 0.7  # e nunca abaixo de 0,7 x alvo: quem pediu 10 m² não recebe 4 m²
 MAX_ASPECT = 2.5  # lado maior <= 2,5 x lado menor (menos circulação e áreas externas)
 CORRIDOR_MAX_WIDTH_MM = 1500  # circulação é faixa: lado menor (no eixo) até 1,50 m
@@ -36,7 +38,7 @@ VOID_SCALE = 1.0  # fase 2: o vazio custa o peso inteiro da compacidade por áre
 LINE_PRICE = 0.02  # fase 1: por faixa de malha usada (menos linhas = paredes mais alinhadas)
 UNTARGETED_PRICE = 2.0  # área de circulação e de cômodo sem alvo (x peso da área)
 MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
-DEFAULT_TIME_LIMIT = 4.0  # fase 1, em unidades determinísticas do CP-SAT; ~10 s de relógio no hardware de referência
+DEFAULT_TIME_LIMIT = 20.0  # fase 1, em unidades determinísticas do CP-SAT; pedidos pequenos param antes, ao provar o ótimo
 POLISH_TIME = 0.3  # fase 2
 
 
@@ -92,20 +94,27 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limi
 def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
            forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> tuple[Plan | None, str]:
     """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout"."""
-    plan, status, topology = _phase(request, catalog, seed, time_limit, forbidden, min_diff, None)
-    if plan is None:
-        return None, status
-    polished = _phase(request, catalog, seed, POLISH_TIME, forbidden, min_diff, topology)[0]
-    return polished or plan, "ok"
+    status = "infeasible"
+    for shape in SHAPE_ATTEMPTS:
+        plan, status, topology = _phase(request, catalog, seed, time_limit, forbidden, min_diff, None, shape)
+        if plan is not None:
+            polished = _phase(request, catalog, seed, POLISH_TIME, forbidden, min_diff, topology, shape)[0]
+            return polished or plan, "ok"
+        if status != "infeasible":
+            break
+    return None, status
 
 
 def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, forbidden: Sequence[Pattern],
-           min_diff: int, topology: list[int] | None) -> tuple[Plan | None, str, list[int]]:
+           min_diff: int, topology: list[int] | None,
+           shape: tuple[int, float] = SHAPE_ATTEMPTS[0]) -> tuple[Plan | None, str, list[int]]:
     """Uma fase do gerador; devolve (planta, situação, índices da malha).
 
     Sem `topology` (fase 1): escolhe quem fica onde, com objetivo combinatório (janelas de área, relações,
     recortes). Com `topology` (fase 2): os índices ficam fixos e só as linhas se movem, com o objetivo exato.
+    `shape` = (número máximo de recortes, teto de área como múltiplo do alvo).
     """
+    max_voids, cap_factor = shape
     topo_phase = topology is None
     site = request.site
     ext = Plan(site=site).wall_ext_mm
@@ -170,7 +179,7 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
             # trava: nunca muito acima do alvo, mas sempre com folga sobre o mínimo do próprio cômodo
             side = max(t.min_width_mm or 0, side_min * GRID - ext)
             smallest = max((t.min_area_m2 or 0) * 1e6, side * side)
-            cap = round(MAX_TARGET_FACTOR * max(targets[k] * 1e6, smallest))
+            cap = round(cap_factor * max(targets[k] * 1e6, smallest))
             limits[k] = (cap, smallest)
             longest = int((cap / (min_side * GRID - ext) + ext) // GRID)  # lado máximo que respeita a trava
             max_w, max_h = max(min(max_w, longest), min_side), max(min(max_h, longest), min_side)
@@ -199,7 +208,7 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
         rect_area.append(ra)
 
     voids = []
-    for v in range(MAX_VOIDS):
+    for v in range(max_voids):
         present = m.new_bool_var(f"void{v}")
         c = _Cell(m, f"void{v}", X, Y, xr, yr, present)
         m.add(c.c2 <= p)
@@ -244,26 +253,28 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
     for k in range(1, Q):
         m.add_bool_or([at(c.r1, k) for c in every] + [at(q, kk) for kk in range(1, k + 1)])
 
+    def touch(ci: _Cell, cj: _Cell) -> cp_model.IntVar:
+        """Booleano que implica parede comum: como as linhas distam >= uma passagem, qualquer trecho comum serve."""
+        subs = []
+        for same, (a1, a2, b1, b2) in (
+            ((ci.c2, cj.c1), (ci.r1, ci.r2, cj.r1, cj.r2)), ((cj.c2, ci.c1), (ci.r1, ci.r2, cj.r1, cj.r2)),
+            ((ci.r2, cj.r1), (ci.c1, ci.c2, cj.c1, cj.c2)), ((cj.r2, ci.r1), (ci.c1, ci.c2, cj.c1, cj.c2)),
+        ):
+            s = m.new_bool_var("")
+            m.add(same[0] == same[1]).only_enforce_if(s)
+            m.add(a1 < b2).only_enforce_if(s)
+            m.add(b1 < a2).only_enforce_if(s)
+            subs.append(s)
+        v = m.new_bool_var("")
+        m.add_bool_or(subs).only_enforce_if(v)
+        return v
+
     adj_cache: dict[tuple[int, int], cp_model.IntVar] = {}
 
     def adj(i: int, j: int) -> cp_model.IntVar:
-        """Booleano que implica parede comum: como as linhas distam >= uma passagem, qualquer trecho comum serve."""
         key = (min(i, j), max(i, j))
         if key not in adj_cache:
-            ci, cj = cells[key[0]], cells[key[1]]
-            subs = []
-            for same, (a1, a2, b1, b2) in (
-                ((ci.c2, cj.c1), (ci.r1, ci.r2, cj.r1, cj.r2)), ((cj.c2, ci.c1), (ci.r1, ci.r2, cj.r1, cj.r2)),
-                ((ci.r2, cj.r1), (ci.c1, ci.c2, cj.c1, cj.c2)), ((cj.r2, ci.r1), (ci.c1, ci.c2, cj.c1, cj.c2)),
-            ):
-                s = m.new_bool_var("")
-                m.add(same[0] == same[1]).only_enforce_if(s)
-                m.add(a1 < b2).only_enforce_if(s)
-                m.add(b1 < a2).only_enforce_if(s)
-                subs.append(s)
-            v = m.new_bool_var("")
-            m.add_bool_or(subs).only_enforce_if(v)
-            adj_cache[key] = v
+            adj_cache[key] = touch(cells[key[0]], cells[key[1]])
         return adj_cache[key]
 
     # acesso local (condição necessária; a global é checada depois por check_access). A circulação tem
@@ -283,6 +294,19 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
     if n >= 3:
         for c in circ:
             m.add(sum(adj(c, j) for j in range(n) if j != c) >= 2)
+    # janela (design 22.2): obrigatória vira restrição; preferida vira critério. O pedido escolhe o rigor:
+    # "strict" torna toda janela obrigatória, "relaxed" torna toda janela preferida
+    window_soft: list[cp_model.IntVar] = []
+    needing = [i for i in range(n) if types[i].window_need]
+    for i in needing:
+        sides = [on_side(i, side) for side in ("front", "back", "left", "right")] + [touch(cells[i], c) for _, c in voids]
+        need, rule = types[i].window_need, request.window_rule
+        if (need == "required" and rule != "relaxed") or rule == "strict":
+            m.add_bool_or(sides)
+        else:
+            has = m.new_bool_var("")
+            m.add_bool_or(sides).only_enforce_if(has)
+            window_soft.append(has)
     social_baths = _social_bath_pairs(types)
     if social_baths:
         m.add_bool_or([adj(i, j) for i, j in social_baths])
@@ -388,8 +412,24 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
     price = UNTARGETED_PRICE * WEIGHTS["area_fit"] / total_target_mm2
     for k in range(n):
         if k not in targets:
-            # fase 1: semiperímetro como substituto linear da área (1 m de corredor ~ 1 m²)
-            terms.append(-price * (GRID * 1000 * (w[k] + h[k]) if topo_phase else area[k]))
+            terms.append(-price * area[k])
+    if window_soft:
+        terms.append(WEIGHTS["ventilation"] / len(needing) * sum(window_soft))
+    # zoneamento (design 22.1), o mesmo da nota (scoring.zoning_value): por onde se chega à circulação e aos
+    # cômodos de uso concentrado; sala vale 1, cozinha 0,5 (`access_hub` do catálogo)
+    items = circ + [i for i in range(n) if types[i].concentrated_use]
+    if items and any(types[j].access_hub for j in range(n)):
+        credits = []
+        for it in items:
+            hub = {j: 1.0 if j in circ and it not in circ else (types[j].access_hub or 0.0) for j in range(n) if j != it}
+            for level in (1.0, 0.5):  # crédito = 0,5 por nível atingido: 1,0 com vizinho de nível 1, 0,5 com 0,5
+                hosts = [j for j, v in hub.items() if v >= level]
+                if hosts:
+                    reached = m.new_bool_var("")
+                    m.add_bool_or([adj(it, j) for j in hosts]).only_enforce_if(reached)
+                    credits.append(0.5 * reached)
+        if credits:
+            terms.append(WEIGHTS["zoning"] / len(items) * sum(credits))
     sunny = [k for k in range(n) if types[k].sun]
     if site.north and sunny:
         terms += [WEIGHTS["solar"] / len(sunny) * on_side(k, site.north) for k in sunny]
@@ -471,14 +511,12 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
     request, plan, attach_note = _attach_if_needed(request, catalog, seed, time_limit, min_diff)
     if plan is None:
         raise GenerationError(_no_fit_message(request, catalog))
-    # num lote simétrico na largura, a planta espelhada não é uma alternativa de verdade
-    site = request.site
-    symmetric = site.north not in ("left", "right") and len(site.attached_sides & {"left", "right"}) != 1
+    # a planta espelhada não é uma alternativa de verdade (design 22.4), nem com um lado encostado
     for attempt in range(max_attempts):
         if len(accepted) == k:
             break
         if attempt > 0:
-            forbidden = seen + [mirrored(s) for s in seen] if symmetric else seen
+            forbidden = seen + [mirrored(s) for s in seen]
             plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
                                 forbidden=forbidden, min_diff=min_diff)
             if plan is None:
@@ -488,6 +526,7 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
         if validate_geometry(plan) or check_access(plan, catalog):
             continue
         notes = ((attach_note,) if attach_note else ()) + tuple(check_recommendations(plan, catalog))
+        notes += tuple(check_ventilation(plan, catalog))
         accepted.append(Alternative(plan=plan, score=score_plan(plan, request, catalog),
                                     warnings=notes + tuple(check_site(plan, defaults))))
     if not accepted:

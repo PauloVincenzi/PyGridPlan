@@ -10,7 +10,7 @@ from pygridplan.model.catalog import Catalog
 LABELS = {
     "relations": "Relações", "area_fit": "Áreas", "compactness": "Compacidade",
     "circulation": "Circulação", "solar": "Sol (norte)", "wet_grouping": "Áreas molhadas",
-    "alignment": "Alinhamento",
+    "alignment": "Alinhamento", "zoning": "Zoneamento", "ventilation": "Janelas",
 }
 STYLE = """
 body{margin:0;background:#121211;color:#ecebe6;font:14px/1.5 system-ui,sans-serif;padding:24px}
