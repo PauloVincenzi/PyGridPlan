@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.3 · Criado em: 2026-11-11 · Atualizado em: 2026-11-12 · Status: **conteúdo aprovado; seção 20 (M1.1 e M1.2) aguarda aprovação do responsável**
+Versão: 1.4 · Criado em: 2026-11-11 · Atualizado em: 2026-11-16 · Status: **conteúdo aprovado até a seção 20; seção 21 (calibração do M1.1 e função da circulação) aguarda aprovação do responsável**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -143,6 +143,8 @@ Todo cômodo precisa ser alcançável a partir da entrada (5.1), mas **nem todo 
 
 A **entrada** fica na frente do terreno; o motor escolhe a posição, e o usuário pode ajustar **[decisão do Agente]**.
 
+Quando o programa tem um cômodo de **circulação**, ele precisa cumprir essa função: as regras estão na seção 21.2.
+
 ### 5.6 Agregação (DEC-0034)
 **No MVP [decisão do Agente]:** soma ponderada de critérios normalizados em [0, 1], com **utilidade de retornos decrescentes** por critério (ex.: raiz ou logaritmo da área de quintal). A nota é sempre exibida **decomposta por critério**.
 **Depois do MVP:** integral de Choquet (interação entre critérios) e fronteira de Pareto. A interface de pontuação deve aceitar trocar o agregador sem mexer nos geradores.
@@ -200,6 +202,8 @@ Todos os geradores seguem uma **interface comum**: recebem o problema da etapa (
 2. **Árvore de subdivisão** (segundo): corta o terreno recursivamente seguindo o grafo de zonas. É rápida e muito visual.
 
 Os geradores 3 e 4 entram depois do MVP sem refatoração, graças à interface comum.
+
+Desde a calibração do M1.1, o CP-SAT usa a **formulação por malha de linhas em duas fases** descrita na seção 21.1; a descrição do item 1 acima vale como histórico do M1.
 
 **Meta de desempenho [decisão do Agente]:** para 8 a 12 cômodos, cada alternativa sai em até ~5 s no hardware de referência, e o conjunto de K em até ~20 s. O gerador **transmite soluções parciais desde o M1** (eventos), e a interface mostra a melhor até o momento. Se a meta não for atingida no teste da seção 12, a grade ou o K padrão são revistos, e isso é registrado como decisão.
 
@@ -363,3 +367,43 @@ Conclusão da D1, aceita pelo responsável: **a área mínima de um cômodo é c
 4. **Itens pedidos** ("mesa para 6", "cama king", "pia de 2 m"): entram no conjunto de mobiliário daquele cômodo e aumentam os mínimos dele. É o pré-dimensionamento da seção 6.3, antecipado do M6.
 
 Ordem: **M1.1 → M1.2 → M2.** A interface só deve mostrar plantas que já pareçam plantas.
+
+## 21. Calibração do M1.1 e função da circulação (S05, DEC-0089 a DEC-0094)
+
+Contexto: o M1.1 fechou **pausado** porque a meta de bloco cheio não era atingida (compacidade de 0,78 a 0,89) e o responsável apontou que a circulação não tinha função: era só um cômodo pequeno, colocado em qualquer lugar. As medições e as alternativas descartadas estão em [docs/plans/m1-1-calibration.md](../plans/m1-1-calibration.md). **[Tudo nesta seção é decisão do Agente, a aprovar.]**
+
+### 21.1 Formulação por malha de linhas, em duas fases
+
+A causa não era o peso dos critérios. Com retângulos livres numa grade de 10 cm, o solver parava longe do ótimo mesmo com 8 vezes mais tempo. A formulação mudou:
+
+1. **Malha de linhas de parede.** A casa é uma malha de até 6 × 6 faixas. As linhas têm **posição variável** (múltiplos de 100 mm) e distam pelo menos uma passagem (900 mm). Cada cômodo ocupa um bloco de células.
+2. **Cobertura exata.** Cômodos e até 2 **recortes de borda** cobrem a malha inteira. O bloco cheio e as paredes na mesma reta deixam de ser preferências: saem **por construção**. Um vazio fechado é impossível; a casa em L, T ou degrau continua possível, mas custa.
+3. **Fase 1 — topologia.** Decide quem fica ao lado de quem. O objetivo é só combinatório: relações, sol, áreas molhadas, cômodos iguais, recortes e uma **janela de área** (prêmio por cada cômodo ficar entre 0,8 e 1,25 vez o alvo).
+4. **Fase 2 — medidas.** Com a topologia fixa, só as linhas se movem. O objetivo é o exato: desvio de área, área vazia e área de circulação, com os mesmos pesos da nota.
+5. **Busca reprodutível.** Oito estratégias do CP-SAT rodam lado a lado com tempo determinístico e vale a melhor: a mesma semente dá a mesma planta.
+
+### 21.2 Circulação com função
+
+Quando o programa tem um cômodo de circulação:
+
+1. **Ela liga cômodos.** Toda circulação tem parede comum (onde cabe uma porta) com pelo menos 2 cômodos.
+2. **Os privativos da zona íntima abrem para ela.** Quarto, banheiro e closet têm parede comum com a circulação ou com um cômodo que os aceite como suíte (`suite_access`: quarto → closet → banheiro). Como o pedido ainda não diz qual closet é de qual quarto, vale qualquer quarto. Não abrem direto para a sala ou a cozinha. Despensa, depósito e lavabo continuam podendo abrir para qualquer cômodo atravessável.
+3. **Pelo menos um banheiro é social:** um banheiro abre para a circulação, ou um lavabo abre para um cômodo atravessável. Abrir só para dentro de um quarto não conta.
+4. **A entrada principal não é pela circulação**, se houver outro cômodo atravessável. A circulação ainda pode tocar a fachada (pendência).
+5. **Ela é uma faixa.** O lado menor tem no máximo 1,50 m (medido no eixo das paredes). Circulação não serve para encher o bloco.
+6. **A nota mede a função.** O critério `circulation` passa a ser **função × economia**: a fração dos privativos íntimos que abrem para a circulação, vezes (1 − área de circulação / área útil total). Sem cômodo de circulação, o critério não entra na nota.
+
+Sem circulação no programa, vale a regra antiga: o privativo abre para qualquer cômodo atravessável. A **validade** (seção 5.1) não mudou: uma planta em que o quarto abre para a sala continua válida; é o gerador que não a propõe quando há circulação.
+
+### 21.3 Regras de forma dos cômodos
+
+1. **Proporção.** O lado maior de um cômodo interno tem no máximo 2,5 vezes o menor. Circulação e áreas externas (varanda, pátio) ficam de fora.
+2. **Cômodos iguais.** Só se premiam medidas iguais entre cômodos do mesmo tipo **e com o mesmo alvo de área**: dois quartos pedidos com 12 e 10 m² não são forçados a ficar iguais.
+3. **Espelho não é alternativa.** Num lote simétrico na largura (sem um lado só encostado, norte na frente ou no fundo), a planta espelhada de uma alternativa não conta como outra alternativa.
+4. **Janela de área.** Um cômodo com área-alvo fica entre **0,7 e 1,5 vezes** o alvo (área útil aproximada). Se o alvo for menor que o menor cômodo possível (o maior entre a área mínima do tipo e a largura mínima ao quadrado), o teto vale sobre esse mínimo. Um alvo que não cabe no lote dá erro com a soma das áreas pedidas. Substitui a trava de 1,8 vezes do M1.1 (DEC-0093).
+
+### 21.4 Resultado e o que fica pendente
+
+- Compacidade de **0,97 a 1,00** nos 5 pedidos de referência (antes: 0,79 a 0,98) e área de 0,80 a 0,89 (antes: 0,60 a 0,96), sem cômodo acima de 1,5 vez o alvo.
+- **Tempo:** 1 a 15 s por resolução; 26 a 111 s para 4 alternativas (máquina livre). A meta da seção 8 (~5 s e ~20 s) **não é atingida**; fica como pendência para o M2, onde a transmissão de soluções parciais muda o que o usuário percebe.
+- No programa mínimo a área piorou (0,96 → 0,88): a malha alinha cômodos pequenos com os grandes e eles crescem até o teto. Detalhes no relatório.

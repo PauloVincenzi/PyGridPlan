@@ -20,6 +20,7 @@ dev = ["pytest>=9"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["slow: roda o solver CP-SAT (a suíte completa leva minutos); suíte rápida: pytest -m \"not slow\""]
 
 [tool.pyright]
 venvPath = "."

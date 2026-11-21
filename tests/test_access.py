@@ -40,3 +40,17 @@ def test_short_shared_wall_is_not_a_passage():
     q = Room(id="q", type="quarto", rect=Rect(x=5000, y=4200, w=3000, h=3000))  # 800 mm em comum
     assert MIN_PASSAGE_MM == 900
     assert _codes(_check(SALA, q)) == [("unreachable", ("q",))]
+
+
+def test_social_bath_rule_accepts_a_lavatory_next_to_the_living_room():
+    # rápido (sem solver): quem satisfaz "pelo menos um banheiro social" (design 21.2, item 3)
+    from pygridplan.generators.cpsat import _social_bath_pairs
+
+    catalog = load_catalog()
+    ids = ("sala", "lavabo", "circulacao", "quarto", "banheiro")
+    pairs = set(_social_bath_pairs([catalog.get(t) for t in ids]))
+    named = {(ids[i], ids[j]) for i, j in pairs}
+    assert ("lavabo", "sala") in named  # lavabo é da zona social: basta um atravessável
+    assert ("banheiro", "circulacao") in named
+    assert ("banheiro", "sala") not in named  # banheiro da zona íntima abre para a circulação
+

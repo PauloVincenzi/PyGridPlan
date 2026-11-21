@@ -3,7 +3,7 @@ from itertools import combinations
 
 import pytest
 
-from pygridplan.generators.cpsat import GenerationError, generate_alternatives
+from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT as TIME, GenerationError, generate_alternatives
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import Site
 from pygridplan.model.request import Request, RoomRequest, load_request
@@ -12,7 +12,7 @@ from pygridplan.validation.access import check_access
 from pygridplan.validation.checks import validate_geometry
 from test_request import BASIC_PROGRAM
 
-TIME = 0.5
+pytestmark = pytest.mark.slow
 LOT = Site(width_mm=10000, depth_mm=25000)
 
 
@@ -29,8 +29,13 @@ def test_four_valid_diverse_alternatives():
         assert check_access(alt.plan, catalog) == []
     pairs = math.comb(len(request.rooms), 2)
     min_diff = max(1, math.ceil(0.15 * pairs))
+    width = request.site.width_mm
     for a, b in combinations(alts, 2):
         assert plan_distance(a.plan, b.plan) >= min_diff / pairs
+        # o lote é simétrico na largura: uma alternativa também não pode ser o espelho de outra
+        flipped = a.plan.model_copy(update={"rooms": tuple(
+            r.model_copy(update={"rect": r.rect.model_copy(update={"x": width - r.rect.x2})}) for r in a.plan.rooms)})
+        assert plan_distance(flipped, b.plan) >= min_diff / pairs
 
 
 def test_program_too_big_raises():
@@ -76,3 +81,16 @@ def test_no_room_inflates_past_double_its_target():
         for room in alt.plan.rooms:
             if targets[room.id]:
                 assert useful_area_mm2(room, alt.plan) / 1e6 <= 2 * targets[room.id], room.id
+
+
+def test_no_room_shrinks_far_below_its_target():
+    # na 3ª alternativa deste pedido a cozinha saía com 3,6 m² para um alvo de 10 m² (calibração do M1.1)
+    from pygridplan.model.walls import useful_area_mm2
+    from pygridplan.scoring.score import room_target_m2
+
+    request, catalog = load_request(BASIC_PROGRAM.parent / "three-bedroom.json"), load_catalog()
+    targets = {r.id: room_target_m2(r, catalog) for r in request.rooms}
+    for alt in generate_alternatives(request, catalog, k=3, time_limit=TIME):
+        for room in alt.plan.rooms:
+            if targets[room.id]:
+                assert useful_area_mm2(room, alt.plan) / 1e6 >= 0.7 * targets[room.id], room.id
