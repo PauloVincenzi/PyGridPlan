@@ -1763,3 +1763,143 @@ Status: Aprovada.
   - conferência das plantas novas;
   - aprovação das DEC-0099 a DEC-0107;
   - área do lote pequeno.
+
+### Log da sessão — continuação 2 (2026-11-22)
+
+3. **Responsável** (registro tardio, a pedido dele: aconteceu às 11:43 UTC, antes dos itens 1 e 2, na conversa da S06): tinha 80 % do uso semanal disponível só para hoje e pediu tarefas que não dependem da conferência das 4 plantas novas, com o esforço e o prompt de cada uma. **Agente** (planejamento do dia, DEC-0124): propôs 6 tarefas em ordem de valor, todas no Opus 5.5, cada uma num branch próprio e numa conversa nova, rodadas **em sequência**, porque todas acrescentam texto ao DECISOES.md e ao README:
+
+   | # | Tarefa | Branch | Esforço |
+   |---|---|---|---|
+   | 1 | Reprodutibilidade e tempo do CP-SAT | `fix/cpsat-reproducibility` | xhigh |
+   | 2 | Pesquisa do M2 com experimento de re-solução | `docs/m2-research` | high |
+   | 3 | Design proposto do M1.2 e promoção dos dados da D2 | `feat/m1-2-design` | high |
+   | 4 | Trilha D3: aberturas | `docs/d3-openings-research` | high |
+   | 5 | Fundamentação teórica do gerador | `docs/generator-theory` | medium |
+   | 6 | Pesquisa de LLM local para o M5 (opcional) | `docs/m5-local-llm-research` | high |
+
+   Ficaram de fora o ajuste das regras do gerador, que depende da conferência, e o design do M2, que precisa do responsável. O registro desse planejamento ficou a cargo da tarefa 1.
+4. **Responsável:** colou o prompt 1 (pendência da DEC-0101). Pediu para:
+   - investigar com `superpowers:systematic-debugging`, reproduzindo com um script e medindo: limite por relógio × determinístico, workers, interleave, polimento, as duas fases e as tentativas de forma;
+   - propor opções com custo e benefício e escolher com evidência;
+   - criar com TDD um teste que roda o mesmo pedido duas vezes e exige a mesma planta;
+   - medir os 5 pedidos da bancada antes e depois (tempo, nota e área) e avisar antes de seguir se a qualidade piorasse;
+   - propor em separado um ganho de tempo barato e seguro, sem misturar com a correção;
+   - não mudar as regras de layout do M1.1.
+
+   Autorizou os commits, com o plano mostrado antes. As tarefas 1, 2 e 3 rodaram **ao mesmo tempo**, em conversas separadas.
+
+   **Agente:**
+   - **Branch e worktree:** criou `fix/cpsat-reproducibility` a partir da `main` (`672af29`). A conversa da tarefa 2 trocou o branch da pasta compartilhada. Para uma sessão não commitar no branch da outra, o responsável escolheu um **worktree em pasta irmã**. Antes dos commits, o branch avançou (fast-forward) até `feat/m1-2-design`, a ponta da pilha das tarefas 2 e 3 (DEC-0125).
+   - **Reprodução:** script no scratchpad que intercepta cada resolução e registra a impressão digital do modelo, o objetivo, os tempos de relógio e determinístico, o vetor de solução e a planta. Na bancada (5 pedidos × 4 alternativas), 3 execuções iguais deram plantas diferentes:
+     - na casa grande, nas alternativas 2 a 4 (a 3ª com nota 0,867 numa execução e 0,927 nas outras);
+     - nos 3 quartos, na alternativa 4.
+
+     O programa básico e os pedidos pequenos saíram iguais.
+   - **Isolamento** (3 processos simultâneos por configuração, comparando o vetor de solução inteiro):
+     - o modelo é idêntico entre processos e com a máquina carregada: o defeito não está no Python;
+     - o limite só age entre lotes de 24 tarefas. Com limites de 11, 14 e 17, a busca gastava sempre ≈ 18,2 unidades; com limite 20, o programa básico gastava de 25 a 28;
+     - parar por número de lotes, sozinho, não resolve;
+     - desligar a troca de cláusulas binárias tornou a 1ª alternativa reprodutível (RINS, cláusulas glue e troca de limites não mudaram nada). Mesmo assim, **o GREEN do teste falhou**, na 2ª alternativa;
+     - no modelo da 2ª alternativa, nem com todas as trocas desligadas a busca se repetia (objetivo de 6,42 a 7,76). Só com o **LNS** desligado as 3 execuções saíram idênticas. Com 1 worker também variou;
+     - com o LNS desligado e as binárias ligadas, voltou a variar: as duas causas são independentes;
+     - o código-fonte do OR-Tools v9.15, lido no GitHub, confirma a lacuna no modo paralelo determinístico.
+   - **Correção (DEC-0123):**
+     - `use_lns = False` e `share_binary_clauses = False`;
+     - parada por 6 lotes na fase 1 e por 2 na fase 2;
+     - a API e a CLI trocam `time_limit`/`--time-limit` por `batches`/`--batches`, e `batches` < 1 é recusado;
+     - nenhuma regra, peso ou restrição do M1.1 mudou.
+   - **Opções medidas:** detalhes na seção 22.5 do design. Com 4 lotes a geração ficava até 35 % mais rápida, e com 5 lotes, um pouco menos. Nos dois casos a pior alternativa da casa grande caía (0,849 e 0,850), abaixo de todas as execuções antigas (0,854 a 0,887). Por piorar a qualidade, ficaram 6 lotes.
+   - **Correção de uma medida:** a primeira comparação de tempo, que dizia "tempo parecido", usou um "antes" medido com a máquina disputada pelas outras conversas. Medindo antes e depois alternados, pedido a pedido, nas mesmas condições, a correção custa ≈ 19 % de tempo.
+   - **TDD:** o teste novo falhou no código antigo e passa no novo. Para a guarda de `batches=0`, o RED não foi executado: sem ela a busca roda sem limite, o que se vê lendo o código.
+   - **Bancada antes e depois:** tabela na DEC-0123. Com o código novo, as 20 alternativas saíram idênticas em 3 execuções, duas delas simultâneas.
+   - **Ganho de tempo:** proposto em separado (DEC-0126), sem implementar.
+   - **Revisão independente** (`superpowers:requesting-code-review`): nada crítico.
+     - **Achado importante, corrigido:** a DEC-0113 e a versão 1.6 do design colidiam com o `feat/m1-2-design`. Daí a renumeração para DEC-0123, a versão 1.7 do design e o empilhamento.
+     - **Achados menores, os 6 corrigidos:** guarda `batches >= 1`; help de `--batches`; teste com 2 alternativas, conferindo que alguma resolução parou no orçamento; afirmações da 22.5; comentários do código; README.
+   - **Concorrência entre as conversas:** os experimentos desta tarefa e o da tarefa 2 rodaram ao mesmo tempo e disputaram CPU. Os "dois processos Python de outra origem" da ressalva da tarefa 2 eram desta tarefa. Isso afeta os tempos de relógio, não as conclusões sobre determinismo.
+   - **Verificação:** suíte completa com 169 testes passando, sem falhas, em 19 min; `pyright` sem erros. A suíte rápida tem 119 testes, incluindo os 6 de dados do M1.2 que vieram com a base. O RED e o GREEN do teste novo foram conferidos com a versão final dele (2 alternativas): falha no código da `main` e passa no novo.
+
+### Decisões — continuação 2 (2026-11-22)
+
+**DEC-0123 — Reprodutibilidade do CP-SAT: orçamento em lotes, sem LNS e sem troca de cláusulas binárias**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente (pedido do Responsável) · Categoria: Arquitetura
+Substitui: DEC-0101 (limite de 20 unidades determinísticas e "reprodutibilidade limitada").
+Contexto: com o mesmo pedido, a mesma semente e os mesmos parâmetros, a busca que parava no limite devolvia plantas diferentes.
+Decisão:
+- o CP-SAT roda 8 estratégias de busca completa intercaladas, com `use_lns = False` e `share_binary_clauses = False`;
+- o orçamento é um número de **lotes sincronizados** (`max_num_deterministic_batches`): `DEFAULT_BATCHES` = 6 na fase 1 (≈ 40 unidades determinísticas) e `POLISH_BATCHES` = 2 na fase 2;
+- `time_limit`/`--time-limit` viram `batches`/`--batches`. `batches` < 1 é recusado, porque no CP-SAT 0 significa "sem limite".
+
+Justificativa: medido (log, item 4, e design, seção 22.5). O LNS e a troca de cláusulas binárias mudavam a busca conforme o tempo das threads, e a parada por tempo determinístico caía em lotes diferentes. Com as três mudanças, as 20 alternativas da bancada saíram idênticas em 3 execuções.
+Consequências:
+- bancada antes e depois (5 pedidos × 4 alternativas). Como o "antes" variava, ele aparece como a faixa de até 4 execuções. O tempo foi medido alternando antes e depois, pedido a pedido, nas mesmas condições:
+
+  | Pedido | Nota média | Pior alternativa | Melhor | Área média | Tempo (4 alternativas) |
+  |---|---|---|---|---|---|
+  | 1 quarto | 0,917 → 0,917 | 0,912 → 0,912 | 0,923 → 0,923 | 0,896 → 0,896 | 2,0 → 2,0 s |
+  | Lote pequeno | 0,847 → 0,846 | 0,821 → 0,821 | 0,919 → 0,919 | 0,750 → 0,745 | 61 → 57 s |
+  | Programa básico | 0,910 → 0,910 | 0,899 → 0,899 | 0,923 → 0,923 | 0,848 → 0,848 | 97 → 120 s |
+  | 3 quartos | 0,938–0,944 → 0,938 | 0,906–0,933 → 0,918 | 0,955 → 0,955 | 0,835–0,870 → 0,871 | 105 → 119 s |
+  | Casa grande | 0,883–0,919 → 0,918 | 0,854–0,887 → 0,896 | 0,925–0,933 → 0,936 | 0,830–0,847 → 0,827 | 115 → 156 s |
+
+  A nota não piora em nenhum pedido. A área média da casa grande fica 0,003 abaixo da pior execução antiga, e o tempo total sobe ≈ 19 % (381 → 454 s);
+- **mudança incompatível:** scripts com `--time-limit` param com erro do argparse;
+- a garantia foi medida com o OR-Tools 9.15.6755 nesta máquina. Outra versão precisa ser conferida de novo; o teste novo faz isso;
+- sem teto global de tempo, o presolve roda até os próprios limites internos. Conferir quando o M1.2 acrescentar restrições;
+- as latências do experimento de re-solução da pesquisa do M2 (DEC-0111) foram medidas com a configuração antiga e precisam ser refeitas;
+- a meta de tempo do design (seção 8: ~20 s para 4 alternativas) continua não atingida.
+
+Status: Proposta (implementada; aguarda aprovação do responsável).
+
+**DEC-0124 — Plano do dia da S07**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente (proposta, a pedido do Responsável) · Categoria: Processo
+Decisão: as 6 tarefas do log (item 3), com esforço, branch e prompt, rodadas em sequência, uma conversa por tarefa.
+Consequências: o responsável rodou as tarefas 1, 2 e 3 ao mesmo tempo. Isso causou a troca de branch na pasta compartilhada e a colisão de numeração resolvida na DEC-0125. A DEC-0127 propõe como evitar.
+Status: Aprovada (executada em paralelo, e não em sequência).
+
+**DEC-0125 — Worktree em pasta irmã e branch empilhado sobre `feat/m1-2-design`**
+Data: 2026-11-22 · Sessão: S07 · Autor: Responsável (worktree) / Agente (empilhamento) · Categoria: Processo
+Decisão:
+- `fix/cpsat-reproducibility` trabalha num worktree fora do repositório, em `PyGridPlan-worktrees/fix-cpsat-reproducibility`, ao lado da pasta do projeto (escolha do responsável);
+- antes dos commits, o branch avançou da `main` até `feat/m1-2-design`, sem reescrever nada, porque ainda não tinha commits. Assim não colide no DECISOES.md, no README e no cabeçalho do design.
+
+Ordem de merge:
+1. `docs/m2-research`;
+2. `feat/m1-2-design`;
+3. `fix/cpsat-reproducibility`.
+
+Cada PR tem como base o anterior até ele ser integrado e depois é redirecionado para a `main`.
+Consequências: o worktree pode ser removido depois do merge (`git worktree remove`), se o responsável quiser.
+Status: Aprovada (worktree) / Proposta (ordem de merge).
+
+**DEC-0126 — Ganho de tempo proposto: não repetir tentativas de forma já provadas inviáveis**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Arquitetura
+Contexto: no lote pequeno, cada alternativa refaz a prova de que o retângulo com teto de 1,5 × não cabe. Com o código novo, as alternativas 2 a 4 gastam 4,3 + 4,0 + 4,4 = 12,7 s dos 56 s nessa prova repetida.
+Decisão proposta: `generate_alternatives` guarda a primeira tentativa de forma que não foi provada inviável e começa por ela nas alternativas seguintes. É seguro: os padrões proibidos só acrescentam restrições, então uma tentativa inviável continua inviável, e as plantas saem idênticas. Só os pedidos que caem nas tentativas de forma ganham: ≈ 23 % no lote pequeno e nada nos outros 4.
+Status: Proposta (não implementada; separada da correção, como o responsável pediu).
+
+**DEC-0127 — Conversas em paralelo: worktree próprio e numeração a partir da ponta**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Processo
+Contexto: três conversas rodaram ao mesmo tempo. Duas usaram os mesmos números de DEC e a mesma versão do design, e uma trocou o branch da pasta da outra.
+Decisão proposta: preferir as tarefas em sequência. Quando rodarem em paralelo:
+1. cada conversa trabalha num worktree próprio;
+2. antes de numerar decisões e de commitar, o agente olha os branches locais ainda não integrados e continua a numeração, a seção da sessão e a versão dos documentos a partir da ponta da pilha;
+3. o branch é empilhado sobre essa ponta, com a ordem de merge informada.
+
+Se aprovada, vale sugerir a regra no CLAUDE.md (seção "Arquivos e git").
+Status: Proposta.
+
+### Pendências abertas (S07) — atualização 2
+
+- **Responsável:**
+  - push e PRs na ordem da DEC-0125;
+  - aprovar ou vetar as DEC-0123, DEC-0125 (ordem de merge), DEC-0126 e DEC-0127;
+  - aceitar ou não o custo de ≈ 19 % de tempo da DEC-0123. A alternativa medida é 5 lotes: mais rápido, mas a pior alternativa da casa grande cai para 0,850;
+  - decidir se fixa `ortools==9.15.6755` no `pyproject.toml`: a reprodutibilidade só foi medida nessa versão;
+  - decidir se o agente implementa o ganho de tempo da DEC-0126.
+- **Agente:**
+  - refazer as latências do experimento de re-solução do M2 com a configuração nova, antes do design do M2;
+  - conferir o presolve e a qualidade sem LNS quando o M1.2 acrescentar restrições;
+  - remover o worktree depois do merge, se o responsável quiser.
+- O tempo de geração continua acima da meta do design (seção 8).
+- As pendências anteriores da S07 e da S06 continuam.
