@@ -1597,3 +1597,169 @@ Status: Aprovada.
   - dica reconstruída só a partir do `Plan`;
   - nova rodada com a máquina livre.
 - Pendências da S06 continuam: conferência das plantas novas, aprovação das DEC-0099 a DEC-0107, área do lote pequeno, M1.2.
+
+### Log da sessão — continuação (2026-11-22)
+
+2. **Responsável:** pediu o design proposto do M1.2 (dimensionamento pelo mobiliário) e a promoção dos dados da D2, sem implementar o gerador.
+   - **Branch:** `feat/m1-2-design` a partir da `main` atualizada, ou do branch anterior se o PR dele não estivesse integrado, informando a ordem dos PRs.
+   - **Processo:** seguir `superpowers:brainstorming` sem perguntas uma a uma, porque ele não estaria disponível. Hipóteses explícitas e todas as perguntas num bloco único no fim.
+   - **Base:** pesquisa D2, seção 20 do design e DEC-0108.
+   - **O design cobre:** perfis de mínimo; mobiliário por tipo; a verificação "cabe?" (algoritmo, checagem depois da geração, restrição no CP-SAT ou as duas, e o custo de cada uma); relatório HTML e DXF; personalização; testes.
+   - **Entregas:**
+     - o design em `docs/design/`, com status Proposta e a justificativa de documento próprio ou seção do mvp.md;
+     - a promoção para `data/` só do que o M1.2 lê, com fonte por valor e teste de registro, sem inventar valores;
+     - o plano em `docs/plans/`, marcado como aguardando a aprovação do design;
+     - README e DECISOES.md atualizados, com as decisões do agente como Proposta.
+   - **Git:** autorizou os commits (com o plano mostrado antes), o estado da tarefa no fim, o comando de push e o PR.
+
+   **Agente:**
+   - **Branch:** `docs/m2-research` não está no `origin` nem integrado. Criou `feat/m1-2-design` a partir dele (DEC-0122).
+   - **Conferência visual da NBR:** baixou a cópia UNMP do anexo (3 páginas) para o scratchpad e conferiu as pp. 1–2 renderizadas como imagem.
+     - Confirmou os valores da sala que a D2 deixara pendentes.
+     - Achou dois pontos que o relatório não registrava: a NBR admite a mesa com o lado menor encostado na parede, e pede 0,50 m na frente da estante de TV. A Tabela 1 diz "criado-mudo (mínimo 1)" e "tanque externo para unidades térreas".
+   - **Design:** `docs/design/m1-2-furniture-sizing.md` (Proposta), em documento próprio pelas razões da seção 2 dele. A seção 20.2 do mvp.md ganhou só um apontador (versão 1.6).
+   - **Dados:**
+     - `data/furniture.yaml` v0.1: 4 perfis, 22 itens, 18 folgas, larguras mínimas, módulos do MCMV e 10 conjuntos por tipo;
+     - 4 fontes novas em `data/sources.yaml`;
+     - notas de 3 fontes corrigidas, como a D2 pedia;
+     - teste novo `tests/test_furniture_data.py`, escrito antes dos dados.
+   - **Plano:** `docs/plans/m1-2-furniture-sizing.md`, com 10 tarefas, portões de custo e o status "aguarda a aprovação do design".
+   - **Documentação:** README (estado e estrutura) e `data/README.md` (arquivo novo; o validador sai do "M8" e vai para o M1.2).
+   - **Leitura de construtor:** feita pelo próprio agente, sem subagente, porque o responsável não pediu agentes. Quatro lacunas viraram decisões do agente, marcadas no design (seção 7.3).
+   - **Verificação:** suíte rápida e `pyright` rodados antes dos commits; o resultado está na resposta desta rodada.
+
+### Decisões — continuação (2026-11-22)
+
+**DEC-0113 — Design do M1.2 em documento próprio**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Processo / Documentação
+Decisão: o design do M1.2 fica em `docs/design/m1-2-furniture-sizing.md`, e não numa seção nova do mvp.md. A seção 20.2 continua como o resumo aprovado e aponta para ele.
+Justificativa:
+- o mvp.md já mistura conteúdo aprovado (até a seção 21) e pendente (22 e 23);
+- o design tem cerca de 300 linhas;
+- `docs/plans/` já tem um arquivo por marco.
+Status: Proposta.
+
+**DEC-0114 — Perfis de mínimo nomeados pela fonte, com `ergonomico` como padrão**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Produto / Dados
+Substitui (se aprovada): o item 3 da seção 20.2 do design (perfis conservador, mediana e personalizado; DEC-0080 a DEC-0083).
+Contexto: a D2 mostrou dois problemas.
+- O "maior mínimo entre as fontes" é quase sempre Panero, a antropometria norte-americana, o que inflaria todos os cômodos.
+- A mediana é uma estatística do agente, que nenhuma fonte publicou.
+Decisão: perfis `nbr` (base), `mcmv` (completado pela NBR, art. 5º da portaria; inclui os módulos de manobra), `ergonomico` (Pedro e Boueri; **padrão proposto**) e `folgado` (Panero). O personalizado é a troca de valores por cima de qualquer perfil. Todo valor tem fonte; o que falta num perfil vem do `fallback`.
+Status: Proposta (pergunta 1 do design).
+
+**DEC-0115 — Verificação "cabe?": escada no CP-SAT e checagem exata depois**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Arquitetura / Algoritmo
+Decisão:
+- um oráculo CP-SAT pequeno por cômodo (`fits`, determinístico, com um laço de alcance em Python);
+- dele sai uma escada por conjunto (largura útil → menor profundidade útil), que entra no modelo da planta como uma restrição `add_element` por cômodo;
+- cada alternativa pronta passa por uma checagem exata, com as paredes de porta reais, que grava o arranjo.
+
+Alternativas descartadas:
+- **só checar depois:** cada rejeição custa uma resolução inteira;
+- **posicionar os móveis no modelo da planta:** modelo várias vezes maior, quando o M1.1 já passa da meta de tempo.
+
+Consequências: metas de custo a medir antes de integrar (design 7.6):
+- escada ≤ 2 s;
+- pré-cálculo de um pedido ≤ 5 s;
+- tempo total ≤ +20 %;
+- rejeições ≤ 1 em 4.
+Status: Proposta.
+
+**DEC-0116 — Regras de composição do mobiliário**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Produto
+Contexto: nenhuma fonte define como as folgas se combinam, e a D2 apontou que isso decide mais a área que os próprios números.
+Decisão (design 5):
+- zonas de uso podem se sobrepor entre si; corpos não sobrepõem nada;
+- encosto na parede por item;
+- cama de casal com 2 lados e pé; cama de solteiro com 1 lado (Pedro);
+- mesa com um lado menor na parede (NBR);
+- criado-mudo dentro da faixa lateral da cama;
+- duas camas de solteiro usam a maior folga entre elas;
+- zona da porta de 0,80 × a `frente_porta` ou a `circulacao` do perfil;
+- alcance com largura mínima igual à `circulacao`;
+- módulo de Ø 1,50 como o quadrado de 1,50.
+
+Conferência: com essas regras, o quarto de casal da NBR tem largura mínima de 2,40 m, o valor da própria NBR e da v07 do MCMV.
+Status: Proposta (pergunta 4).
+
+**DEC-0117 — Mobiliário mínimo por tipo e regras do programa**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente (sobre as Tabelas 1 e 2 da NBR e o MCMV) · Categoria: Produto / Dados
+Decisão: conjuntos padrão para quarto (casal), quarto de solteiro, sala, sala de jantar, copa, cozinha, banheiro, lavabo e lavanderia, mais o conjunto `quarto_duplo` sob pedido. Regras do programa:
+- assentos ≥ leitos;
+- a mesa de 4 vai para a sala quando não há sala de jantar nem copa;
+- 1 criado-mudo no casal.
+
+Os demais tipos não têm conjunto, porque não há fonte.
+Status: Proposta (pergunta 5: casal por padrão ou ordem da NBR).
+
+**DEC-0118 — Mínimos dos tipos mobiliados vêm do mobiliário, não do catálogo**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Produto / Dados
+Contexto: o catálogo aplica a toda casa larguras do MCMV (banheiro 1,50, cozinha 1,80) e da v07 substituída (quarto 2,40, lavanderia 1,80). Isso contraria a DEC-0108.
+Decisão: nos tipos com conjunto, o gerador usa o lado e a área mínimos da escada do perfil ativo. `min_width_mm` e `min_area_m2` saem desses tipos em `room_types.yaml`, e as larguras com fonte viram dado do perfil (`room_min_width`). O catálogo **não foi alterado nesta rodada**: a mudança está na tarefa 7 do plano e depende de aprovação.
+Status: Proposta (pergunta 2).
+
+**DEC-0119 — Promoção da D2 para `data/furniture.yaml`**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Dados
+Decisão: foram promovidos só os valores que o M1.2 lê, cada um com fonte externa.
+- **NBR:** itens, folgas e larguras, com a sala conferida visualmente na S07.
+- **MCMV:** cama de solteiro, folga entre camas, box, larguras, módulos e frente da porta.
+- **Ergonomia:** Pedro e Panero via Mendonça, Boueri via Kapitzky, e NAURB.
+- **Mercado:** colchões queen e king.
+
+Fontes novas: `mendonca-2015`, `kapitzky-2019`, `naurb-ufpel` e `madeiramadeira-colchoes`. Notas corrigidas: `nbr15575-1-anexo`, `mcmv-725-2023` e `mcmv-espec-2017`.
+Ficaram fora, com o motivo no design (seção 12):
+- presets de mercado lidos só em trechos de busca;
+- Palermo, LNEC e Portaria 168;
+- quadros ambíguos de Pedro;
+- NBR 9050 secundária;
+- lavatório do MCMV;
+- máquina frontal;
+- sofás sem braço;
+- Reis e Lay.
+
+Consequência: o teste `test_furniture_data.py` barra medida sem fonte, medida com fonte `agente` e referência quebrada.
+Status: Proposta (dados versionados; o uso depende do design).
+
+**DEC-0120 — Arranjo de móveis no modelo, no relatório e no DXF**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente · Categoria: Arquitetura / Interface
+Decisão:
+- **Modelo:** `Plan.furniture` guarda corpo, giro e zonas de cada móvel.
+- **Relatório HTML:** desenha móveis e folgas e mostra o perfil e uma tabela "cabe" por cômodo.
+- **DXF:** cada móvel é um bloco `MOB-<item>-<w>x<d>` no `A-MOBILIARIO`; as folgas vão para o layer novo `A-MOBILIARIO-FOLGAS`, que não imprime; avisos no `A-AVISOS`.
+- Um plano antigo, sem móveis, continua válido.
+Status: Proposta (pergunta 6).
+
+**DEC-0121 — Personalização do mobiliário no pedido**
+Data: 2026-11-22 · Sessão: S07 · Autor: Agente (sobre a DEC-0108 do responsável) · Categoria: Produto
+Decisão: campos novos no pedido.
+- `furniture_profile` (padrão `ergonomico`);
+- `furniture_rule`: `enforce` (padrão) ou `warn`;
+- `furniture_overrides`: folgas, dimensões de itens e larguras mínimas, em mm;
+- `RoomRequest.furniture`: id de conjunto, lista explícita ou `[]`.
+
+O M2 leva esses controles para a tela.
+Status: Proposta (pergunta 3: `enforce` como padrão).
+
+**DEC-0122 — Branch `feat/m1-2-design` empilhado sobre `docs/m2-research`**
+Data: 2026-11-22 · Sessão: S07 · Autor: Responsável (regra) / Agente (aplicação) · Categoria: Processo
+Decisão: `docs/m2-research` ainda não estava no `origin`, nem integrado. O branch novo saiu dele, como o responsável instruiu.
+Ordem de merge:
+1. PR de `docs/m2-research` → `main`;
+2. PR de `feat/m1-2-design`, com base em `docs/m2-research` até o primeiro ser integrado e depois redirecionado para a `main`.
+Status: Aprovada.
+
+### Pendências abertas (S07) — atualização
+
+- **Responsável:**
+  - responder às 8 perguntas da seção 15 do design do M1.2 e aprovar ou vetar as DEC-0113 a DEC-0121;
+  - fazer o push de `docs/m2-research` e de `feat/m1-2-design` e abrir os dois PRs, nessa ordem.
+- **Agente, depois da aprovação:** ajustar o design e o plano às respostas e executar o plano do M1.2, começando pela medição de custo (tarefa 5) antes de integrar no gerador.
+- **Trilha de dados:** conferir as fichas dos presets de mercado (pergunta 7 do design).
+- **Pendências anteriores da S07 e da S06 continuam:**
+  - 15 perguntas do M2;
+  - ordem M1.2 → M2;
+  - dados brutos do experimento;
+  - conferência das plantas novas;
+  - aprovação das DEC-0099 a DEC-0107;
+  - área do lote pequeno.
