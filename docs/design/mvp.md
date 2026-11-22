@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.5 · Criado em: 2026-11-11 · Atualizado em: 2026-11-19 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06) aguarda aprovação do responsável**
+Versão: 1.6 · Criado em: 2026-11-11 · Atualizado em: 2026-11-22 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06) aguarda aprovação do responsável; o design do M1.2 está em documento próprio (Proposta)**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -365,6 +365,8 @@ Conclusão da D1, aceita pelo responsável: **a área mínima de um cômodo é c
 
    O objetivo é o gerador nunca propor um cômodo em que o que foi pedido não cabe, **sem** precisar de dezenas de perguntas.
 4. **Itens pedidos** ("mesa para 6", "cama king", "pia de 2 m"): entram no conjunto de mobiliário daquele cômodo e aumentam os mínimos dele. É o pré-dimensionamento da seção 6.3, antecipado do M6.
+
+**Design detalhado (S07, Proposta):** [m1-2-furniture-sizing.md](m1-2-furniture-sizing.md). Ele propõe trocar os perfis do item 3 por perfis nomeados pela fonte (DEC-0114) e detalha a verificação do item 2 (DEC-0115).
 
 Ordem: **M1.1 → M1.2 → M2.** A interface só deve mostrar plantas que já pareçam plantas.
 
