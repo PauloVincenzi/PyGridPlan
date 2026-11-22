@@ -3,7 +3,7 @@ from itertools import combinations
 
 import pytest
 
-from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT as TIME, GenerationError, generate_alternatives
+from pygridplan.generators.cpsat import DEFAULT_BATCHES as BATCHES, GenerationError, generate_alternatives
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import Site
 from pygridplan.model.request import Request, RoomRequest, load_request
@@ -22,7 +22,7 @@ def _req(*types):
 
 def test_four_valid_diverse_alternatives():
     request, catalog = load_request(BASIC_PROGRAM), load_catalog()
-    alts = generate_alternatives(request, catalog, k=4, time_limit=TIME)
+    alts = generate_alternatives(request, catalog, k=4, batches=BATCHES)
     assert len(alts) == 4
     for alt in alts:
         assert validate_geometry(alt.plan) == []
@@ -42,24 +42,47 @@ def test_program_too_big_raises():
     site = Site(width_mm=5000, depth_mm=5000)
     rooms = (RoomRequest(id="s", type="sala"), RoomRequest(id="q1", type="quarto"), RoomRequest(id="q2", type="quarto"))
     with pytest.raises(GenerationError, match="caber"):
-        generate_alternatives(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME)
+        generate_alternatives(Request(site=site, rooms=rooms), load_catalog(), batches=BATCHES)
 
 
 def test_no_traversable_room_raises():
     with pytest.raises(GenerationError, match="atravessável"):
-        generate_alternatives(_req("quarto", "quarto"), load_catalog(), time_limit=TIME)
+        generate_alternatives(_req("quarto", "quarto"), load_catalog(), batches=BATCHES)
 
 
 def test_small_program_returns_fewer():
     # sala + cozinha só têm 4 arranjos realmente diferentes (esquerda, direita, frente, atrás)
-    alts = generate_alternatives(_req("sala", "cozinha"), load_catalog(), k=6, time_limit=TIME)
+    alts = generate_alternatives(_req("sala", "cozinha"), load_catalog(), k=6, batches=BATCHES)
     assert 1 <= len(alts) < 6
 
 
 def test_same_seed_same_plans():
     req = _req("sala", "cozinha", "quarto")
-    first = generate_alternatives(req, load_catalog(), k=2, time_limit=TIME)
-    second = generate_alternatives(req, load_catalog(), k=2, time_limit=TIME)
+    first = generate_alternatives(req, load_catalog(), k=2, batches=BATCHES)
+    second = generate_alternatives(req, load_catalog(), k=2, batches=BATCHES)
+    assert [a.plan for a in first] == [a.plan for a in second]
+
+
+def test_same_request_same_plans_when_the_search_stops_at_its_budget(monkeypatch):
+    # a casa grande não prova o ótimo no orçamento: antes da S07, da 2ª alternativa em diante a planta mudava de uma
+    # execução para outra (nota de 0,87 a 0,93 na mesma alternativa), porque o LNS e a troca de cláusulas binárias do
+    # CP-SAT dependiam do tempo das threads (DEC-0123). As duas gerações rodam ao mesmo tempo, como num servidor
+    from concurrent.futures import ThreadPoolExecutor
+
+    from ortools.sat.python import cp_model
+
+    statuses, solve = [], cp_model.CpSolver.solve
+
+    def recording(self, *args, **kwargs):
+        status = solve(self, *args, **kwargs)
+        statuses.append(status)
+        return status
+
+    monkeypatch.setattr(cp_model.CpSolver, "solve", recording)
+    request, catalog = load_request(BASIC_PROGRAM.parent / "large-house.json"), load_catalog()
+    with ThreadPoolExecutor(2) as pool:
+        first, second = pool.map(lambda _: generate_alternatives(request, catalog, k=2), range(2))
+    assert cp_model.FEASIBLE in statuses  # a premissa: alguma resolução parou no orçamento, sem provar o ótimo
     assert [a.plan for a in first] == [a.plan for a in second]
 
 
@@ -68,7 +91,7 @@ def test_all_attempts_rejected_raises(monkeypatch):
 
     monkeypatch.setattr(g, "check_access", lambda plan, catalog: ["rejeitada"])  # força rejeição
     with pytest.raises(GenerationError):
-        g.generate_alternatives(_req("sala", "cozinha"), load_catalog(), k=1, time_limit=TIME, max_attempts=2)
+        g.generate_alternatives(_req("sala", "cozinha"), load_catalog(), k=1, batches=BATCHES, max_attempts=2)
 
 
 def test_no_room_inflates_past_double_its_target():
@@ -77,7 +100,7 @@ def test_no_room_inflates_past_double_its_target():
 
     request, catalog = load_request(BASIC_PROGRAM), load_catalog()
     targets = {r.id: room_target_m2(r, catalog) for r in request.rooms}
-    for alt in generate_alternatives(request, catalog, k=4, time_limit=TIME):
+    for alt in generate_alternatives(request, catalog, k=4, batches=BATCHES):
         for room in alt.plan.rooms:
             if targets[room.id]:
                 assert useful_area_mm2(room, alt.plan) / 1e6 <= 2 * targets[room.id], room.id
@@ -90,7 +113,7 @@ def test_no_room_shrinks_far_below_its_target():
 
     request, catalog = load_request(BASIC_PROGRAM.parent / "three-bedroom.json"), load_catalog()
     targets = {r.id: room_target_m2(r, catalog) for r in request.rooms}
-    for alt in generate_alternatives(request, catalog, k=3, time_limit=TIME):
+    for alt in generate_alternatives(request, catalog, k=3, batches=BATCHES):
         for room in alt.plan.rooms:
             if targets[room.id]:
                 assert useful_area_mm2(room, alt.plan) / 1e6 >= 0.7 * targets[room.id], room.id

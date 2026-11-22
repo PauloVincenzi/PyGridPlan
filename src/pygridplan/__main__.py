@@ -1,6 +1,6 @@
 """CLI:
 python -m pygridplan export-dxf PLANO.json SAIDA.dxf
-python -m pygridplan generate PEDIDO.json PASTA [--k 4] [--seed 0] [--time-limit 4]
+python -m pygridplan generate PEDIDO.json PASTA [--k 4] [--seed 0] [--batches 6]
 """
 
 import argparse
@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from pygridplan.export.dxf import export_dxf
 from pygridplan.export.report import write_report
-from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT, GenerationError, generate_alternatives
+from pygridplan.generators.cpsat import DEFAULT_BATCHES, GenerationError, generate_alternatives
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import load_plan, save_plan
 from pygridplan.model.request import load_request
@@ -57,7 +57,7 @@ def _generate(args: argparse.Namespace) -> int:
     catalog = load_catalog()
     start = time.perf_counter()
     try:
-        alternatives = generate_alternatives(request, catalog, k=args.k, seed=args.seed, time_limit=args.time_limit)
+        alternatives = generate_alternatives(request, catalog, k=args.k, seed=args.seed, batches=args.batches)
     except GenerationError as exc:
         print(f"ERRO: {exc}", file=sys.stderr)
         return 1
@@ -95,7 +95,9 @@ def main(argv: list[str] | None = None) -> int:
     gen.add_argument("output", type=Path)
     gen.add_argument("--k", type=_positive(int), default=4)
     gen.add_argument("--seed", type=int, default=0)
-    gen.add_argument("--time-limit", type=_positive(float), default=DEFAULT_TIME_LIMIT)
+    gen.add_argument("--batches", type=_positive(int), default=DEFAULT_BATCHES,
+                     help="lotes de busca do CP-SAT por resolução (mais lotes = busca mais longa; resultado "
+                          "reprodutível). O 1º lote só carrega o modelo: o mínimo útil é 2")
     args = parser.parse_args(argv)
     return _export(args) if args.command == "export-dxf" else _generate(args)
 

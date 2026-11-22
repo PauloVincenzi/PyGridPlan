@@ -38,8 +38,10 @@ VOID_SCALE = 1.0  # fase 2: o vazio custa o peso inteiro da compacidade por áre
 LINE_PRICE = 0.02  # fase 1: por faixa de malha usada (menos linhas = paredes mais alinhadas)
 UNTARGETED_PRICE = 2.0  # área de circulação e de cômodo sem alvo (x peso da área)
 MIN_DIFF_FRACTION = 0.15  # alternativas diferem em >= 15 % dos pares de cômodos
-DEFAULT_TIME_LIMIT = 20.0  # fase 1, em unidades determinísticas do CP-SAT; pedidos pequenos param antes, ao provar o ótimo
-POLISH_TIME = 0.3  # fase 2
+# orçamento de busca em lotes sincronizados do CP-SAT, não em tempo (DEC-0123): a parada cai sempre no mesmo lote.
+# O 1º lote de cada fase só carrega o modelo
+DEFAULT_BATCHES = 6  # fase 1 (≈ 40 unidades determinísticas); pedidos pequenos param antes, ao provar o ótimo
+POLISH_BATCHES = 2  # fase 2
 
 
 class _Cell:
@@ -86,26 +88,26 @@ def _social_bath_pairs(types: Sequence[RoomType]) -> list[tuple[int, int]]:
             for j in (circ if circ and t.zone == "intima" else trav)]
 
 
-def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, time_limit: float = DEFAULT_TIME_LIMIT,
+def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, batches: int = DEFAULT_BATCHES,
                  forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> Plan | None:
-    return _solve(request, catalog, seed=seed, time_limit=time_limit, forbidden=forbidden, min_diff=min_diff)[0]
+    return _solve(request, catalog, seed=seed, batches=batches, forbidden=forbidden, min_diff=min_diff)[0]
 
 
-def _solve(request: Request, catalog: Catalog, *, seed: int, time_limit: float,
+def _solve(request: Request, catalog: Catalog, *, seed: int, batches: int,
            forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> tuple[Plan | None, str]:
-    """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout"."""
+    """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout" (orçamento esgotado)."""
     status = "infeasible"
     for shape in SHAPE_ATTEMPTS:
-        plan, status, topology = _phase(request, catalog, seed, time_limit, forbidden, min_diff, None, shape)
+        plan, status, topology = _phase(request, catalog, seed, batches, forbidden, min_diff, None, shape)
         if plan is not None:
-            polished = _phase(request, catalog, seed, POLISH_TIME, forbidden, min_diff, topology, shape)[0]
+            polished = _phase(request, catalog, seed, POLISH_BATCHES, forbidden, min_diff, topology, shape)[0]
             return polished or plan, "ok"
         if status != "infeasible":
             break
     return None, status
 
 
-def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, forbidden: Sequence[Pattern],
+def _phase(request: Request, catalog: Catalog, seed: int, batches: int, forbidden: Sequence[Pattern],
            min_diff: int, topology: list[int] | None,
            shape: tuple[int, float] = SHAPE_ATTEMPTS[0]) -> tuple[Plan | None, str, list[int]]:
     """Uma fase do gerador; devolve (planta, situação, índices da malha).
@@ -114,6 +116,8 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
     recortes). Com `topology` (fase 2): os índices ficam fixos e só as linhas se movem, com o objetivo exato.
     `shape` = (número máximo de recortes, teto de área como múltiplo do alvo).
     """
+    if batches < 1:  # no CP-SAT, 0 lote = sem limite: a busca só pararia ao provar o ótimo
+        raise ValueError(f"batches precisa ser pelo menos 1 (recebeu {batches})")
     max_voids, cap_factor = shape
     topo_phase = topology is None
     site = request.site
@@ -444,10 +448,16 @@ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, for
 
     solver = cp_model.CpSolver()
     solver.parameters.random_seed = seed
-    solver.parameters.max_deterministic_time = time_limit
     solver.parameters.num_workers = 8
-    # reprodutível (mesma semente = mesma planta): oito estratégias de busca rodam lado a lado e vale a melhor
+    # reprodutível (mesma semente = mesma planta, DEC-0123): oito estratégias de busca completa rodam lado a lado,
+    # em lotes sincronizados, e vale a melhor. No OR-Tools 9.15, quando a busca não prova o ótimo, a planta mudava
+    # entre execuções: a busca por vizinhança (LNS) não é determinística nem numa thread só, a troca de cláusulas
+    # binárias entre as estratégias entra fora dos lotes, e com o LNS o total de tempo determinístico oscila.
+    # O limite de lotes só vale com interleave_search e num_workers > 1 (com 1 worker o CP-SAT o ignora)
     solver.parameters.interleave_search = True
+    solver.parameters.use_lns = False
+    solver.parameters.share_binary_clauses = False
+    solver.parameters.max_num_deterministic_batches = batches
     status = solver.solve(m)
     if status == cp_model.MODEL_INVALID:  # erro de programação, não "sem tempo"
         raise RuntimeError(f"modelo CP-SAT inválido: {m.validate()}")
@@ -477,18 +487,18 @@ ATTACH_SEQUENCE = (("left",), ("left", "right"), ("left", "right", "back"))  # d
 SIDE_PT = {"left": "esquerda", "right": "direita", "back": "do fundo"}
 
 
-def _attach_if_needed(request: Request, catalog: Catalog, seed: int, time_limit: float,
+def _attach_if_needed(request: Request, catalog: Catalog, seed: int, batches: int,
                       min_diff: int) -> tuple[Request, Plan | None, Issue | None]:
     """Primeira resolução; sem lados encostados no pedido e sem solução, tenta encostar nas divisas."""
-    plan, status = _solve(request, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+    plan, status = _solve(request, catalog, seed=seed, batches=batches, min_diff=min_diff)
     if status == "timeout":
-        raise GenerationError("A busca esgotou o tempo sem achar nenhuma planta: aumente --time-limit "
+        raise GenerationError("A busca esgotou o orçamento sem achar nenhuma planta: aumente --batches "
                               "(isso não significa que o programa não cabe no terreno).")
     if plan is not None or request.site.attached_sides:
         return request, plan, None
     for sides in ATTACH_SEQUENCE:
         attached = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(sides)})})
-        plan, status = _solve(attached, catalog, seed=seed, time_limit=time_limit, min_diff=min_diff)
+        plan, status = _solve(attached, catalog, seed=seed, batches=batches, min_diff=min_diff)
         if plan is not None:
             names = " e ".join(SIDE_PT[s] for s in sides)
             note = Issue(code="attached", message=f"casa encostada na divisa {names}: o programa, com as áreas "
@@ -498,7 +508,7 @@ def _attach_if_needed(request: Request, catalog: Catalog, seed: int, time_limit:
 
 
 def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, seed: int = 0,
-                          time_limit: float = DEFAULT_TIME_LIMIT, max_attempts: int = 20,
+                          batches: int = DEFAULT_BATCHES, max_attempts: int = 20,
                           defaults: SiteDefaults | None = None) -> list[Alternative]:
     """K plantas válidas e diferentes entre si; soluções rejeitadas são proibidas e o solver roda de novo."""
     if not any(catalog.get(r.type).passage == "traversable" for r in request.rooms):
@@ -508,7 +518,7 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
     defaults = defaults or load_site_defaults()
     seen: list[Pattern] = []
     accepted: list[Alternative] = []
-    request, plan, attach_note = _attach_if_needed(request, catalog, seed, time_limit, min_diff)
+    request, plan, attach_note = _attach_if_needed(request, catalog, seed, batches, min_diff)
     if plan is None:
         raise GenerationError(_no_fit_message(request, catalog))
     # a planta espelhada não é uma alternativa de verdade (design 22.4), nem com um lado encostado
@@ -517,7 +527,7 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
             break
         if attempt > 0:
             forbidden = seen + [mirrored(s) for s in seen]
-            plan = solve_layout(request, catalog, seed=seed + attempt, time_limit=time_limit,
+            plan = solve_layout(request, catalog, seed=seed + attempt, batches=batches,
                                 forbidden=forbidden, min_diff=min_diff)
             if plan is None:
                 break  # não há mais alternativas diferentes
@@ -531,7 +541,7 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
                                     warnings=notes + tuple(check_site(plan, defaults))))
     if not accepted:
         raise GenerationError(f"Nenhuma das {len(seen)} soluções encontradas gerou uma planta válida (acesso ou geometria). "
-                              "Tente mais tempo de busca (--time-limit) ou revise o programa.")
+                              "Tente mais lotes de busca (--batches) ou revise o programa.")
     return accepted
 
 
@@ -545,4 +555,4 @@ def _no_fit_message(request: Request, catalog: Catalog) -> str:
     return (f"Nenhuma planta coube no terreno: os mínimos e as áreas pedidas somam ≈ {needed:.1f} m² de área útil "
             f"(cada cômodo com pelo menos {MIN_TARGET_FACTOR:.0%} do alvo), a área edificável (terreno menos "
             f"recuos) é ≈ {buildable:.1f} m², e as larguras mínimas e passagens também precisam caber. "
-            "Tente menos cômodos, áreas menores, recuos menores ou mais tempo de busca.")
+            "Tente menos cômodos, áreas menores, recuos menores ou mais lotes de busca (--batches).")

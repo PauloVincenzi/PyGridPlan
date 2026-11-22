@@ -1,6 +1,6 @@
 import pytest
 
-from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT as TIME, solve_layout
+from pygridplan.generators.cpsat import DEFAULT_BATCHES as BATCHES, solve_layout
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import Site
 from pygridplan.model.request import Request, RoomRequest, load_request
@@ -14,7 +14,7 @@ pytestmark = pytest.mark.slow  # roda o solver: fora da suíte rápida (pytest -
 @pytest.fixture(scope="module")
 def solved():
     request, catalog = load_request(BASIC_PROGRAM), load_catalog()
-    return request, catalog, solve_layout(request, catalog, time_limit=TIME)
+    return request, catalog, solve_layout(request, catalog, batches=BATCHES)
 
 
 def test_solution_is_valid(solved):
@@ -37,7 +37,7 @@ def test_respects_minimums(solved):
 
 def test_forbidden_pattern_is_avoided(solved):
     request, catalog, first = solved
-    second = solve_layout(request, catalog, time_limit=TIME, forbidden=[relative_pattern(first)], min_diff=3)
+    second = solve_layout(request, catalog, batches=BATCHES, forbidden=[relative_pattern(first)], min_diff=3)
     assert second is not None
     pairs = len(relative_pattern(first))
     assert plan_distance(first, second) >= 3 / pairs
@@ -47,7 +47,13 @@ def test_infeasible_returns_none():
     # cada cômodo precisa de >= 2,55 m nos dois sentidos; num lote útil de 4,85 m só cabe um
     site = Site(width_mm=5000, depth_mm=5000)
     rooms = (RoomRequest(id="s", type="sala"), RoomRequest(id="q1", type="quarto"), RoomRequest(id="q2", type="quarto"))
-    assert solve_layout(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME) is None
+    assert solve_layout(Request(site=site, rooms=rooms), load_catalog(), batches=BATCHES) is None
+
+
+def test_zero_batches_is_rejected():
+    # no CP-SAT, 0 lote significa "sem limite": a busca rodaria até provar o ótimo, sem orçamento nenhum
+    with pytest.raises(ValueError, match="batches"):
+        solve_layout(load_request(BASIC_PROGRAM), load_catalog(), batches=0)
 
 
 def _small_rooms_request():
@@ -59,7 +65,7 @@ def _small_rooms_request():
 def test_small_rooms_get_real_passage_and_usable_size():
     from pygridplan.validation.access import check_access
 
-    plan = solve_layout(_small_rooms_request(), load_catalog(), time_limit=TIME)
+    plan = solve_layout(_small_rooms_request(), load_catalog(), batches=BATCHES)
     assert plan is not None
     assert check_access(plan, load_catalog()) == []
     assert all(min(r.rect.w, r.rect.h) >= 1100 for r in plan.rooms)  # porta (900) + paredes
@@ -78,7 +84,7 @@ def test_big_lot_is_feasible():
     site = Site(width_mm=100000, depth_mm=100000)
     rooms = (RoomRequest(id="sala", type="sala"), RoomRequest(id="quarto", type="quarto"),
              RoomRequest(id="banheiro", type="banheiro"))
-    assert solve_layout(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME) is not None
+    assert solve_layout(Request(site=site, rooms=rooms), load_catalog(), batches=BATCHES) is not None
 
 
 @pytest.mark.parametrize("seed", [0, 1, 2])
@@ -86,7 +92,7 @@ def test_solutions_are_globally_reachable(seed):
     from pygridplan.validation.access import check_access
 
     request, catalog = load_request(BASIC_PROGRAM), load_catalog()
-    plan = solve_layout(request, catalog, seed=seed, time_limit=TIME)
+    plan = solve_layout(request, catalog, seed=seed, batches=BATCHES)
     assert check_access(plan, catalog) == []
 
 
@@ -101,7 +107,7 @@ def test_house_on_front_setback_and_centered(solved):
 def test_attached_left_touches_left_bound():
     request = load_request(BASIC_PROGRAM)
     request = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset({"left"})})})
-    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    plan = solve_layout(request, load_catalog(), batches=BATCHES)
     assert min(r.rect.x for r in plan.rooms) == 100
 
 
@@ -118,7 +124,7 @@ def test_three_bedrooms_tend_to_match():
     types = ("sala", "cozinha", "banheiro", "circulacao", "quarto", "quarto", "quarto")
     request = Request(site=Site(width_mm=12000, depth_mm=30000),
                       rooms=tuple(RoomRequest(id=f"{t}{i}", type=t) for i, t in enumerate(types)))
-    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    plan = solve_layout(request, load_catalog(), batches=BATCHES)
     dims = [tuple(sorted((r.rect.w, r.rect.h))) for r in plan.rooms if r.type == "quarto"]
     assert len(set(dims)) < 3
 
@@ -128,7 +134,7 @@ def test_rooms_without_target_do_not_inflate():
     types = ("sala", "cozinha", "banheiro", "quarto", "hall", "sala_jantar")
     request = Request(site=Site(width_mm=20000, depth_mm=40000),
                       rooms=tuple(RoomRequest(id=t, type=t) for t in types))
-    plan = solve_layout(request, load_catalog(), time_limit=TIME)
+    plan = solve_layout(request, load_catalog(), batches=BATCHES)
     from pygridplan.model.walls import useful_area_mm2
 
     # critério original do M1.1 (DEC-0104 desfaz a DEC-0095): antes da correção a sala de jantar chegava a 20 m²
@@ -187,7 +193,7 @@ def test_benchmark_requests_give_full_block_with_sane_areas(name, attached):
 
     request, catalog = load_request(REQUESTS / f"{name}.json"), load_catalog()
     request = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(attached)})})
-    plan = solve_layout(request, catalog, time_limit=TIME)
+    plan = solve_layout(request, catalog, batches=BATCHES)
     assert plan is not None
     assert validate_geometry(plan) == [] and check_access(plan, catalog) == []
     criteria = {c.name: c.value for c in score_plan(plan, request, catalog).criteria}
@@ -198,7 +204,7 @@ def test_benchmark_requests_give_full_block_with_sane_areas(name, attached):
 def test_tiny_explicit_target_stays_feasible():
     # alvo pedido abaixo do mínimo da sala (largura 2,40 m): a janela de área (0,7 a 1,5 x) não pode inviabilizar
     rooms = (RoomRequest(id="sala", type="sala", target_area_m2=2.0), RoomRequest(id="cozinha", type="cozinha"))
-    plan = solve_layout(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(), time_limit=TIME)
+    plan = solve_layout(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(), batches=BATCHES)
     assert plan is not None
 
 
@@ -209,4 +215,4 @@ def test_unreachable_target_explains_requested_areas():
     rooms = (RoomRequest(id="sala", type="sala", target_area_m2=500), RoomRequest(id="cozinha", type="cozinha"))
     with pytest.raises(GenerationError, match="áreas pedidas"):
         generate_alternatives(Request(site=Site(width_mm=10000, depth_mm=25000), rooms=rooms), load_catalog(),
-                              time_limit=TIME)
+                              batches=BATCHES)
