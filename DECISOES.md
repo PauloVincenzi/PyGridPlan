@@ -1951,3 +1951,86 @@ Status: Aprovada (regra) / Proposta (ordem).
   - atualizar o documento de teoria quando o M1.2 ou a DEC-0126 mudarem o gerador;
   - remover o worktree `PyGridPlan-worktrees/generator-theory` depois do merge, se o responsável quiser.
 - As pendências anteriores da S07 e da S06 continuam.
+
+### Log da sessão — continuação 4 (2026-11-22 a 2026-11-23)
+
+6. **Responsável:** colou o prompt 6 do plano do dia (DEC-0124): pesquisa para o M5, sobre um LLM local que interpreta o pedido em português e preenche o JSON validado do `Request`, offline, sem API paga e sem a IA mexer na geometria. Pediu a skill `anthropic-skills:deep-research`, com 6 perguntas:
+   - motores locais;
+   - modelos pequenos bons em português;
+   - saída estruturada;
+   - parser de regras antes do LLM;
+   - avaliação com casos de teste;
+   - requisitos de hardware, com a configuração desta máquina verificada por comandos locais.
+
+   Pediu relatório e notas em `docs/research/`, com recomendação e perguntas para ele, README e DECISOES.md atualizados. Autorizou os commits, com o plano mostrado antes, e pediu no fim o estado, o push com o `origin` e o PR.
+
+   **Agente:**
+   - **Branch:** a `main` não tinha a pilha da S07, e nenhum branch dela estava no `origin`. Seguindo a DEC-0127, criou `docs/m5-local-llm-research` num worktree próprio (`PyGridPlan-worktrees/m5-local-llm-research`), a partir de `fix/cpsat-reproducibility` (`6e1eea3`). Recebeu do orquestrador (`pygridplan-d4`) a regra de conferir as pontas antes de commitar. Antes do commit, `docs/generator-theory` (`49c226b`) já tinha commits e virou a ponta: o branch foi avançado até ele (rebase sem commits próprios).
+   - **Hardware medido localmente** (PowerShell/CIM, 2026-11-22):
+     - notebook Samsung 750XGK com Windows 11 Home;
+     - i5-1335U com 10 núcleos (2 P + 8 E) e 12 threads;
+     - 7,7 GB de RAM visível (LPDDR4x-4267, soldada), com só 0,6 GB livres na hora da medição;
+     - Iris Xe integrada com Vulkan, sem NVIDIA;
+     - ~205 GB livres no disco;
+     - Ollama e llama.cpp não estão instalados.
+
+     **Nenhum modelo foi baixado nem executado:** as latências do relatório são estimativas.
+   - **Pesquisa:**
+     - 6 frentes em paralelo. Todas pararam no limite de uso de 5 h e foram retomadas de onde estavam depois da renovação.
+     - As notas estão em `docs/research/notes/LLM local para interpretar pedidos/`, com 6 arquivos, cada ponto marcado como FATO, HIPÓTESE ou OPINIÃO.
+     - O relatório é `docs/research/LLM local para interpretar pedidos.md`, com 15 perguntas para o responsável.
+     - Testes locais das notas, feitos em diretório isolado do scratchpad, sem instalar nada no projeto:
+       - o `text2num` 3.1.0 troca "quarto" pelo ordinal "4º";
+       - o `rapidfuzz` corrige grafia, mas não resolve sinônimos;
+       - um esquema delta gerado com `Literal` dos ids cabe no subconjunto de JSON Schema do llama.cpp.
+     - A conversão real em GBNF não foi feita: a permissão foi negada.
+   - **Correção na revisão do coordenador:** o pedido às pesquisas dizia que o CPU tem AVX2/AVX-VNNI. Isso vinha de conhecimento prévio, não de medição, porque o CIM não lista extensões de instrução. A nota de hardware e o relatório chegaram a chamar isso de "detectado localmente" e foram corrigidos para "não medido".
+   - **README:** status (pesquisa técnica do M5 ✅) e estrutura de `docs/research/`.
+   - **Verificação:** só documentação. Nenhum código, teste ou dado mudou, então a suíte e o `pyright` não foram rodados de novo.
+
+### Decisões — continuação 4 (2026-11-23)
+
+**DEC-0130 — Pesquisa técnica do M5 (LLM local) concluída**
+Data: 2026-11-23 · Sessão: S07 · Autor: Responsável (pedido) / Agente (pesquisa e recomendação) · Categoria: IA
+Decisão: o relatório `docs/research/LLM local para interpretar pedidos.md` e as 6 notas são a base técnica do brainstorming do M5. As recomendações dele **não são decisões**. Em resumo, o agente propõe:
+- parser de regras só com a biblioteca padrão e um léxico versionado em `data/`;
+- o LLM chamado só quando sobra texto que as regras não explicaram;
+- um esquema "delta" gerado por pedido, com `Literal` dos ids;
+- `llama-server` do llama.cpp como subprocesso, numa build fixada e na CPU por padrão;
+- restrição por `json_schema`, com validação Pydantic, reparo determinístico, no máximo uma retentativa e, se tudo falhar, só as regras;
+- regras com precedência no merge;
+- nenhuma dependência Python nova no primeiro corte;
+- Qwen3.5-2B como candidato inicial e Qwen3.5-4B como teto de qualidade, com a escolha feita num spike de medição local;
+- avaliação com ~100–150 pedidos de desenvolvimento e ~50 de teste com gabarito JSON, scorer próprio em pytest e marcador `llm_eval` fora da suíte padrão.
+
+Consequências:
+- **Achado que pede decisão de design:** o critério "responde em segundos" do design (seção 12) não se cumpre nesta máquina pelas estimativas. Um 2B quente levaria ~10 a 20 s, e um 4B ~21 a 42 s, com risco de paginação. O relatório sugere um número explícito (pergunta 6).
+- **Achados de dados:** o catálogo `data/room_types.yaml` não tem "suíte" nem "oficina", que é o exemplo da seção 7 do design. O `Request` não liga um banheiro a um quarto específico (pergunta 9). A tabela de intensidade 1..5 é decisão de projeto, porque a literatura não dá escala numérica (pergunta 11).
+- O `text2num` não pode rodar sobre o texto inteiro do pedido.
+
+Status: Proposta.
+
+**DEC-0131 — Branch `docs/m5-local-llm-research` empilhado sobre `docs/generator-theory`**
+Data: 2026-11-23 · Sessão: S07 · Autor: Responsável (regra, DEC-0127, via orquestrador) / Agente (aplicação) · Categoria: Processo
+Decisão: o branch sai da ponta da pilha no momento do commit (`docs/generator-theory`, `49c226b`), num worktree próprio. Ordem de merge:
+1. `docs/m2-research`;
+2. `feat/m1-2-design`;
+3. `fix/cpsat-reproducibility`;
+4. `docs/generator-theory`;
+5. `docs/m5-local-llm-research`.
+
+O PR tem como base `docs/generator-theory` até ele ser integrado e depois é redirecionado para a `main`. Se `docs/d3-openings-research` commitar sobre esta ponta antes do merge, o rebase e a renumeração cabem a quem commitar por último.
+Status: Aprovada (regra) / Proposta (ordem).
+
+### Pendências abertas (S07) — atualização 4
+
+- **Responsável:**
+  - ler o relatório do M5 e responder às 15 perguntas no brainstorming do M5;
+  - decidir se autoriza o spike de medição: ~meio dia, ~4,6 GB de modelos Qwen3.5 (0,8B, 2B e 4B), com os outros apps fechados;
+  - push e PR na ordem da DEC-0131.
+- **Agente:**
+  - se o spike for autorizado, rodar `llama-bench`/`llama-server` nesta máquina e registrar os números no relatório, numa versão nova;
+  - obter a gramática GBNF real do esquema delta pelo `llama-server` e transformá-la num teste;
+  - conferir o AVX-VNNI localmente, por exemplo com o Coreinfo;
+  - remover o worktree `PyGridPlan-worktrees/m5-local-llm-research` depois do merge, se o responsável quiser.
+- As pendências anteriores da S07 e da S06 continuam.
