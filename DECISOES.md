@@ -1903,3 +1903,51 @@ Status: Proposta.
   - remover o worktree depois do merge, se o responsável quiser.
 - O tempo de geração continua acima da meta do design (seção 8).
 - As pendências anteriores da S07 e da S06 continuam.
+
+### Log da sessão — continuação 3 (2026-11-22)
+
+5. **Responsável:** colou o prompt 5 do plano do dia (DEC-0124): o primeiro documento de `docs/theory/`, com a fundamentação teórica do gerador do M1, para estudo e portfólio. Conteúdo pedido: o problema como cobertura exata numa malha de linhas de parede; CP-SAT (programação por restrições + SAT + relaxações lineares, busca em portfólio paralela); as duas fases e as tentativas de forma; critérios, pesos e nota final; diversidade e proibição de espelho; reprodutibilidade e limitações; comparação com árvore de subdivisão, crescimento em grade e recozimento simulado. Pediu cada afirmação conferida no código, referências reais, um diagrama onde ajudar, README (`docs/theory` ✅) e DECISOES.md atualizados. Autorizou os commits, com o plano mostrado antes, e pediu no fim o estado, o push com o `origin` e o PR.
+
+   **Agente:**
+   - **Branch:** os branches da S07 não estavam no `origin` nem integrados. Seguindo a DEC-0125 e a DEC-0127, criou `docs/generator-theory` sobre a ponta da pilha (`fix/cpsat-reproducibility`, `6e1eea3`), num worktree próprio em `PyGridPlan-worktrees/generator-theory`. A base importa: o documento descreve o `cpsat.py` já reprodutível (lotes, sem LNS).
+   - **Coordenação:** recebeu do orquestrador da sessão paralela (`pygridplan-d4`) a regra de conferir as pontas antes de commitar. Conferiu: nenhum dos branches paralelos (`docs/d3-openings-research`, `docs/m5-local-llm-research`) tinha commits além de `6e1eea3`, então a ponta continuou sendo `fix/cpsat-reproducibility`.
+   - **Documento:** `docs/theory/cpsat-generator.md`, com 10 seções, um esquema da malha em texto, um fluxograma Mermaid das tentativas e das fases e um mapa "afirmação → código".
+   - **Conferência no código:** cada afirmação aponta para `cpsat.py`, `scoring/score.py`, `scoring/diversity.py`, `validation/` ou um teste. A leitura achou e registrou no documento **divergências entre o código e o design**, sem mudar código:
+     - a nota é soma ponderada linear, e o design 5.6 previa retornos decrescentes;
+     - a diversidade é gulosa e sequencial, com limiar fixo de 15 % dos pares, e o design 9 previa maximizar a menor distância;
+     - o objetivo do solver aproxima a nota, mas não é igual a ela (área conservadora, circulação sem termo próprio, compacidade por recortes);
+     - nas alternativas depois da primeira, "orçamento esgotado" e "não há mais alternativas" se confundem: `solve_layout` devolve `None` nos dois casos.
+   - **Referências:** conferidas na web antes de citar: Perron, Didier e Gay (CP 2023), `sat_parameters.proto` v9.15 (comentários dos parâmetros usados, lidos no GitHub), CP-SAT Primer, Ohrimenko/Stuckey/Codish (2009), Hebrard et al. (2005), Kirkpatrick et al. (1983), Marson e Musse (2010), Bruls et al. (2000), Lopes et al. (2010), Merrell et al. (2010) e Wu et al. (2018). Citadas sem nova conferência, por serem clássicas: Karp (1972), Knuth (2000), Shaw (1998), Gent/Petrie/Puget (2006) e Marler e Arora (2010). Duas atribuições foram suavizadas porque só os resumos foram lidos (Hebrard et al. e Merrell et al.).
+   - **Comparação:** os três geradores alternativos aparecem pelo que a literatura diz deles; nenhum foi implementado, e o que se espera deles no M7 está marcado como hipótese.
+   - **README:** status e estrutura (`docs/theory/` ✅).
+   - **Verificação:** só documentação; nenhum código, teste ou dado mudou, então a suíte e o `pyright` não foram rodados de novo.
+
+### Decisões — continuação 3 (2026-11-22)
+
+**DEC-0128 — Fundamentação teórica do gerador em `docs/theory/cpsat-generator.md`**
+Data: 2026-11-22 · Sessão: S07 · Autor: Responsável (pedido) / Agente (conteúdo) · Categoria: Processo
+Decisão: o primeiro documento de `docs/theory/` descreve o gerador CP-SAT do M1 no estado da DEC-0123, com cada afirmação ligada ao código e referências conferidas. Quando o gerador mudar (M1.2, DEC-0126), o documento ganha nova versão no cabeçalho.
+Consequências: as quatro divergências código × design listadas no log (item 5) ficam visíveis num só lugar. Nenhuma foi corrigida nesta tarefa.
+Status: Aprovada (pedido do responsável; conteúdo aguarda leitura dele).
+
+**DEC-0129 — Branch `docs/generator-theory` empilhado sobre `fix/cpsat-reproducibility`**
+Data: 2026-11-22 · Sessão: S07 · Autor: Responsável (regra) / Agente (aplicação) · Categoria: Processo
+Decisão: o branch sai da ponta da pilha (DEC-0125, DEC-0127), num worktree próprio. Ordem de merge:
+1. `docs/m2-research`;
+2. `feat/m1-2-design`;
+3. `fix/cpsat-reproducibility`;
+4. `docs/generator-theory`.
+
+O PR tem como base `fix/cpsat-reproducibility` até ele ser integrado e depois é redirecionado para a `main`. Se um branch paralelo da S07 (`docs/d3-openings-research`, `docs/m5-local-llm-research`) entrar na fila antes, a base muda para ele.
+Status: Aprovada (regra) / Proposta (ordem).
+
+### Pendências abertas (S07) — atualização 3
+
+- **Responsável:**
+  - ler `docs/theory/cpsat-generator.md`;
+  - decidir o que fazer com as quatro divergências código × design (corrigir o código, corrigir o design ou registrar como decisão);
+  - push e PR na ordem da DEC-0129.
+- **Agente:**
+  - atualizar o documento de teoria quando o M1.2 ou a DEC-0126 mudarem o gerador;
+  - remover o worktree `PyGridPlan-worktrees/generator-theory` depois do merge, se o responsável quiser.
+- As pendências anteriores da S07 e da S06 continuam.
