@@ -2118,3 +2118,220 @@ Status: Aprovada (regra) / Proposta (ordem).
   - tabela de Castro et al. 2015;
   - vigência dos arts. 61–66 do Decreto SP 12.342/1978.
 - As pendências anteriores da S07 e da S06 continuam.
+
+## Sessão S08 — 2026-11-24
+
+### Log da sessão (prompts e ações, em resumo)
+
+1. **Responsável:** com 80 % do uso semanal disponível num só dia, pediu as tarefas que não dependiam da conferência das plantas, o esforço de cada uma e os prompts. **Agente (orquestrador):** propôs 6 tarefas, com esforço, branch e prompt, para rodar em sequência (DEC-0124). O responsável abriu as 6 conversas ao mesmo tempo.
+2. **Responsável:** pediu que a conversa orquestradora gerenciasse as 6 conversas: merges, commits, branches e ordem. **Agente:**
+   - encontrou 3 branches prontos e já empilhados em fila (`docs/m2-research` → `feat/m1-2-design` → `fix/cpsat-reproducibility`) e 3 ainda em andamento, que iam disputar a numeração a partir da DEC-0128;
+   - mandou às 6 conversas a regra da DEC-0127: escrever no DECISOES.md e no README só na hora do commit, depois de empilhar o branch sobre a ponta da fila;
+   - as três terminaram em fila linear (`docs/generator-theory`, `docs/m5-local-llm-research`, `docs/d3-openings-research`), e o agente conferiu cada uma pelo git;
+   - entregou a lista de pushes e de PRs, em ordem.
+3. **Responsável:** fez os 6 pushes e integrou os PRs #6 a #11, colando o título e o texto de cada conversa. Estranhou a `main` no GitHub e os muitos branches, mandou as respostas finais das 6 conversas e pediu a lista do que faltava, decisões rápidas e uma explicação de como gerenciar o modelo de orquestrador. **Agente:**
+   - conferiu: os 6 PRs entraram na `main` em ordem; a `main` local é igual ao `origin`; os 11 branches remotos estavam todos integrados;
+   - explicou que o GitHub não apaga branches depois do merge;
+   - montou a folha de 20 decisões, com recomendação em cada uma;
+   - explicou o modelo de orquestrador (DEC-0136).
+4. **Responsável:** aceitou todas as recomendações; apagou os 11 branches antigos no GitHub e ligou a remoção automática de branches depois do merge; vai conferir as plantas depois. **Agente:**
+   - removeu os 3 worktrees e os branches locais integrados;
+   - copiou os dados brutos dos dois experimentos do scratchpad para o repositório (DEC-0141);
+   - regenerou as 4 plantas com o código integrado e guardou as anteriores em `out/calibration-old/`. Notas: programa básico 0,90–0,92; lote pequeno 0,82–0,92; 3 quartos 0,92–0,95; casa grande 0,90–0,94. Tempo para 4 alternativas: 141, 67, 201 e 274 s. É mais que a bancada da DEC-0123 (120, 57, 119 e 156 s); a máquina estava com várias conversas abertas, e a medição limpa fica para a tarefa de ajustes;
+   - registrou esta sessão; atualizou o README;
+   - propôs o texto das regras para o CLAUDE.md (DEC-0142, aguardando o responsável).
+
+### Decisões
+
+**DEC-0136 — Modelo de trabalho: um orquestrador e conversas trabalhadoras**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta do Agente) · Categoria: Processo
+Decisão:
+- uma tarefa corresponde a uma conversa, um branch, um worktree e um PR;
+- **responsável:** decide, cola os prompts, faz push e merge;
+- **orquestrador:** divide o trabalho, escreve os prompts (com esforço, branch, worktree e o que pode correr em paralelo), confere o git, monta a fila de merge e junta as pendências numa folha de decisões com recomendação;
+- **trabalhadoras:** executam uma tarefa, testam, commitam e avisam o orquestrador por mensagem;
+- **paralelo:** só entre tarefas que mexem em arquivos diferentes. O DECISOES.md e o README são pontos de encontro (regra da DEC-0127);
+- o responsável não precisa ler as conversas trabalhadoras para decidir: o que importa vai para os documentos e para a folha de decisões;
+- o branch é apagado depois do merge (configuração do GitHub ligada pelo responsável).
+
+Consequências: a fila linear da S07 mostrou que a regra evita conflitos: os 6 PRs entraram sem conflito. A conversa orquestradora pode ser trocada de tempos em tempos, porque o estado fica no repositório.
+Status: Aprovada.
+
+**DEC-0137 — Reprodutibilidade aceita, `ortools` fixo e ganho de tempo da DEC-0126**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta do Agente) · Categoria: Arquitetura
+Decisão:
+- aprova a DEC-0123, com o custo de cerca de 19 % de tempo, porque o M2 ao vivo precisa de "mesmo pedido, mesma planta";
+- fixa `ortools==9.15.6755` no `pyproject.toml`, a única versão em que a reprodutibilidade foi medida. Uma atualização futura passa pelo teste de reprodutibilidade;
+- aprova e manda implementar a DEC-0126 (não repetir as tentativas de forma já provadas inviáveis);
+- aprova as DEC-0127 (regra de paralelo) e as ordens de merge das DEC-0125, DEC-0129, DEC-0131 e DEC-0135, já executadas.
+
+Status: Aprovada (a implementar na tarefa de ajustes do gerador).
+
+**DEC-0138 — Divergências entre o código e o design (DEC-0128)**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta do Agente) · Categoria: Arquitetura
+Decisão:
+- **divergência 4:** corrigir o código. A geração precisa diferenciar "o orçamento acabou" de "não há mais alternativas diferentes" e dizer o motivo quando entregar menos de K plantas;
+- **divergências 1 a 3** (nota linear, diversidade gulosa, objetivo do solver que só aproxima a nota): ficam como estão. O design é corrigido para descrever o código, e o tema volta no M3 (A vs. B) e no M7 (comparação de geradores).
+
+Status: Aprovada (a implementar na tarefa de ajustes do gerador).
+
+**DEC-0139 — Respostas às 8 perguntas do design do M1.2**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta do Agente) · Categoria: Produto
+Decisão:
+1. **perfil padrão:** `ergonomico`;
+2. **mínimos do catálogo:** nos tipos mobiliados, o mínimo vem do mobiliário do perfil. O valor do catálogo vira só aviso e deixa de ser piso;
+3. **rigor:** rígido como padrão (não propor cômodo onde o mobiliário mínimo não cabe), com a opção de só avisar;
+4. **regras de encaixe:** as 6 propostas aceitas (faixas de uso sobrepostas, criado-mudo na faixa da cama, cama de solteiro com um lado livre, mesa com o lado menor na parede, sofá e poltrona encostados, 0,80 m na chegada da porta);
+5. **tipos de quarto:** a ordem da NBR (1.º casal, 2.º duas camas, 3.º solteiro), configurável no pedido;
+6. **móveis no modelo:** a posição dos móveis fica gravada na planta;
+7. **fichas de mercado:** coleta durante o M2, em paralelo;
+8. **ordem:** implementar o M1.2 e, em paralelo, fazer o design do M2 (só documentos).
+
+Consequências: as DEC-0113 a DEC-0121 ficam aprovadas, com estas respostas. O design e o plano do M1.2 são ajustados a elas no início da implementação.
+Status: Aprovada.
+
+**DEC-0140 — D3: rótulo `L-est` e link da NBR 13103**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta do Agente) · Categoria: Dados
+Decisão:
+- cria o tipo de fonte `L-est` (decreto ou especificação estadual) no `data/README.md`, tratado como `L-mun` pela regra 4: nunca vira padrão nacional. Aprova essa parte da DEC-0134; o resto dela espera o design do M4;
+- troca o link da NBR 13103, que aponta para uma cópia de terceiro, por uma fonte secundária.
+
+Status: Aprovada (a aplicar na tarefa de ajustes do gerador).
+
+**DEC-0141 — Dados brutos dos experimentos versionados**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta do Agente) · Categoria: Processo
+Decisão: dados brutos e scripts de experimentos vão para `docs/research/notes/<título>/raw-data/`, com um README que descreve os arquivos. Foram copiados sem alteração:
+- o experimento de re-solução do M2: `notes/Arquitetura interativa do M2/raw-data/`;
+- a investigação de reprodutibilidade (DEC-0123): `notes/Reprodutibilidade do CP-SAT/raw-data/`. Essa investigação não tem relatório próprio; o README aponta para a DEC-0123, a seção 22.5 do design e o documento de teoria.
+
+Consequências: o relatório do M2 ganhou uma linha que aponta para a cópia durável. Isso responde à pergunta 15 da pesquisa do M2.
+Status: Aprovada.
+
+**DEC-0142 — Regras para o CLAUDE.md: conversas paralelas e PRs pelo `gh`**
+Data: 2026-11-24 · Sessão: S08 · Autor: Agente (proposta, a pedido do Responsável) · Categoria: Processo
+Decisão proposta: acrescentar à seção "Arquivos e git" do CLAUDE.md:
+- **Conversas paralelas** (DEC-0127, DEC-0136): uma tarefa = uma conversa, um branch, um worktree em `../PyGridPlan-worktrees/<branch>` e um PR. Antes de escrever no DECISOES.md e no README, a conversa empilha o branch sobre a ponta da fila e continua a numeração, a seção da sessão e a versão dos documentos a partir dela. Depois avisa o orquestrador.
+- **PRs pelo `gh`:** com o `gh` instalado e autenticado pelo responsável, o agente abre o PR com título e texto. O merge continua sendo do responsável, assim como o push.
+
+Consequências: o CLAUDE.md é administrado pelo responsável. O agente só aplica o texto depois da aprovação. O `gh` precisa ser instalado e autenticado uma vez (`winget install GitHub.cli`, depois `gh auth login`).
+Status: Proposta.
+
+### Pendências abertas (S08)
+
+- **Responsável:**
+  - conferir as plantas regeneradas (`out/calibration/*/report.html`, com as anteriores em `out/calibration-old/`) e aprovar ou vetar as DEC-0099 a DEC-0101 e DEC-0103 a DEC-0107. Isso fecha o M1.1;
+  - aprovar o texto da DEC-0142 e, se quiser, instalar e autenticar o `gh`;
+  - decisões que esperam a fase de cada uma:
+    - as 15 perguntas do M2: no brainstorming do M2;
+    - as 15 do M5 e o spike de medição: no M5;
+    - o resto das DEC-0132 a DEC-0134: no design do M4.
+- **Agente:**
+  - tarefa de ajustes do gerador (DEC-0137, DEC-0138, DEC-0140), sozinha, antes do M1.2, porque as duas mexem no `cpsat.py`;
+  - depois do merge dela: implementação do M1.2 e brainstorming do M2, em paralelo;
+  - refazer as latências do experimento de re-solução com a configuração nova, antes do design do M2.
+- **Continuam:**
+  - a área do lote pequeno;
+  - o tempo de geração acima da meta;
+  - as lacunas da próxima coleta da D3.
+
+### Log da sessão — continuação (2026-11-24)
+
+5. **Responsável:** autorizou os commits e aprovou o texto do CLAUDE.md, com uma mudança: os PRs são abertos por ele, com títulos e textos consolidados pela conversa orquestradora. Toda a orientação deve ficar nela: quando abrir uma conversa nova, quando mandar um prompt numa conversa existente, quando fechar uma aba, e o esforço de cada prompt. Também conferiu as 4 plantas regeneradas:
+   - **programa básico:** as 4 alternativas são boas. Duas têm banheiro com parede externa e duas pedem duto ou claraboia. As com parede externa têm nota maior, o que ele aprova (é mais barato e eficaz e não exige manutenção);
+   - **casa grande:** as 4 são viáveis, com acessos e corredores mínimos. Mas todas têm 1 ou 2 cômodos que pedem duto ou claraboia, quando isso deveria ser só preferência ou necessidade forte. Todas repetem o mesmo contorno: um retângulo na frente do lote, ocupando uma fração pequena dele. Pede para explorar:
+     - o retângulo girado, com o lado maior paralelo ao lado maior do lote;
+     - outras formas, com mais perímetro externo;
+     - blocos destacados da casa (quintal, oficina, rancho, horta, quadra);
+     - uma edícula ou área de lazer, que pode ter cozinha, sala e quarto.
+
+     Preferências dele: claraboia é muito melhor que duto, e cabe mais na circulação interna. No banheiro, ele prefere fortemente a parede externa (mofo, toalhas, roupa suja). Pede que isso valha para todas as plantas;
+   - **lote pequeno:**
+     - a ordem das notas está invertida em relação à percepção dele. Ranking dele: 2, 4, 3, 1;
+     - a alt-1 tem corredor de ponta a ponta sem necessidade, embora junte as áreas molhadas e ponha sala, cozinha e serviço na frente;
+     - a alt-2 entra pela cozinha, o que só é aceitável com entrada lateral;
+     - a alt-3 é a alt-2 espelhada e só permite entrar pela cozinha;
+     - a alt-4 é boa, com entrada pela sala;
+   - **3 quartos:**
+     - alt-1: ótima, com entrada pela sala, cozinha ao lado e um corredor mínimo para quartos e banheiros;
+     - alt-2: a sala só tem acesso por cima, e entrar por baixo pela lavanderia ou pela cozinha não faz sentido. Os banheiros pedem duto;
+     - alt-3: interessante, e seria a melhor se o banheiro viesse antes da cozinha a partir da sala;
+     - alt-4: a visita atravessa a circulação dos quartos até o banheiro.
+
+     Ranking dele: 1, 3, 2, 4.
+
+   **Agente:**
+   - commitou o plano da S08 e aplicou a regra ao CLAUDE.md;
+   - salvou a memória da orientação centralizada;
+   - conferiu as plantas do lote pequeno. As alt-2 e alt-3 **são espelhos** se os dois quartos forem trocados: a proibição de espelho (DEC-0100) compara os cômodos pelo id e não vê a troca entre dois cômodos do mesmo tipo;
+   - na alt-2 a cozinha está na frente: a regra de entrada atual aceita qualquer cômodo atravessável que não seja circulação;
+   - registrou a conferência e as decisões abaixo.
+
+### Decisões — continuação (2026-11-24)
+
+**DEC-0143 — Conversa orquestradora concentra a orientação e os PRs**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável · Categoria: Processo
+Substitui: DEC-0142
+Decisão: o texto da DEC-0142 entra no CLAUDE.md sem a parte do `gh`. O responsável abre os PRs com o push, o título, o texto e o link consolidados pela orquestradora. A orquestradora também diz quando abrir uma conversa nova, quando mandar um prompt numa conversa existente e quando uma conversa pode ser fechada, e indica o esforço de cada prompt. As trabalhadoras avisam a orquestradora ao terminar e não precisam entregar PR.
+Status: Aprovada (aplicada no CLAUDE.md).
+
+**DEC-0144 — Conferência das plantas da S08: aprovações**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável · Categoria: Produto
+Decisão:
+- **aprovadas, sem objeção na conferência:** DEC-0100 (espelho nunca é alternativa, com o defeito da DEC-0147 a corrigir), DEC-0103, DEC-0104, DEC-0105 e DEC-0107 (zoneamento como critério);
+- **aprovada no princípio, com mais peso no banheiro:** DEC-0106 (janelas em níveis), ajustada pela DEC-0146;
+- **substituída pela DEC-0145:** DEC-0099 (retângulo antes de recorte);
+- a DEC-0101 já tinha sido substituída pela DEC-0123.
+
+Consequências: o M1.1 não fecha nesta conferência. As DEC-0145 a DEC-0148 viram uma segunda rodada de calibração.
+Status: Aprovada.
+
+**DEC-0145 — Variedade de forma e implantação: retângulo girado, outras formas, blocos destacados e edícula**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável · Categoria: Produto / Arquitetura
+Substitui: DEC-0099
+Contexto: na casa grande, as 4 alternativas repetiam o mesmo retângulo na frente do lote, ocupavam uma fração pequena dele e deixavam cômodos sem parede externa.
+Decisão: a forma da casa deixa de ser "o retângulo primeiro" e passa a ser um eixo de diversidade entre as alternativas:
+- retângulo nas duas orientações, com o lado maior paralelo à frente ou à profundidade do lote;
+- formas com mais perímetro (L, U, recortes) quando aumentam a parede externa;
+- blocos destacados: quintal, oficina, rancho, horta, quadra;
+- uma alternativa com casa e edícula ou área de lazer, que pode ter cozinha, sala e quarto.
+
+O objetivo explícito é mais parede externa, para que, mesmo na casa grande, os cômodos tenham janela sem duto nem claraboia.
+Consequências: é uma mudança grande no gerador: vários blocos, um programa por bloco e circulação externa entre eles. Proposta do agente: um marco próprio, **M1.3 (forma livre e blocos)**, desenhado com o responsável no brainstorming. O retângulo continua como uma das formas possíveis.
+Status: Aprovada (design a fazer).
+
+**DEC-0146 — Banheiro com parede externa por padrão; duto e claraboia como exceção**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (proposta de mecanismo do Agente) · Categoria: Produto
+Decisão:
+- banheiro, e por extensão os demais `preferred`, ganham parede externa **sempre que couber**;
+- duto ou claraboia só quando a janela for impossível com o programa e o lote, ou quando o usuário escolher (`window_rule`);
+- **claraboia antes de duto:** o aviso sugere claraboia primeiro. Na circulação interna, a claraboia é a solução sugerida para luz e ventilação;
+- proposta de mecanismo: tentar primeiro com as janelas preferidas como restrição e relaxar só se for provado inviável (como as tentativas de forma). Assim a janela vem antes de qualquer outro critério, em vez de pesar 1 numa soma.
+
+Consequências: o lavabo sem chuveiro continua mais flexível (DEC-0106), mas também tenta a parede externa primeiro.
+Status: Aprovada (mecanismo a confirmar na calibração).
+
+**DEC-0147 — Defeito: espelho escapa quando cômodos do mesmo tipo trocam de lugar**
+Data: 2026-11-24 · Sessão: S08 · Autor: Agente (achado na conferência do Responsável) · Categoria: Arquitetura
+Contexto: no lote pequeno, a alt-3 é a alt-2 espelhada, com `quarto1` e `quarto2` trocados. `mirrored()` compara o padrão de posições pelo id do cômodo, então a troca de dois quartos equivalentes parece outra planta. Pelo mesmo motivo, `plan_distance` superestima a diferença entre as plantas.
+Decisão: a diversidade e o espelho passam a tratar como intercambiáveis os cômodos do mesmo tipo e com o mesmo pedido (alvo de área, relações): compara-se o melhor emparelhamento, não o id.
+Status: Aprovada (a corrigir na calibração).
+
+**DEC-0148 — Entrada pela sala, corredor sem sobra, banheiro social perto da área social e rankings do responsável como gabarito**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (observações) / Agente (formulação) · Categoria: Produto / Algoritmo
+Decisão:
+- **entrada:** a entrada principal é preferencialmente pela sala (o `access_hub` mais alto). Pela cozinha, só como alternativa marcada, por exemplo com entrada lateral, que depende do portão e da garagem nas etapas seguintes. Nunca pela lavanderia, por quarto ou pela circulação;
+- **corredor sem sobra:** a circulação não pode passar do necessário para ligar os cômodos que dependem dela. A nota de circulação precisa penalizar o comprimento que não serve a nenhum acesso. Foi esse o defeito da alt-1 do lote pequeno, a de maior nota;
+- **banheiro social:** a visita chega a ele a partir da área social sem atravessar a circulação íntima (pior caso: a alt-4 dos 3 quartos);
+- **gabarito de preferência:** os rankings do responsável (lote pequeno 2, 4, 3, 1; 3 quartos 1, 3, 2, 4) entram como caso de teste. A nota recalibrada precisa reproduzir pelo menos o primeiro e o último colocado de cada um. É o primeiro dado do aprendizado de pesos previsto no design.
+
+Status: Aprovada (a implementar na calibração).
+
+### Pendências abertas (S08) — atualização
+
+- **Ordem proposta pelo orquestrador:**
+  1. ajustes do gerador (DEC-0137, DEC-0138, DEC-0140), já com prompt;
+  2. **calibração 2 do M1.1** (DEC-0146 a DEC-0148). Fecha o M1.1 com uma nova conferência;
+  3. em paralelo com a calibração 2: brainstorming do **M1.3** (DEC-0145), só documentos;
+  4. implementação do M1.2 depois da calibração 2, porque as duas mexem no `cpsat.py`;
+  5. o brainstorming do M2 depois do M1.3, ou em paralelo, conforme o tempo do responsável.
+- As pendências anteriores da S08 continuam, menos a conferência das plantas e a DEC-0142, que estão resolvidas.
