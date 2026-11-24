@@ -1527,3 +1527,73 @@ Status: Aprovada.
 - Reprodutibilidade do CP-SAT quando a busca para pelo limite (DEC-0101). Nesta rodada a suíte passou inteira.
 - Área do lote pequeno (0,73–0,76) com o teto de 2,0 ×.
 - M1.2: design, promoção dos dados da D2 e verificação "cabe?".
+
+## Sessão S07 — 2026-11-22
+
+### Log da sessão (prompts e ações, em resumo)
+
+1. **Responsável:** pediu a pesquisa técnica para o M2 (servidor local + interface interativa), sem implementar o M2 e sem fazer o design dele, que será feito no brainstorming. Branch `docs/m2-research` a partir da `main` atualizada. Pediu a skill `anthropic-skills:deep-research`, com relatório em `docs/research/` e notas em `docs/research/notes/`, sobre 5 perguntas:
+   1. arquitetura do app local Python + TypeScript offline (servidor, WebSocket × SSE, build, distribuição);
+   2. desenho e edição da planta no navegador (SVG × Canvas × bibliotecas), com o caso de teste da interação de portas da seção 23.3;
+   3. re-solução interativa com CP-SAT, com um experimento medido: travar de 1 a 3 cômodos e re-resolver nos 5 pedidos da bancada, com o código no scratchpad;
+   4. árvore de estados, desfazer e refazer (DEC-0076);
+   5. produtos e artigos de geração interativa de plantas.
+
+   Pediu fatos separados de hipóteses, só bibliotecas que existem e com versão, e uma recomendação com as perguntas que ele terá de decidir. Pediu também README e DECISOES.md atualizados, autorizou os commits (com plano mostrado antes), e no fim o estado da tarefa, o push com o `origin` e o PR.
+
+   **Agente:**
+   - **Branch:** a `main` já tinha os PRs #4 e #5 integrados (`672af29`). Criou `docs/m2-research` a partir dela.
+   - **Pesquisa:** 5 frentes de pesquisa em paralelo e o experimento. As notas estão em `docs/research/notes/Arquitetura interativa do M2/`, com 6 arquivos, cada ponto marcado como FATO ou HIPÓTESE. O relatório é `docs/research/Arquitetura interativa do M2.md`.
+   - **Experimento:** feito numa cópia instrumentada de `cpsat.py`, no scratchpad, sem tocar em `src/`, `tests/` nem `data/`. Foram 115 execuções e 20 checagens de dica.
+     - **Travas:** valeram em 115 de 115 execuções.
+     - **Latência da re-solução por número de cômodos travados:**
+
+       | Travados | Latência |
+       |---|---|
+       | 3 | 0,03 a 4,7 s |
+       | 2 | 1,3 a 9,1 s, com o ótimo provado em todos os pedidos |
+       | 0 ou 1, nos pedidos de 8 a 12 cômodos | 20 a 27 s, o mesmo que gerar do zero |
+
+     - **Dica:** a dica completa e viável devolve a planta anterior em ≤ 0,3 s. A dica parcial atrasou a 1.ª solução de 0,62 para 5,47 s.
+     - **Limite curto:** com `interleave_search`, o limite de 2 dt não funciona como limite; a busca para em ≈ 8 dt.
+     - **Reprodutibilidade:** os casos parados no limite de 20 dt deram 3 plantas diferentes em 4 rodadas.
+     - **Ressalva:** dois processos Python de outra origem rodaram durante parte da rodada válida. Esses casos estão marcados; o tempo determinístico não muda.
+   - **README:** status e estrutura de `docs/research/` atualizados.
+
+### Decisões
+
+**DEC-0111 — Pesquisa técnica do M2 concluída**
+Data: 2026-11-22 · Sessão: S07 · Autor: Responsável (pedido) / Agente (pesquisa e recomendação) · Categoria: Arquitetura / Interface
+Decisão: o relatório `docs/research/Arquitetura interativa do M2.md` e as 6 notas são a base técnica do brainstorming do M2. As recomendações dele **não são decisões**. Em resumo, o agente propõe:
+- Starlette + uvicorn, com comandos por POST e eventos por SSE;
+- solve numa thread com `stop_search` para cancelar;
+- front-end em SVG puro com câmera própria, Vite + TypeScript em dev e build embutido no pacote Python;
+- travas por igualdade em x/y/w/h;
+- re-solução assíncrona que mostra logo a planta anterior, usando a dica completa só quando ela é viável;
+- árvore no Python, com snapshots completos e toda edição como nó filho.
+
+Consequências:
+- O relatório lista 15 perguntas para o responsável decidir no design.
+- **Achado que reabre uma decisão:** a reprodutibilidade por semente (M1.1) e a latência entram em choque no caminho interativo (perguntas 6 e 7 do relatório), o que se liga à pendência da DEC-0101.
+- O código e os dados brutos do experimento ficam no scratchpad, que é temporário, como o responsável pediu. Os números ficam no relatório e na nota do experimento.
+
+Status: Proposta.
+
+**DEC-0112 — Branch `docs/m2-research` a partir da `main`**
+Data: 2026-11-22 · Sessão: S07 · Autor: Responsável · Categoria: Processo
+Decisão: a pesquisa do M2 vai num branch próprio, criado da `main` com os PRs #4 e #5 já integrados, e com commits autorizados nesta rodada (plano mostrado antes).
+Consequências: o branch local `fix/cpsat-reproducibility`, sem nenhum commit além da `main`, não foi usado nem alterado.
+Status: Aprovada.
+
+### Pendências abertas (S07)
+
+- Responsável: ler o relatório e responder às 15 perguntas no brainstorming do M2.
+- Responsável: decidir a ordem entre M1.2 e M2.
+- Responsável: decidir se copia para o repositório os dados brutos do experimento (`results.jsonl` e scripts), que hoje estão só no scratchpad (pergunta 15).
+- Experimentos de solver antes ou durante o M2:
+  - `stop_search` com o servidor ativo;
+  - `interleave_batch_size` e `share_binary_clauses=False` (piso de 8 dt e reprodutibilidade);
+  - perturbação para baixo;
+  - dica reconstruída só a partir do `Plan`;
+  - nova rodada com a máquina livre.
+- Pendências da S06 continuam: conferência das plantas novas, aprovação das DEC-0099 a DEC-0107, área do lote pequeno, M1.2.
