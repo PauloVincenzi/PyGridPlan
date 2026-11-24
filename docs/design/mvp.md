@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.7 · Criado em: 2026-11-11 · Atualizado em: 2026-11-22 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06; 22.5 revista na S07) aguarda aprovação do responsável; o design do M1.2 está em documento próprio (Proposta)**
+Versão: 1.8 · Criado em: 2026-11-11 · Atualizado em: 2026-11-24 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06; 22.5 revista na S07) aguarda aprovação do responsável; o design do M1.2 está em documento próprio (Proposta)**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -146,7 +146,12 @@ A **entrada** fica na frente do terreno; o motor escolhe a posição, e o usuár
 Quando o programa tem um cômodo de **circulação**, ele precisa cumprir essa função: as regras estão na seção 21.2.
 
 ### 5.6 Agregação (DEC-0034)
-**No MVP [decisão do Agente]:** soma ponderada de critérios normalizados em [0, 1], com **utilidade de retornos decrescentes** por critério (ex.: raiz ou logaritmo da área de quintal). A nota é sempre exibida **decomposta por critério**.
+**No MVP [revisto na S08, DEC-0138: descreve o código]:** soma ponderada **linear** de critérios normalizados em [0, 1], dividida pela soma dos pesos dos critérios que se aplicam ao pedido. A nota é sempre exibida **decomposta por critério**.
+
+**Objetivo do solver × nota.** Os dois usam os mesmos pesos (`scoring.WEIGHTS`), mas o objetivo do CP-SAT só **aproxima** a nota. Por exemplo: usa a área conservadora (meia parede externa em todos os lados), não tem termo próprio para a circulação, mede a compacidade pelos recortes (fase 1) ou pela área vazia (fase 2) e o alinhamento só entre cômodos iguais. A nota é a palavra final; a melhor planta para o solver não é, garantidamente, a de maior nota. Detalhes em [docs/theory/cpsat-generator.md](../theory/cpsat-generator.md), seções 4.2 a 4.4.
+
+**Nota (DEC-0138):** a versão 1.7 previa utilidade de **retornos decrescentes** por critério (ex.: raiz ou logaritmo da área de quintal), que o código não tem. O tema volta no **M3** (o A vs. B dá dados para escolher a curva) e no **M7** (comparação de geradores com a mesma nota), junto com a distância entre o objetivo e a nota.
+
 **Depois do MVP:** integral de Choquet (interação entre critérios) e fronteira de Pareto. A interface de pontuação deve aceitar trocar o agregador sem mexer nos geradores.
 
 ## 6. Pipeline de etapas
@@ -209,7 +214,14 @@ Desde a calibração do M1.1, o CP-SAT usa a **formulação por malha de linhas 
 
 ## 9. Diversidade das alternativas (DEC-0023)
 
-As K alternativas de uma etapa precisam ser **diferentes de verdade**. **[Decisão do Agente]:** uma distância entre plantas que combine posição relativa dos cômodos (quem está ao norte, sul, leste ou oeste de quem) e sobreposição de áreas por cômodo; as K alternativas são escolhidas para maximizar a menor distância entre pares, entre as candidatas que passam no validador e têm nota acima de um piso.
+As K alternativas de uma etapa precisam ser **diferentes de verdade**. **[Revisto na S08, DEC-0138: descreve o código.]**
+
+- **Distância:** fração dos pares de cômodos cuja **posição relativa** (quem está à esquerda, à direita, à frente ou atrás de quem) mudou de verdade: nenhuma relação que valia numa planta vale na outra. A sobreposição de áreas não entra.
+- **Escolha gulosa e sequencial:** uma planta por vez. Cada resolução exige que pelo menos 15 % dos pares difiram de cada planta já vista e do espelho dela (22.4). As vistas incluem as reprovadas na validação. Não há piso de nota, nem escolha do conjunto mais diverso entre candidatas.
+- **Menos de K plantas:** a geração diz o motivo, no aviso de cada planta e na CLI: o **orçamento esgotou** (pode haver mais), **não há mais** plantas diferentes o bastante das já vistas, com aquela implantação (provado pelo solver) ou o **limite de tentativas** acabou.
+- **Tentativas de forma (22.3):** a partir da 2ª alternativa, a busca começa pela primeira forma ainda não provada inviável (DEC-0126). As plantas são as mesmas sempre que a prova repetida caberia no orçamento, como nos 5 pedidos da bancada; só o tempo muda.
+
+**Nota (DEC-0138):** a versão 1.7 previa uma distância que somasse a sobreposição de áreas e a escolha das K plantas que maximizasse a menor distância entre pares, acima de um piso de nota. O tema volta no **M3** (A vs. B) e no **M7** (comparação de geradores). A troca entre cômodos iguais, que escapa hoje, é da calibração 2 (DEC-0147).
 
 ## 10. Modelo de dados
 

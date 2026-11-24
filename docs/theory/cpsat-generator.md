@@ -1,7 +1,7 @@
 # Fundamentação teórica do gerador CP-SAT (M1)
 
-> Criado em 2026-11-22 · Sessão S07 · Versão 1.0
-> Código de referência: `src/pygridplan/generators/cpsat.py`, `scoring/score.py`, `scoring/diversity.py` e `validation/` no estado do branch `fix/cpsat-reproducibility` (DEC-0123).
+> Criado em 2026-11-22 (S07) · Atualizado em 2026-11-24 (S08) · Versão 1.1: formas provadas inviáveis não se repetem (DEC-0126), motivo de menos de K plantas (DEC-0138) e `ortools` fixo (DEC-0137)
+> Código de referência: `src/pygridplan/generators/cpsat.py`, `scoring/score.py`, `scoring/diversity.py` e `validation/` no estado do branch `fix/generator-adjustments` (DEC-0123, DEC-0126, DEC-0138).
 > Documento de estudo e portfólio. Cada afirmação sobre o PyGridPlan aponta para o código ou para um teste. As afirmações sobre o CP-SAT e a literatura apontam para as referências da seção 10.
 
 ## Sumário
@@ -177,6 +177,8 @@ Essa separação é uma **decomposição hierárquica**: primeiro a decisão dis
 
 Cada tentativa só roda se a anterior for **provada inviável** (`status == "infeasible"`). Se a anterior esgotar o orçamento sem provar nada, o gerador para. Isso é uma forma de **prioridade lexicográfica** entre objetivos: "retângulo" é mais importante que "área perto do alvo", que é mais importante que "sem recortes", e a prioridade não depende da calibração de pesos. Origem: a observação do responsável de que o recorte é "área perdida" e dificulta a obra (design 22.3, DEC-0099).
 
+**Sem repetir provas (DEC-0126).** Da 2ª alternativa em diante, `_solve` começa pela tentativa em que a busca anterior parou (`first_shape`), e não pela primeira. É seguro por **monotonicidade**: cada alternativa tem as restrições da anterior mais os padrões proibidos novos, então o conjunto de soluções só encolhe, e uma forma provada inviável continua inviável. As plantas são as mesmas (`test_shapes_proven_infeasible_are_not_tried_again` compara com quem refaz todas as tentativas; a bancada dá 20 plantas iguais); só o tempo muda, e só nos pedidos que passam da primeira forma. A exceção teórica: se refazer a prova estourasse o orçamento, a geração antiga parava ali, e a nova pode entregar mais plantas.
+
 Antes das tentativas de forma, se o pedido não tem lado encostado e nada coube, `_attach_if_needed` tenta encostar a casa nas divisas, em ordem: esquerda; esquerda e direita; esquerda, direita e fundo (design 20.1, item 5). A planta resultante leva o aviso `attached`.
 
 ---
@@ -218,7 +220,9 @@ O objetivo do solver é uma **aproximação** da nota, não uma cópia:
 - **área:** o solver usa a área conservadora (meia parede externa em todos os lados); a nota usa a área útil real, com parede interna de 100 mm nos lados internos. Na fase 1, o solver nem mede desvio: só premia a janela de 0,8 a 1,25;
 - **circulação:** o critério de nota (função × economia) não tem termo próprio no solver; a função vem das restrições duras de acesso, e a economia, do preço por área;
 - **compacidade:** na fase 1 vem dos custos de recorte; na fase 2, da área vazia da caixa. Sem recortes, a cobertura exata já dá compacidade 1;
-- **alinhamento:** o solver só premia os gêmeos; o alinhamento de faces vizinhas sai da malha.
+- **alinhamento:** o solver só premia os gêmeos (mesmo alvo, w = w e h = h); a nota aceita a orientação trocada, ignora o alvo e conta o alinhamento de faces vizinhas, que no solver sai da malha;
+- **áreas molhadas:** o solver soma os **pares** adjacentes; a nota usa a fração de **cômodos** com vizinho molhado;
+- **preços** por faixa de malha e por área sem alvo (`LINE_PRICE`, `UNTARGETED_PRICE`) não existem na nota.
 
 Consequência: a melhor planta para o solver não é, garantidamente, a de maior nota. As duas medidas apontam na mesma direção por construção, mas a nota é a palavra final.
 
@@ -226,7 +230,7 @@ Consequência: a melhor planta para o solver não é, garantidamente, a de maior
 
 - **Fato:** a soma ponderada só alcança soluções na parte **convexa** da fronteira de Pareto. Soluções eficientes em regiões côncavas não são ótimas para nenhum vetor de pesos [Marler e Arora 2010].
 - **Fato:** os pesos atuais foram calibrados pelo agente na bancada de 5 pedidos (DEC-0089 a DEC-0091), não estimados a partir de preferências medidas de usuários.
-- **Divergência registrada:** o design 5.6 prevê utilidade com retornos decrescentes por critério; o código do M1 é linear (docstring de `score.py`). Choquet e Pareto ficaram para depois do MVP (design 5.6).
+- **Divergência registrada:** o design previa utilidade com retornos decrescentes por critério; o código do M1 é linear (docstring de `score.py`). Na S08, o design 5.6 passou a descrever o código, e o tema volta no M3 e no M7 (DEC-0138). Choquet e Pareto ficaram para depois do MVP (design 5.6).
 
 ---
 
@@ -245,6 +249,16 @@ Para cada par de cômodos (i, j), `relative_pattern` guarda quatro booleanos: i 
 3. resolve de novo com a restrição: para cada padrão proibido, pelo menos `min_diff` pares precisam diferir de verdade, com `min_diff` = max(1, ⌈0,15 · C(n, 2)⌉) (`MIN_DIFF_FRACTION`);
 4. repete até ter K plantas válidas, até 20 tentativas, ou até o solver não achar mais nada.
 
+Quando entrega menos de K, diz o motivo em todas as plantas (aviso `fewer_alternatives`) e na CLI. Os três motivos (`STOP_REASONS`) têm significados lógicos diferentes (DEC-0138):
+
+| Parada | O que se sabe | O que fazer |
+|---|---|---|
+| `infeasible` | **prova** de que nenhuma planta do modelo difere o bastante das já vistas | mais lotes nesta resolução não ajudam; outra semente (as plantas já vistas mudam) ou outro pedido pode dar outro conjunto |
+| `timeout` | nada: a busca parou no orçamento sem achar nem provar | aumentar `--batches` |
+| `attempts` | 20 resoluções gastas: K passa de 20, ou muitas plantas foram reprovadas na validação | pedir menos plantas, ou rever o programa |
+
+A prova vale dentro do modelo: a malha de até 6 × 6, as três formas, o teto de área e a implantação usada.
+
 No modelo, cada par tem quatro literais (`lo <= hi`), e um booleano *d* "difere" implica a negação de cada relação que valia no padrão antigo. É uma generalização das **restrições *no-good*** da programação por restrições: em vez de proibir uma única atribuição, proíbe-se uma vizinhança inteira (tudo o que estiver a menos de `min_diff` pares de distância). Hebrard et al. [2005] formalizam esse tipo de problema ("encontrar k soluções diversas") e propõem métodos para ele, alguns com restrições globais de diversidade. A geração sequencial usada aqui é a versão **gulosa**: acha uma solução por vez, exigindo distância das anteriores.
 
 Cada tentativa usa a semente `seed + attempt`, o que varia a busca sem quebrar a reprodutibilidade.
@@ -255,9 +269,9 @@ O espelho de uma planta na largura troca "esquerda" por "direita" em todos os pa
 
 Do ponto de vista teórico, é **quebra de simetria entre soluções**: a reflexão horizontal é uma simetria do problema quando o lote é simétrico, e proibir a imagem de cada solução vista corta essa simetria de forma dinâmica [Gent, Petrie e Puget 2006]. Quando o lote não é simétrico (casa encostada, norte lateral), o espelho seria outra planta válida, e a proibição é uma escolha de produto, não uma simetria matemática.
 
-### 5.4 Diferença em relação ao design
+### 5.4 A escolha gulosa e a alternativa
 
-O design 9 propõe escolher as K alternativas **maximizando a menor distância entre pares** entre candidatas válidas acima de um piso de nota. O código faz a versão **gulosa e sequencial**, com uma distância mínima fixa (15 % dos pares). A versão gulosa não garante o conjunto mais diverso, mas cada alternativa nova sai ótima (ou a melhor no orçamento) dentro do que ainda é permitido.
+Até a S08, o design 9 propunha escolher as K alternativas **maximizando a menor distância entre pares** entre candidatas válidas acima de um piso de nota. O código faz a versão **gulosa e sequencial**, com uma distância mínima fixa (15 % dos pares). A versão gulosa não garante o conjunto mais diverso, mas cada alternativa nova sai ótima (ou a melhor no orçamento) dentro do que ainda é permitido. O design 9 agora descreve a versão gulosa, e a alternativa volta no M3 e no M7 (DEC-0138).
 
 ---
 
@@ -287,7 +301,7 @@ O código do OR-Tools v9.15 reconhece essa lacuna num comentário de `FullProble
 
 ### 6.4 Limites da garantia
 
-- Medida com o OR-Tools 9.15.6755 numa máquina Windows x86-64. O `pyproject.toml` pede `ortools>=9.15`; outra versão ou outro processador pode mudar a planta. O teste de reprodutibilidade detecta isso.
+- Medida com o OR-Tools 9.15.6755 numa máquina Windows x86-64. O `pyproject.toml` fixa essa versão (DEC-0137); outra versão ou outro processador pode mudar a planta. Uma atualização passa antes pelo teste de reprodutibilidade.
 - É reprodutibilidade **dada a mesma entrada**. Uma mudança pequena no pedido (1 m² a mais num cômodo) pode mudar a topologia inteira: o gerador não é contínuo em relação à entrada.
 
 ---
@@ -296,9 +310,9 @@ O código do OR-Tools v9.15 reconhece essa lacuna num comentário de `FullProble
 
 Fatos do código e das medições, em ordem de impacto:
 
-1. **Tempo acima da meta.** O design 8 pede ~20 s para 4 alternativas de 8 a 12 cômodos. A casa grande leva ≈ 156 s (DEC-0123). A DEC-0126 propõe não repetir tentativas de forma já provadas inviáveis (≈ 23 % no lote pequeno).
+1. **Tempo acima da meta.** O design 8 pede ~20 s para 4 alternativas de 8 a 12 cômodos. A casa grande leva ≈ 151 s. Não repetir as formas provadas inviáveis (DEC-0126) cortou 26 % do lote pequeno (54 → 40 s, medianas de 3 execuções) e ficou dentro do ruído (±3 %) nos outros quatro pedidos, que se resolvem na primeira forma (DEC-0149).
 2. **Sem otimalidade garantida.** Nos pedidos maiores, a fase 1 para no orçamento sem provar o ótimo (10 das 20 alternativas da bancada, design 22.5). A decomposição em duas fases também fixa a topologia antes de medir.
-3. **"Timeout" e "acabaram as alternativas" se confundem** na geração das alternativas seguintes: `solve_layout` devolve `None` nos dois casos, e o laço de `generate_alternatives` para. Na primeira resolução, os dois casos são distinguidos (`_attach_if_needed`).
+3. **O encosto automático passa por cima de um orçamento esgotado.** Se uma implantação encostada para sem prova, `_attach_if_needed` tenta a próxima, que encosta mais. Só quando nenhuma dá planta o erro diz que o orçamento esgotou, e não que o programa não cabe (DEC-0149).
 4. **Expressividade da malha.** No máximo 6 × 6 faixas e cômodos retangulares: um cômodo em L é impossível. Linhas a ≥ 900 mm umas das outras impedem degraus menores que isso. A malha representa arranjos que não são de guilhotina (o "cata-vento" de quatro cômodos em volta de um central cabe numa malha 3 × 3), mas não arranjos fora da grade comum.
 5. **Restrições necessárias, não suficientes.** O acesso no solver é potencial (paredes comuns ≥ 900 mm); portas e janelas reais ficam para o M2/M4. A validação independente pode reprovar uma planta, que então consome uma das 20 tentativas.
 6. **Objetivo ≠ nota.** Seção 4.4.
@@ -361,11 +375,11 @@ A interface comum dos geradores (design 8) e o validador independente (design 5.
 | Recortes só na borda, quebra de simetria | `cpsat.py`, `_phase`, laço `for v in range(max_voids)` e "cada linha interna usada é face" |
 | Conectividade por fluxo | `cpsat.py`, `_phase`, bloco "conectividade global" |
 | Duas fases | `cpsat.py`, `_solve` e `topo_phase` em `_phase` |
-| Tentativas de forma | `cpsat.py`, `SHAPE_ATTEMPTS` e `_solve` |
+| Tentativas de forma, sem repetir as inviáveis | `cpsat.py`, `SHAPE_ATTEMPTS` e `_solve` (`first_shape`) |
 | Parâmetros do CP-SAT | `cpsat.py`, fim de `_phase` |
 | Pesos e nota | `scoring/score.py`, `WEIGHTS` e `score_plan` |
 | Padrões, espelho, distância | `scoring/diversity.py` |
-| Alternativas e proibições | `cpsat.py`, `generate_alternatives` |
+| Alternativas, proibições e motivo de menos de K | `cpsat.py`, `generate_alternatives` e `STOP_REASONS` |
 | Testes de reprodutibilidade | `tests/test_generate.py` |
 | Testes de forma, acesso e circulação | `tests/test_cpsat.py` |
 
@@ -407,4 +421,4 @@ A interface comum dos geradores (design 8) e o validador independente (design 5.
 
 - `docs/design/mvp.md`, seções 5, 8, 9, 20 a 22.
 - `docs/plans/m1-1-calibration.md`, seções 3 a 5.
-- `DECISOES.md`: DEC-0050, DEC-0089 a DEC-0101, DEC-0123, DEC-0126.
+- `DECISOES.md`: DEC-0050, DEC-0089 a DEC-0101, DEC-0123, DEC-0126, DEC-0137, DEC-0138.
