@@ -2034,3 +2034,87 @@ Status: Aprovada (regra) / Proposta (ordem).
   - conferir o AVX-VNNI localmente, por exemplo com o Coreinfo;
   - remover o worktree `PyGridPlan-worktrees/m5-local-llm-research` depois do merge, se o responsável quiser.
 - As pendências anteriores da S07 e da S06 continuam.
+
+### Log da sessão — continuação 5 (2026-11-22 a 2026-11-23)
+
+7. **Responsável:** pediu a trilha de dados D3, sobre aberturas (portas e janelas), como base do M4. Só pesquisa, sem promoção para `data/`, porque o M4 ainda está longe. Branch `docs/d3-openings-research` a partir da `main` atualizada, ou do branch anterior se o PR dele não estivesse integrado, informando a ordem dos PRs. Seguir o processo `Dn` do `data/README.md`, começando pelo inventário do que a D2 já cobrira, e usar a skill `anthropic-skills:deep-research` com 5 perguntas:
+   - larguras de porta por cômodo e por tipo (giro, correr, camarão, pivotante), varredura e folgas (NBR 15575, NBR 9050, Anexo III do MCMV, códigos de obra);
+   - janelas: área mínima de iluminação e ventilação por cômodo (frações federais × municipais), peitoril, distância à divisa;
+   - ventilação por duto, poço e claraboia;
+   - segunda porta externa e porta de serviço;
+   - regras de posição de portas, ligadas à seção 23 do design.
+
+   Cada valor com fonte, nacional separado de municipal (regra 4 do catálogo) e fato separado de convenção de mercado. Pediu também README e DECISOES.md atualizados, autorizou os commits (com o plano mostrado antes) e, no fim, o estado, o push com o `origin` e o PR.
+
+   **Agente:**
+   - **Branch:** a pilha da S07 não estava na `main` nem no `origin`. Criou `docs/d3-openings-research` na pasta principal, a partir de `feat/m1-2-design` (`c741f21`). No meio da rodada, recebeu do orquestrador (`pygridplan-d4`) a regra da DEC-0127. Antes de commitar, a ponta era `docs/m5-local-llm-research` (`d33bb4f`), e o branch foi avançado até ela (rebase sem commits próprios).
+   - **Inventário:** D1 e D2 já cobriam MCMV (0,80 × 2,10 m, aproximação, duas portas de acesso, poço, ventilação cruzada), POA, BH multifamiliar, DF, SP e Curitiba, NBR 9050 só por fonte secundária e o Pv do projeto de emenda da NBR 15575-4. A D3 foi dirigida às lacunas.
+   - **Pesquisa:**
+     - 5 frentes em paralelo. Todas pararam no limite de uso de 5 h e foram retomadas de onde estavam.
+     - As notas estão em `docs/research/notes/Portas e janelas residenciais/` (5 arquivos), e o relatório é `docs/research/Portas e janelas residenciais.md`.
+     - Textos primários lidos: NBR 9050:2020 e 2015, NBR 9077:2001, NBR 13103:2020, Código Civil, Decreto 9.451/2018, códigos do Rio, Salvador, Vitória, BH (unifamiliar), Goiânia 2023, Florianópolis 2026 e Pato Branco, Decreto SP 12.342/1978 (parcial), caderno SINAPI de janelas, catálogo Eclisse e Merrell et al. 2010.
+   - **Revisão do coordenador:** o relatório resolve o "conflito" do Pv. São dois projetos de emenda com zoneamentos diferentes (2005: 7 % ZB 1–7, 12 % ZB 8 Norte, 8 % ZB 8 NE/SE; 2024: 7 % ZB 1–4, 12 % ZB 5A/6A, 8 % ZB 5B/6B). A emenda de 12/2025 só tem fonte secundária. O relatório também registra 12 correções às pesquisas anteriores, entre elas o escopo do 0,60 m da NBR 9050, Goiânia e Florianópolis revogados e as janelas da MCMV v07, que não estão na portaria vigente.
+   - **Ressalva de fonte:** o link da NBR 13103 aponta para uma cópia licenciada a terceiro. Pela regra 3, nenhum texto de norma entrou no repositório.
+   - **README:** status (D3 ✅) e estrutura de `docs/research/`.
+   - **Verificação:** só documentação. Nenhum código, teste ou dado mudou, então a suíte e o `pyright` não foram rodados de novo.
+
+### Decisões — continuação 5 (2026-11-23)
+
+**DEC-0132 — Pesquisa D3 (aberturas) concluída, sem promoção para `data/`**
+Data: 2026-11-23 · Sessão: S07 · Autor: Responsável (pedido e escopo) / Agente (pesquisa e propostas) · Categoria: Dados
+Decisão: o relatório `docs/research/Portas e janelas residenciais.md` e as 5 notas são a base de dados do design do M4. Nenhum valor foi promovido. A tabela "Valores candidatos" do relatório lista os ids de fonte sugeridos, todos marcados como "não promovido". As propostas da seção "Implicações para o modelo de aberturas (M4)" são do agente e **não são decisões**:
+- porta guardada pelo vão livre e pelo tipo, com a geometria derivada (setor de giro, parede ocupada, lado da maçaneta);
+- cinco formas de regra de janela: por cômodo, global, delegada, Pv por zona e desempenho;
+- iluminação indireta com penalidade, distância máxima e profundidade máxima;
+- divisão entre restrições duras e critérios de nota, com "porta perto do canto" como custo (Merrell 2010) e não como restrição.
+
+Achados principais:
+- o único número nacional de porta é 0,80 × 2,10 m (NBR 9050:2020, com −20 mm de tolerância; MCMV);
+- não existe fração nacional de janela por cômodo, e o Pv da NBR 15575-4 só vale na falta de lei local;
+- nenhuma norma brasileira trata de boneca, de porta no canto, de colisão de folhas ou de giro contra móveis;
+- a segunda porta externa só é exigida pelo MCMV.
+
+Status: Proposta.
+
+**DEC-0133 — Rever o limiar de 900 mm de "passagem possível" no design do M4**
+Data: 2026-11-23 · Sessão: S07 · Autor: Agente · Categoria: Produto / Algoritmo
+Contexto: a seção 23.1 do design (DEC-0109) trata uma parede comum de ≥ 900 mm como passagem possível. Pela NBR 15930-2 (via SUDECAP), a folha de 820 mm de uma porta de 0,80 m pede vão de alvenaria de 880–900 mm. Com bonecas de ~75 mm (piso físico por analogia com as golas da NBR 9077), a parede comum precisa de ~1050 mm.
+Decisão proposta: no design do M4, parametrizar o limiar pelo vão livre do perfil, mais o vão de alvenaria e as bonecas, em vez de fixar 900 mm.
+Consequências: o M1 não muda agora, porque só promete passagens possíveis. Pode haver plantas do M1 em que a única parede comum de um acesso não comporte uma porta de 0,80 m com bonecas. Isso deve ser medido quando o M4 for desenhado.
+Status: Proposta (afeta a DEC-0109 se aprovada).
+
+**DEC-0134 — Ajustes propostos para `data/` a partir da D3, para quando o M4 ler**
+Data: 2026-11-23 · Sessão: S07 · Autor: Agente · Categoria: Dados
+Decisão proposta, sem nada aplicado agora:
+- `site_defaults.yaml`: manter `window_min_distance_mm: 1500` (confirmado pelo texto primário do art. 1.301) e acrescentar 750 mm para janela perpendicular ou oblíqua (§1º), com aviso citando a Súmula 414, e a isenção de 100 × 200 mm acima de 2000 mm (§2º);
+- `room_types.yaml`: `window_need: required` passa a aceitar abertura via varanda ou terraço aberto, e nunca por poço, duto ou cômodo fechado; fonte expressa (Rio, municipal) para closet, despensa e circulação sem abertura;
+- regra nacional condicional de gás na cozinha (NBR 13103:2020);
+- novo tipo de fonte `L-est` (decreto ou especificação estadual), tratado como `L-mun` pela regra 4, ou rotular essas fontes como `L-mun`.
+Status: Proposta (o responsável decide no design do M4; a última opção pode ser decidida antes).
+
+**DEC-0135 — Branch `docs/d3-openings-research` empilhado sobre `docs/m5-local-llm-research`**
+Data: 2026-11-23 · Sessão: S07 · Autor: Responsável (regra, DEC-0127, via orquestrador) / Agente (aplicação) · Categoria: Processo
+Decisão: o branch nasceu de `feat/m1-2-design` e foi avançado, antes do primeiro commit, até a ponta da pilha (`docs/m5-local-llm-research`, `d33bb4f`). Ordem de merge:
+1. `docs/m2-research`;
+2. `feat/m1-2-design`;
+3. `fix/cpsat-reproducibility`;
+4. `docs/generator-theory`;
+5. `docs/m5-local-llm-research`;
+6. `docs/d3-openings-research`.
+
+O PR tem como base `docs/m5-local-llm-research` até ele ser integrado e depois é redirecionado para a `main`.
+Status: Aprovada (regra) / Proposta (ordem).
+
+### Pendências abertas (S07) — atualização 5
+
+- **Responsável:**
+  - ler o relatório da D3 e decidir as DEC-0132 a DEC-0134 (podem esperar o design do M4, menos o tipo `L-est`);
+  - push e PR na ordem da DEC-0135.
+- **Agente (próxima coleta da D3, quando houver acesso):**
+  - texto final da emenda de 12/2025 da NBR 15575 e mapa da NBR 15220-3:2024;
+  - cozinha integrada na NBR 13103 ("ambiente multiuso");
+  - boneca mínima com fonte (Neufert, Panero & Zelnik, CDHU);
+  - figuras 83 e 84 da NBR 9050;
+  - tabela de Castro et al. 2015;
+  - vigência dos arts. 61–66 do Decreto SP 12.342/1978.
+- As pendências anteriores da S07 e da S06 continuam.
