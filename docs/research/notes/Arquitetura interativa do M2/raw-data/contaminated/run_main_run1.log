@@ -1,0 +1,14 @@
+basic-program ok 0 64.44 [('FEASIBLE', 60.53, 25.62)]
+large-house ok 0 79.3 [('FEASIBLE', 73.84, 23.87)]
+one-bedroom ok 0 0.42 [('OPTIMAL', 0.25, 0.08)]
+Traceback (most recent call last):
+  File "C:\Users\paulo\AppData\Local\Temp\claude\d0e1a6539163643b\be01e520-0af3-4256-97cf-65e37e9d9285\scratchpad\m2-relock\relock_experiment.py", line 208, in <module>
+    """A (barato): k = 0..3 x variantes de 2 dt. B: k = 1..3 x cold/hinted (20 dt). C: k = 0 x cold/hinted."""
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\paulo\AppData\Local\Temp\claude\d0e1a6539163643b\be01e520-0af3-4256-97cf-65e37e9d9285\scratchpad\m2-relock\relock_experiment.py", line 131, in run_baseline
+    plan = res["plan"]
+              ^^^^^^^^
+  File "C:\Users\paulo\AppData\Local\Temp\claude\d0e1a6539163643b\be01e520-0af3-4256-97cf-65e37e9d9285\scratchpad\m2-relock\relock_experiment.py", line 70, in rects
+    "total_s": time.perf_counter() - t0}
+    
+AttributeError: 'NoneType' object has no attribute 'rooms'

@@ -1,0 +1,116 @@
+basic-program ok attached= [] 0 27.58 [('FEASIBLE', 26.31, 25.6)]
+large-house ok attached= [] 0 36.8 [('FEASIBLE', 33.37, 20.11)]
+one-bedroom ok attached= [] 0 0.61 [('OPTIMAL', 0.35, 0.08)]
+small-lot ok attached= ['left'] 1 29.84 [('INFEASIBLE', 7.01, 6.79), ('OPTIMAL', 8.74, 6.95)]
+three-bedroom ok attached= [] 0 38.16 [('FEASIBLE', 35.26, 27.27)]
+one-bedroom 0 hint_check OPTIMAL index
+one-bedroom 0 fast_cold 0 ok 0 tot=0.60s p1=OPTIMAL 0.44s dt=0.21 obj2=1.345927890528905
+one-bedroom 0 fast_partial 0 ok 0 tot=0.51s p1=OPTIMAL 0.35s dt=0.11 obj2=1.345927890528905
+one-bedroom 0 fast_hint 0 ok 0 tot=0.49s p1=OPTIMAL 0.25s dt=0.03 obj2=1.345927890528905
+one-bedroom 1 hint_check OPTIMAL index
+one-bedroom 1 fast_cold 0 ok 0 tot=0.16s p1=OPTIMAL 0.14s dt=0.02 obj2=1.313037361623616
+one-bedroom 1 fast_partial 0 ok 0 tot=0.23s p1=OPTIMAL 0.19s dt=0.02 obj2=1.313037361623616
+one-bedroom 1 fast_hint 0 ok 0 tot=0.17s p1=OPTIMAL 0.14s dt=0.01 obj2=1.313037361623616
+one-bedroom 2 hint_check OPTIMAL index
+one-bedroom 2 fast_cold 0 ok 0 tot=0.10s p1=OPTIMAL 0.05s dt=0.00 obj2=1.313037361623616
+one-bedroom 2 fast_partial 0 ok 0 tot=0.03s p1=OPTIMAL 0.02s dt=0.00 obj2=1.313037361623616
+one-bedroom 2 fast_hint 0 ok 0 tot=0.07s p1=OPTIMAL 0.03s dt=0.00 obj2=1.313037361623616
+one-bedroom 3 hint_check OPTIMAL index
+one-bedroom 3 fast_cold 0 ok 0 tot=0.09s p1=OPTIMAL 0.03s dt=0.00 obj2=1.313037361623616
+one-bedroom 3 fast_partial 0 ok 0 tot=0.05s p1=OPTIMAL 0.02s dt=0.00 obj2=1.313037361623616
+one-bedroom 3 fast_hint 0 ok 0 tot=0.10s p1=OPTIMAL 0.03s dt=0.00 obj2=1.313037361623616
+one-bedroom 1 cold 0 ok 0 tot=0.11s p1=OPTIMAL 0.10s dt=0.02 obj2=1.313037361623616
+one-bedroom 1 hinted 0 ok 0 tot=0.17s p1=OPTIMAL 0.14s dt=0.01 obj2=1.313037361623616
+one-bedroom 2 cold 0 ok 0 tot=0.12s p1=OPTIMAL 0.07s dt=0.00 obj2=1.313037361623616
+one-bedroom 2 hinted 0 ok 0 tot=0.08s p1=OPTIMAL 0.03s dt=0.00 obj2=1.313037361623616
+one-bedroom 3 cold 0 ok 0 tot=0.03s p1=OPTIMAL 0.01s dt=0.00 obj2=1.313037361623616
+one-bedroom 3 hinted 0 ok 0 tot=0.09s p1=OPTIMAL 0.03s dt=0.00 obj2=1.313037361623616
+small-lot 0 hint_check OPTIMAL index
+small-lot 0 fast_cold 0 ok 1 tot=16.16s p1=OPTIMAL 7.98s dt=6.55 obj2=3.66067394533571
+small-lot 0 fast_partial 0 ok 1 tot=17.38s p1=OPTIMAL 10.31s dt=6.80 obj2=3.66067394533571
+small-lot 0 fast_hint 0 ok 1 tot=17.85s p1=OPTIMAL 9.45s dt=6.91 obj2=3.66067394533571
+small-lot 1 hint_check OPTIMAL index
+small-lot 1 fast_cold 0 ok 1 tot=12.16s p1=OPTIMAL 5.40s dt=3.26 obj2=3.66067394533571
+small-lot 1 fast_partial 0 ok 1 tot=10.25s p1=OPTIMAL 4.47s dt=2.76 obj2=3.66067394533571
+small-lot 1 fast_hint 0 ok 1 tot=10.43s p1=OPTIMAL 6.04s dt=2.64 obj2=3.66067394533571
+small-lot 2 hint_check OPTIMAL index
+small-lot 2 fast_cold 0 ok 1 tot=2.76s p1=OPTIMAL 1.05s dt=0.27 obj2=3.66067394533571
+small-lot 2 fast_partial 0 ok 1 tot=1.93s p1=OPTIMAL 0.98s dt=0.23 obj2=3.66067394533571
+small-lot 2 fast_hint 0 ok 1 tot=1.52s p1=OPTIMAL 0.57s dt=0.17 obj2=3.66067394533571
+small-lot 3 hint_check OPTIMAL index
+small-lot 3 fast_cold 0 ok 1 tot=0.30s p1=OPTIMAL 0.14s dt=0.00 obj2=3.66067394533571
+small-lot 3 fast_partial 0 ok 1 tot=0.11s p1=OPTIMAL 0.05s dt=0.00 obj2=3.66067394533571
+small-lot 3 fast_hint 0 ok 1 tot=0.25s p1=OPTIMAL 0.10s dt=0.00 obj2=3.66067394533571
+small-lot 1 cold 0 ok 1 tot=11.93s p1=OPTIMAL 6.18s dt=3.26 obj2=3.66067394533571
+small-lot 1 hinted 0 ok 1 tot=11.84s p1=OPTIMAL 5.47s dt=2.63 obj2=3.66067394533571
+small-lot 2 cold 0 ok 1 tot=2.01s p1=OPTIMAL 0.86s dt=0.27 obj2=3.66067394533571
+small-lot 2 hinted 0 ok 1 tot=1.47s p1=OPTIMAL 0.46s dt=0.17 obj2=3.66067394533571
+small-lot 3 cold 0 ok 1 tot=0.18s p1=OPTIMAL 0.08s dt=0.00 obj2=3.66067394533571
+small-lot 3 hinted 0 ok 1 tot=0.22s p1=OPTIMAL 0.07s dt=0.00 obj2=3.66067394533571
+basic-program 0 hint_check OPTIMAL index
+basic-program 0 fast_cold 0 ok 0 tot=12.72s p1=FEASIBLE 11.36s dt=8.07 obj2=5.7629802529674325
+basic-program 0 fast_partial 0 ok 0 tot=14.48s p1=FEASIBLE 13.07s dt=8.30 obj2=5.7629802529674325
+basic-program 0 fast_hint 0 ok 0 tot=13.99s p1=FEASIBLE 11.37s dt=8.47 obj2=5.7629802529674325
+basic-program 1 hint_check OPTIMAL index
+basic-program 1 fast_cold 0 ok 0 tot=7.36s p1=OPTIMAL 7.31s dt=5.89 obj2=5.6885924999955275
+basic-program 1 fast_partial 0 ok 0 tot=9.90s p1=OPTIMAL 9.77s dt=4.96 obj2=5.6885924999955275
+basic-program 1 fast_hint 0 ok 0 tot=6.25s p1=OPTIMAL 6.18s dt=4.83 obj2=5.6885924999955275
+basic-program 2 hint_check OPTIMAL index
+basic-program 2 fast_cold 0 ok 0 tot=4.91s p1=OPTIMAL 4.86s dt=3.06 obj2=5.770013604014985
+basic-program 2 fast_partial 0 ok 0 tot=4.67s p1=OPTIMAL 4.63s dt=2.16 obj2=5.770013604014985
+basic-program 2 fast_hint 0 ok 0 tot=3.10s p1=OPTIMAL 2.98s dt=0.86 obj2=5.770013604014985
+basic-program 3 hint_check OPTIMAL index
+basic-program 3 fast_cold 0 ok 0 tot=0.41s p1=OPTIMAL 0.38s dt=0.12 obj2=5.770013604014985
+basic-program 3 fast_partial 0 ok 0 tot=0.68s p1=OPTIMAL 0.62s dt=0.09 obj2=5.770013604014985
+basic-program 3 fast_hint 0 ok 0 tot=0.36s p1=OPTIMAL 0.31s dt=0.07 obj2=5.770013604014985
+basic-program 1 cold 0 ok 0 tot=6.34s p1=OPTIMAL 6.31s dt=5.89 obj2=5.6885924999955275
+basic-program 1 hinted 0 ok 0 tot=3.72s p1=OPTIMAL 3.68s dt=4.82 obj2=5.6885924999955275
+basic-program 2 cold 0 ok 0 tot=2.66s p1=OPTIMAL 2.62s dt=3.06 obj2=5.770013604014985
+basic-program 2 hinted 0 ok 0 tot=1.27s p1=OPTIMAL 1.17s dt=0.86 obj2=5.770013604014985
+basic-program 3 cold 0 ok 0 tot=0.44s p1=OPTIMAL 0.41s dt=0.12 obj2=5.770013604014985
+basic-program 3 hinted 0 ok 0 tot=0.31s p1=OPTIMAL 0.27s dt=0.07 obj2=5.770013604014985
+three-bedroom 0 hint_check OPTIMAL index
+three-bedroom 0 fast_cold 0 ok 0 tot=8.07s p1=FEASIBLE 6.92s dt=8.09 obj2=7.036411669246592
+three-bedroom 0 fast_partial 0 ok 0 tot=9.07s p1=FEASIBLE 7.54s dt=8.35 obj2=7.1285279678208155
+three-bedroom 0 fast_hint 0 ok 0 tot=9.59s p1=FEASIBLE 8.02s dt=8.60 obj2=7.1285279678208155
+three-bedroom 1 hint_check OPTIMAL index
+three-bedroom 1 fast_cold 0 ok 0 tot=7.37s p1=OPTIMAL 6.71s dt=7.17 obj2=7.021035655827525
+three-bedroom 1 fast_partial 0 ok 0 tot=6.64s p1=OPTIMAL 5.66s dt=6.91 obj2=7.021035655827525
+three-bedroom 1 fast_hint 0 ok 0 tot=7.43s p1=OPTIMAL 6.39s dt=7.06 obj2=7.021035655827525
+three-bedroom 2 hint_check OPTIMAL index
+three-bedroom 2 fast_cold 0 ok 0 tot=3.45s p1=OPTIMAL 3.41s dt=3.87 obj2=7.021035655827525
+three-bedroom 2 fast_partial 0 ok 0 tot=3.46s p1=OPTIMAL 3.41s dt=2.90 obj2=7.021035655827525
+three-bedroom 2 fast_hint 0 ok 0 tot=2.07s p1=OPTIMAL 2.01s dt=1.83 obj2=7.021035655827525
+three-bedroom 3 hint_check OPTIMAL index
+three-bedroom 3 fast_cold 0 ok 0 tot=2.93s p1=OPTIMAL 2.89s dt=1.54 obj2=7.021035655827525
+three-bedroom 3 fast_partial 0 ok 0 tot=2.93s p1=OPTIMAL 2.89s dt=1.60 obj2=7.021035655827525
+three-bedroom 3 fast_hint 0 ok 0 tot=0.76s p1=OPTIMAL 0.71s dt=0.42 obj2=7.021035655827525
+three-bedroom 1 cold 0 ok 0 tot=7.10s p1=OPTIMAL 6.39s dt=7.17 obj2=7.021035655827525
+three-bedroom 1 hinted 0 ok 0 tot=7.30s p1=OPTIMAL 6.22s dt=7.05 obj2=7.021035655827525
+three-bedroom 2 cold 0 ok 0 tot=3.52s p1=OPTIMAL 3.47s dt=3.87 obj2=7.021035655827525
+three-bedroom 2 hinted 0 ok 0 tot=2.14s p1=OPTIMAL 2.09s dt=1.83 obj2=7.021035655827525
+three-bedroom 3 cold 0 ok 0 tot=2.86s p1=OPTIMAL 2.83s dt=1.54 obj2=7.021035655827525
+three-bedroom 3 hinted 0 ok 0 tot=0.77s p1=OPTIMAL 0.72s dt=0.43 obj2=7.021035655827525
+large-house 0 hint_check INFEASIBLE index
+large-house 0 fast_cold 0 ok 0 tot=9.90s p1=FEASIBLE 8.52s dt=8.09 obj2=5.1628826067484
+large-house 0 fast_partial 0 ok 0 tot=10.62s p1=FEASIBLE 9.15s dt=8.43 obj2=6.372036950396015
+large-house 0 fast_hint 0 ok 0 tot=10.54s p1=FEASIBLE 9.25s dt=8.43 obj2=6.372036950396015
+large-house 1 hint_check INFEASIBLE index
+large-house 1 fast_cold 0 ok 0 tot=8.34s p1=FEASIBLE 8.28s dt=8.11 obj2=5.033437895716198
+large-house 1 fast_partial 0 ok 0 tot=10.85s p1=FEASIBLE 8.83s dt=8.41 obj2=4.900663703543748
+large-house 1 fast_hint 0 ok 0 tot=10.52s p1=FEASIBLE 8.50s dt=8.41 obj2=4.900663703543748
+large-house 2 hint_check INFEASIBLE index
+large-house 2 fast_cold 0 ok 0 tot=7.18s p1=OPTIMAL 7.13s dt=7.73 obj2=6.428719345740329
+large-house 2 fast_partial 0 ok 0 tot=8.80s p1=OPTIMAL 8.75s dt=8.26 obj2=6.428719345740329
+large-house 2 fast_hint 0 ok 0 tot=8.77s p1=OPTIMAL 8.71s dt=8.26 obj2=6.428719345740329
+large-house 3 hint_check INFEASIBLE index
+large-house 3 fast_cold 0 ok 0 tot=4.10s p1=OPTIMAL 4.05s dt=4.23 obj2=4.87866154284998
+large-house 3 fast_partial 0 ok 0 tot=4.90s p1=OPTIMAL 4.85s dt=4.57 obj2=4.87866154284998
+large-house 3 fast_hint 0 ok 0 tot=4.70s p1=OPTIMAL 4.64s dt=4.57 obj2=4.87866154284998
+large-house 1 cold 0 ok 0 tot=26.60s p1=FEASIBLE 25.91s dt=25.34 obj2=5.605203533087537
+large-house 1 hinted 0 ok 0 tot=27.24s p1=FEASIBLE 26.65s dt=25.47 obj2=6.2707675794631434
+large-house 2 cold 0 ok 0 tot=7.14s p1=OPTIMAL 7.08s dt=7.73 obj2=6.428719345740329
+large-house 2 hinted 0 ok 0 tot=9.11s p1=OPTIMAL 9.05s dt=8.52 obj2=6.428719345740329
+large-house 3 cold 0 ok 0 tot=4.04s p1=OPTIMAL 4.00s dt=4.23 obj2=4.87866154284998
+large-house 3 hinted 0 ok 0 tot=4.67s p1=OPTIMAL 4.60s dt=4.57 obj2=4.87866154284998
+exit=0

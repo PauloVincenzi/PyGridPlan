@@ -1,0 +1,72 @@
+# Consumo de material por unidade de serviço (perdas incluídas), de composições SINAPI (média nacional).
+# `driver` = grandeza da planta que multiplica o serviço. Mão de obra fica de fora (estimável depois).
+# Esquema e decisões: data/README.md · DEC-0075
+version: "0.1"
+updated: "2026-11-11"
+services:
+  - id: alvenaria_bloco_ceramico_9x19x19
+    sinapi: 103329
+    unit: m2
+    driver: wall_area_net
+    reference_month: "2024-08"
+    materials:
+      - {item: bloco_ceramico_9x19x19, qty: 28.31, unit: un, theoretical_qty: 25, loss: 0.132}
+      - {item: argamassa_1_2_8, qty: 0.0091, unit: m3}
+    source: sinapi-orcamentor
+  - id: chapisco_interno
+    sinapi: 87879
+    unit: m2
+    driver: wall_face_area_net
+    reference_month: "2026-09"
+    materials: [{item: argamassa_chapisco_1_3, qty: 0.0037, unit: m3}]
+    source: sinapi-orcamentor
+  - id: massa_unica_cimento_cal
+    sinapi: 87529
+    unit: m2
+    driver: wall_face_area_net
+    reference_month: "2026-09"
+    note: "Reboco cimento + cal 1:2:8, espessura real de cerca de 20 mm."
+    materials: [{item: argamassa_1_2_8, qty: 0.0304, unit: m3}]
+    source: sinapi-orcamentor
+  - id: gesso_projetado_1cm
+    sinapi: 87433
+    unit: m2
+    driver: wall_face_area_net
+    reference_month: "2026-09"
+    note: "Alternativa ao reboco: cerca de 18,7 kg de gesso por m²."
+    materials: [{item: pasta_gesso, qty: 0.01712, unit: m3}]
+    source: sinapi-orcamentor
+  - id: contrapiso_3cm
+    sinapi: 87630
+    unit: m2
+    driver: floor_area
+    reference_month: "2026-09"
+    materials:
+      - {item: argamassa_contrapiso_1_4, qty: 0.0431, unit: m3}
+      - {item: cimento_cp, qty: 0.5, unit: kg}
+    source: sinapi-orcamentor
+  - id: porcelanato_60x60_acima_10m2
+    sinapi: 87263
+    unit: m2
+    driver: floor_area
+    validity: "ambiente > 10 m² (abaixo de 5 m² o consumo de placa sobe para cerca de 1,13 m²/m², SINAPI 87261)"
+    reference_month: "2026-09"
+    materials:
+      - {item: porcelanato_60x60, qty: 1.069, unit: m2}
+      - {item: argamassa_colante_ac3, qty: 9.13, unit: kg}
+      - {item: rejunte, qty: 0.141, unit: kg}
+    source: sinapi-orcamentor
+  - id: emassamento_latex_2_demaos
+    sinapi: 88497
+    unit: m2
+    driver: wall_face_area_net
+    reference_month: "2026-09"
+    materials: [{item: massa_corrida_pva, qty: 1.3389, unit: kg}]
+    source: sinapi-orcamentor
+  - id: pintura_latex_premium_2_demaos
+    sinapi: 88489
+    unit: m2
+    driver: wall_face_area_net
+    reference_month: "2026-09"
+    materials: [{item: tinta_latex_premium, qty: 0.2285, unit: L}]
+    source: sinapi-orcamentor

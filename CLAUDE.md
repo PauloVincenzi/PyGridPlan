@@ -54,6 +54,14 @@ Status: Proposta | Aprovada | Aprovada (detalhe a definir) | Substituída por DE
 - **Commits só com autorização explícita.** Mensagens em inglês, no padrão Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `build:`, `chore:`.
 - **Plano de commits antes de commitar.** Antes de qualquer commit, o agente mostra a lista dos commits sugeridos: a mensagem de cada um e os arquivos que entram em cada um. Só depois da confirmação do responsável o agente executa `git add` e `git commit`. O **`git push` é sempre feito pelo responsável**; o agente nunca faz push.
 - **Ao fechar um branch**, o agente entrega o **título e o texto do pull request** (em inglês, como os commits). O responsável abre o PR e faz o merge.
+- **Conversas em paralelo** (DEC-0127, DEC-0136):
+  - uma tarefa = uma conversa, um branch, um worktree em `../PyGridPlan-worktrees/<branch>` e um PR;
+  - só correm juntas tarefas que mexem em arquivos diferentes;
+  - o DECISOES.md e o README só são editados na hora do commit. Antes, a conversa empilha o branch sobre a ponta da fila e continua a numeração, a seção da sessão e a versão dos documentos a partir dela. Depois, avisa a conversa orquestradora.
+- **Conversa orquestradora** (DEC-0143): concentra toda a orientação ao responsável.
+  - Diz quando abrir uma conversa nova, quando mandar um prompt numa conversa já aberta e quando uma conversa pode ser fechada.
+  - Indica o modelo e o esforço de cada prompt.
+  - Consolida a fila de merge: o push, o título, o texto e o link de cada PR. O responsável abre os PRs com o que a orquestradora entrega; as trabalhadoras não precisam entregar PR.
 
 ## Princípios de arquitetura
 

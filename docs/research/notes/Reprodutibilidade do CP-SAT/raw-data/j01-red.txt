@@ -1,0 +1,34 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+______ test_same_request_same_plans_when_the_search_stops_at_its_budget _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001FFF98ED0F0>
+
+    def test_same_request_same_plans_when_the_search_stops_at_its_budget(monkeypatch):
+        from concurrent.futures import ThreadPoolExecutor
+    
+        from ortools.sat.python import cp_model
+    
+        statuses, solve = [], cp_model.CpSolver.solve
+    
+        def recording(self, *args, **kwargs):
+            status = solve(self, *args, **kwargs)
+            statuses.append(status)
+            return status
+    
+        monkeypatch.setattr(cp_model.CpSolver, "solve", recording)
+        request, catalog = load_request(REQUESTS / "large-house.json"), load_catalog()
+        with ThreadPoolExecutor(2) as pool:
+            first, second = pool.map(lambda _: generate_alternatives(request, catalog, k=2), range(2))
+        assert cp_model.FEASIBLE in statuses  # a premissa: alguma resolução parou no orçamento, sem provar o ótimo
+>       assert [a.plan for a in first] == [a.plan for a in second]
+E       AssertionError: assert [Plan(site=Si...l_int_mm=100)] == [Plan(site=Si...l_int_mm=100)]
+E         
+E         At index 1 diff: Plan(site=Site(width_mm=15000, depth_mm=30000, setbacks=Setbacks(front=5000, back=3000, left=1500, right=1500), attached_sides=frozenset(), north='back'), rooms=(Room(id='sala', type='sala', rect=Rect(x=10200, y=7500, w=3000, h=7500), floor=0), Room(id='jantar', type='sala_jantar', rect=Rect(x=6100, y=7500, w=4100, h=3400), floor=0), Room(id='cozinha', type='cozinha', rect=Rect(x=1800, y=5100, w=5500, h=2400), floor=0), Room(id='lavanderia', type='lavanderia', rect=Rect(x=7300, y=5100, w=2000, h=2400), floor=0), Room(id='escritorio', type='escritorio', ...
+E         
+E         ...Full output truncated, use '-vv' to show
+
+test_red_same_plans.py:30: AssertionError
+=========================== short test summary info ===========================
+FAILED test_red_same_plans.py::test_same_request_same_plans_when_the_search_stops_at_its_budget
+1 failed in 169.08s (0:02:49)

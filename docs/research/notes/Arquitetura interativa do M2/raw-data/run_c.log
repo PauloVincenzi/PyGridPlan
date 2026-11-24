@@ -1,0 +1,26 @@
+one-bedroom 0 cold 0 ok 0 tot=0.68s p1=OPTIMAL 0.52s dt=0.21 obj2=1.345927890528905
+one-bedroom 0 hinted 0 ok 0 tot=0.26s p1=OPTIMAL 0.15s dt=0.03 obj2=1.345927890528905
+small-lot 0 cold 0 ok 1 tot=9.72s p1=OPTIMAL 5.11s dt=6.55 obj2=3.66067394533571
+small-lot 0 hinted 0 ok 1 tot=10.83s p1=OPTIMAL 5.49s dt=6.90 obj2=3.66067394533571
+basic-program 0 cold 0 ok 0 tot=22.79s p1=OPTIMAL 21.80s dt=25.68 obj2=5.7629802529674325
+basic-program 0 hinted 0 ok 0 tot=19.61s p1=OPTIMAL 18.61s dt=23.48 obj2=5.7629802529674325
+three-bedroom 0 cold 0 ok 0 tot=22.57s p1=FEASIBLE 21.20s dt=26.73 obj2=7.1285279678208155
+three-bedroom 0 hinted 0 ok 0 tot=24.19s p1=FEASIBLE 22.75s dt=27.35 obj2=7.1285279678208155
+large-house 0 cold 0 ok 0 tot=25.57s p1=FEASIBLE 24.09s dt=20.33 obj2=6.379039384342232
+large-house 0 hinted 0 ok 0 tot=23.86s p1=FEASIBLE 22.45s dt=20.52 obj2=6.679357116960046
+large-house 1 cold 1 ok 0 tot=26.92s p1=FEASIBLE 26.22s dt=25.97 obj2=6.410993779174698
+large-house 1 cold 2 ok 0 tot=27.61s p1=FEASIBLE 26.98s dt=26.64 obj2=5.605203533087537
+large-house 1 cold 3 ok 0 tot=27.17s p1=FEASIBLE 26.42s dt=27.09 obj2=5.873342497287468
+large-house 0 fast_cold 1 ok 0 tot=10.14s p1=FEASIBLE 8.86s dt=8.09 obj2=5.1628826067484
+large-house 0 fast_cold 2 ok 0 tot=9.96s p1=FEASIBLE 8.65s dt=8.09 obj2=5.1628826067484
+large-house 0 fast_cold 3 ok 0 tot=9.80s p1=FEASIBLE 8.53s dt=8.09 obj2=5.1628826067484
+basic-program 0 fast_cold 1 ok 0 tot=8.01s p1=FEASIBLE 6.75s dt=8.07 obj2=5.7629802529674325
+basic-program 0 fast_cold 2 ok 0 tot=7.84s p1=FEASIBLE 6.88s dt=8.07 obj2=5.7629802529674325
+basic-program 0 fast_cold 3 ok 0 tot=7.93s p1=FEASIBLE 6.89s dt=8.07 obj2=5.7629802529674325
+basic-program 1 hinted 1 ok 0 tot=3.60s p1=OPTIMAL 3.56s dt=4.82 obj2=5.6885924999955275
+basic-program 1 hinted 2 ok 0 tot=3.57s p1=OPTIMAL 3.53s dt=4.84 obj2=5.6885924999955275
+basic-program 1 hinted 3 ok 0 tot=3.53s p1=OPTIMAL 3.48s dt=4.84 obj2=5.6885924999955275
+three-bedroom 2 hinted 1 ok 0 tot=2.13s p1=OPTIMAL 2.07s dt=1.83 obj2=7.021035655827525
+three-bedroom 2 hinted 2 ok 0 tot=2.08s p1=OPTIMAL 2.02s dt=1.83 obj2=7.021035655827525
+three-bedroom 2 hinted 3 ok 0 tot=2.09s p1=OPTIMAL 2.03s dt=1.83 obj2=7.021035655827525
+exit=0
