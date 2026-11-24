@@ -1,0 +1,1 @@
+{"label": "R10nolnsdt-p1", "overrides": {"use_lns": false, "max_num_deterministic_batches": 0, "max_deterministic_time": 20}, "total": 62.9, "status": "FEASIBLE", "obj": 6.8672, "dtime": 24.114, "sol": "8bc4b36c39", "model": "503d3ecc74", "topo": 4144363767993604431}

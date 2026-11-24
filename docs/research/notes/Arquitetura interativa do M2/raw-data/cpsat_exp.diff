@@ -1,0 +1,129 @@
+--- cpsat.py
++++ cpsat_exp.py
+@@ -7,6 +7,7 @@
+ """
+ 
+ import math
++import time  # EXP
+ from collections.abc import Sequence
+ 
+ from ortools.sat.python import cp_model
+@@ -107,13 +108,15 @@
+ 
+ def _phase(request: Request, catalog: Catalog, seed: int, time_limit: float, forbidden: Sequence[Pattern],
+            min_diff: int, topology: list[int] | None,
+-           shape: tuple[int, float] = SHAPE_ATTEMPTS[0]) -> tuple[Plan | None, str, list[int]]:
++           shape: tuple[int, float] = SHAPE_ATTEMPTS[0],
++           locks=None, hint=None, fix_hint=False, stats=None) -> tuple[Plan | None, str, list[int]]:  # EXP
+     """Uma fase do gerador; devolve (planta, situação, índices da malha).
+ 
+     Sem `topology` (fase 1): escolhe quem fica onde, com objetivo combinatório (janelas de área, relações,
+     recortes). Com `topology` (fase 2): os índices ficam fixos e só as linhas se movem, com o objetivo exato.
+     `shape` = (número máximo de recortes, teto de área como múltiplo do alvo).
+     """
++    _t_start = time.perf_counter()  # EXP
+     max_voids, cap_factor = shape
+     topo_phase = topology is None
+     site = request.site
+@@ -356,6 +359,7 @@
+             diffs.append(d)
+         m.add(sum(diffs) >= min_diff)
+ 
++    _exp_n_prefix = _exp_lock_and_hint(m, reqs, cells, w, h, locks, hint, fix_hint, stats)  # EXP
+     # objetivo (pesos de scoring.WEIGHTS)
+     span = (site.width_mm + site.depth_mm) / GRID
+     terms = []
+@@ -448,7 +452,10 @@
+     solver.parameters.num_workers = 8
+     # reprodutível (mesma semente = mesma planta): oito estratégias de busca rodam lado a lado e vale a melhor
+     solver.parameters.interleave_search = True
+-    status = solver.solve(m)
++    _cb = _FirstSolution()  # EXP
++    _t_solve = time.perf_counter()  # EXP
++    status = solver.solve(m, _cb)  # EXP (original: solver.solve(m))
++    _exp_stats(stats, solver, status, _cb, _t_start, _t_solve, m, _exp_n_prefix)  # EXP
+     if status == cp_model.MODEL_INVALID:  # erro de programação, não "sem tempo"
+         raise RuntimeError(f"modelo CP-SAT inválido: {m.validate()}")
+     if status not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+@@ -546,3 +553,81 @@
+             f"(cada cômodo com pelo menos {MIN_TARGET_FACTOR:.0%} do alvo), a área edificável (terreno menos "
+             f"recuos) é ≈ {buildable:.1f} m², e as larguras mínimas e passagens também precisam caber. "
+             "Tente menos cômodos, áreas menores, recuos menores ou mais tempo de busca.")
++
++
++# ---------------------------------------------------------------- EXP: código só do experimento
++class _FirstSolution(cp_model.CpSolverSolutionCallback):
++    def __init__(self):
++        super().__init__()
++        self.t0 = time.perf_counter()
++        self.first_s = None
++        self.first_obj = None
++        self.count = 0
++
++    def on_solution_callback(self):
++        if self.first_s is None:
++            self.first_s = time.perf_counter() - self.t0
++            self.first_obj = self.objective_value
++        self.count += 1
++
++
++def _exp_lock_and_hint(m, reqs, cells, w, h, locks, hint, fix_hint, stats):
++    """Travas: x, y, w, h (unidades de GRID) do cômodo iguais aos valores dados. Dica: valores da planta-base
++    para as variáveis criadas antes do objetivo (mesma ordem de criação => mesmo índice no proto)."""
++    n_prefix = len(m.proto.variables)
++    for k, r in enumerate(reqs):
++        if locks and r.id in locks:
++            lx, ly, lw, lh = locks[r.id]
++            m.add(cells[k].x == lx)
++            m.add(cells[k].y == ly)
++            m.add(w[k] == lw)
++            m.add(h[k] == lh)
++    mode = None
++    if hint is not None:
++        if hint["n_prefix"] == n_prefix:
++            mode = "index"
++            pairs = list(enumerate(hint["values"]))
++        else:  # outro formato de malha (ex.: tentativa com recortes): só as variáveis com nome
++            mode = "name"
++            by_name = hint["names"]
++            vs = m.proto.variables
++            pairs = [(i, by_name[vs[i].name]) for i in range(n_prefix) if vs[i].name and vs[i].name in by_name]
++        for i, value in pairs:
++            var = m.get_int_var_from_proto_index(i)
++            if fix_hint:
++                m.add(var == value)
++            else:
++                m.add_hint(var, value)
++        if stats is not None:
++            stats["hint_mode"] = mode
++            stats["hint_vars"] = len(pairs)
++    if stats is not None:
++        stats["n_prefix"] = n_prefix
++    return n_prefix
++
++
++def _exp_stats(stats, solver, status, cb, t_start, t_solve, m, n_prefix):
++    if stats is None:
++        return
++    t_end = time.perf_counter()
++    ok = status in (cp_model.OPTIMAL, cp_model.FEASIBLE)
++    stats.update(
++        status=solver.status_name(status),
++        build_s=t_solve - t_start,
++        solve_s=t_end - t_solve,
++        solver_wall_s=solver.wall_time,
++        user_s=solver.user_time,
++        det_time=solver.deterministic_time,
++        objective=solver.objective_value if ok else None,
++        bound=solver.best_objective_bound if ok else None,
++        first_solution_s=cb.first_s,
++        first_objective=cb.first_obj,
++        n_solutions=cb.count,
++        n_vars=len(m.proto.variables),
++        n_constraints=len(m.proto.constraints),
++    )
++    if ok:
++        sol = solver.response_proto.solution
++        stats["prefix_values"] = list(sol)[:n_prefix]
++        vs = m.proto.variables
++        stats["prefix_names"] = [vs[i].name for i in range(n_prefix)]

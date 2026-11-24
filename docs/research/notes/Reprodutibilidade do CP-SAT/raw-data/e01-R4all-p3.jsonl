@@ -1,0 +1,1 @@
+{"label": "R4all-p3", "overrides": {"share_glue_clauses": false, "share_objective_bounds": false, "share_level_zero_bounds": false, "use_rins_lns": false}, "total": 65.2, "status": "FEASIBLE", "obj": 7.7578, "dtime": 20.085, "sol": "0e8c262ecb", "model": "503d3ecc74", "topo": -4735793364399007097}

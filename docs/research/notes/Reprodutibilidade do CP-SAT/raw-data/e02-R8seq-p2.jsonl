@@ -1,0 +1,1 @@
+{"label": "R8seq-p2", "overrides": {"num_workers": 1, "max_deterministic_time": 20}, "total": 123.2, "status": "FEASIBLE", "obj": 7.1649, "dtime": 20.0, "sol": "7f73f3e07c", "model": "503d3ecc74", "topo": -7763490272776819339}

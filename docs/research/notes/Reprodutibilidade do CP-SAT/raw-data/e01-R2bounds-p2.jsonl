@@ -1,0 +1,1 @@
+{"label": "R2bounds-p2", "overrides": {"share_objective_bounds": false, "share_level_zero_bounds": false}, "total": 66.6, "status": "FEASIBLE", "obj": 7.7578, "dtime": 19.791, "sol": "8881733e77", "model": "503d3ecc74", "topo": -4735793364399007097}
