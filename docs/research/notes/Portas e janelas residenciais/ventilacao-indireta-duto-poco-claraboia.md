@@ -44,7 +44,12 @@ A NBR 15575 inclui as aberturas zenitais na definição de "abertura", mas o cri
 A edição lida é a **NBR 13103:2020 (5ª ed., 25/08/2020)**. Banheiros e ambientes de permanência prolongada não podem receber aparelho a gás, salvo os de circuito fechado (tipos C1, C3, C5). Cozinha com fogão e volume < 19,5 m³ precisa de aberturas permanentes de 100 + 100 cm² ou uma de 200 cm². Aquecedor tipo A ou B11 em ambiente interno pede volume ≥ 6 m³ e AVu = 21,5 × P(kW), com mínimo de 600 cm², sendo a abertura superior ≥ 400 cm² e a inferior ≥ 33 %. A norma admite prisma de ventilação (≥ 4 m², lado ≥ 1 m) e dutos individuais.
 
 ### Cited Findings
-Todos os itens abaixo são **[N]** e citam o mesmo documento, salvo indicação. A fonte é uma cópia da norma licenciada a terceiro e postada em site privado. O conteúdo é primário, mas a cópia não é a distribuição oficial — [NBR 13103:2020 (cópia)](https://normadedesempenho.com.br/wp-content/uploads/2024/02/NBR-13103-2020-Instalacao-de-aparelhos-a-gas-%E2%80%94-Requisitos-1-1_compressed.pdf)
+Todos os itens abaixo são **[N]** e citam o mesmo documento, salvo indicação. O texto foi lido numa cópia licenciada a terceiro, que não é a distribuição oficial; o link dela saiu na S08 (DEC-0140).
+
+**Conferência por fonte secundária (S08, 2026-11-24)**, em duas palestras sobre a edição de 2020, com material da Rinnai: [Seminário Técnico ABNT, Florianópolis, 21/09/2023](https://gasescombustiveis.com.br/seminario/156/palestras/Palestra_NBR_13103_Florianopolis.pdf) e [Seminário Técnico ABNT, Belém, 16/05/2023](https://www.gasescombustiveis.com.br/seminario/151/palestras/151_Semin%C3%A1rio_Tecnico_Belem_NBR%2013103_16.05.23.pdf).
+- **Confirmados em Florianópolis:** só o tipo C em banheiro, dormitório e permanência prolongada; volume mínimo de 6 m³ (tipos A e B); AVu = 21,5 × P, com mínimo de 600 cm², superior ≥ 400 cm² e inferior ≥ ⅓ (A e B11); ≥ 200 cm² para fogão de até 14 000 kcal/h; abertura superior a ≥ 1,50 m, inferior a ≤ 0,80 m; superior para o exterior, ambiente externo ou prisma; inferior também por outros ambientes; as duas podem usar dutos.
+- **Confirmados em Belém:** projeto específico acima de 75 kW; área técnica ≥ 40 % da parede e ≥ 1 m²; forro sem comunicação com ambiente sanitário ou APP, com 120 cm² e 200 cm²; aparelho B11 interno só dos tipos B11AS ou B11BS.
+- **Sem fonte secundária conferida (só o texto da norma):** os demais, entre eles 19,5 m³, 100 + 100 cm², prisma de 4 m² e lado de 1 m, escala do duto (1×, 1,5×, 2×) e vazões mecânicas.
 
 - **Escopo e potência.** O somatório de potências nominais por ambiente é no máximo **75 kW**. Acima disso é preciso projeto específico (5.1).
 - **Locais proibidos (5.3).**
@@ -124,7 +129,7 @@ Não achei norma ABNT que fixe vazão mínima de exaustão para banheiro residen
 - **[F] (já coberto, não reverificado)** A Portaria MCID 725/2023 (MCMV) proíbe ventilação mecânica nas UH. A exceção é o banheiro nas ZB 3B, 4B, 5B e 6B, quando a ventilação natural ou por poço for impossível.
 - **[L-mun] (já coberto)** DF, Lei 6.138/2018, Tabela III, nota 3: serviço, banheiro e lavabo podem ter ventilação mecânica ou artificial.
 - **[P] (secundário, mercado)** Blogs falam em 8–12 trocas do volume por hora, exaustores de 75–300 m³/h e cerca de 100 m³/h para banheiros pequenos. Não há base normativa — [Monitor do Mercado](https://monitordomercado.com.br/noticias/imoveis/397744-este-banheiro-sem-janela-parece-condenado-ao-mofo-mas-um-exaustor-bem-dimensionado-pode-mudar-completamente-a-umidade-presa-depois-do-banho-quente/); [Zap Imóveis](https://www.zapimoveis.com.br/blog/casa-e-decoracao/arquitetura/exaustor-para-banheiro-evita-mofo-e-elimina-odores/)
-- **[N] (primário, por analogia de gás)** A NBR 13103:2020 dá fórmulas de extração mecânica só para ambientes com aparelho a gás: q = 10·A + 2·QnA e alimentação de 2,04 m³/h/kW. Não se aplicam a banheiro sem gás — [NBR 13103:2020 (cópia)](https://normadedesempenho.com.br/wp-content/uploads/2024/02/NBR-13103-2020-Instalacao-de-aparelhos-a-gas-%E2%80%94-Requisitos-1-1_compressed.pdf)
+- **[N] (primário, por analogia de gás)** A NBR 13103:2020 dá fórmulas de extração mecânica só para ambientes com aparelho a gás: q = 10·A + 2·QnA e alimentação de 2,04 m³/h/kW. Não se aplicam a banheiro sem gás — NBR 13103:2020, texto lido na D3 (sem link, DEC-0140)
 
 ### Inferences
 - [X] Para o motor, "banheiro com exaustão mecânica" deve ser uma **opção marcada como dependente do município**. Ela é proibida no MCMV fora das ZB 3B–6B e tem vazão "a especificar pelo projeto". O motor não deve impor um número de m³/h sem fonte.
@@ -239,7 +244,7 @@ Closet, despensa, depósito e circulação interna são os cômodos mais aceitos
   - Porto Alegre: duto (já coberto).
   - MCMV: mecânico só nas ZB 3B–6B quando natural ou poço for impossível (já coberto).
   — fontes nas seções 3 e 4.
-- **Banheiro com aparelho a gás de circuito aberto: proibido** (NBR 13103:2020, 5.3) — [NBR 13103:2020 (cópia)](https://normadedesempenho.com.br/wp-content/uploads/2024/02/NBR-13103-2020-Instalacao-de-aparelhos-a-gas-%E2%80%94-Requisitos-1-1_compressed.pdf)
+- **Banheiro com aparelho a gás de circuito aberto: proibido** (NBR 13103:2020, 5.3) — secundária: [palestra, Florianópolis, 2023](https://gasescombustiveis.com.br/seminario/156/palestras/Palestra_NBR_13103_Florianopolis.pdf)
 - **Área de serviço:** pode abrir para poço interno no MCMV (já coberto). Na NBR 13103, se houver aquecedor, precisa de aberturas permanentes para o exterior, ambiente externo ou prisma ≥ 4 m².
 - **Dormitório e sala:** iluminação e ventilação naturais obrigatórias (Rio, art. 17, §3º; MCMV Anexo II, que proíbe janela para poço interno). Em Salvador, o dormitório pode ter iluminação e ventilação "direta ou indireta" (art. 21) — [Lei 9.281/2017](https://www.normasbrasil.com.br/norma/lei-9281-2017-salvador_373646.html)
 
@@ -262,7 +267,7 @@ Fontes acadêmicas lidas nesta rodada: Castro et al. (2015) mostra que as dimens
 ### Cited Findings
 - **[A]** Castro et al. fizeram 480 simulações (Daysim) de componentes de condução de luz dimensionados pelo mínimo do código de João Pessoa. Os resultados indicam que os limites mínimos do código são insuficientes em diversos casos, sobretudo em banheiros, cuja abertura é só 1/8 do piso. Os autores sugerem rever o valor de 1/8 para cima — [Castro et al. 2015](https://www.ct.ufpb.br/lat/contents/publicacoes/artigos/componentes-de-conducao-da-luz-natural-em-edificios-multifamiliares-analise-de-um-codigo-de-obras.pdf)
 - **[A]** Para APP, a melhor faixa é de 8–15 % de área de ventilação (Sorgato, Versage e Lamberts, via NT LabEEE) — [LabEEE NT 15575](https://labeee.ufsc.br/sites/default/files/publicacoes/notas_tecnicas/NT_15575_FINAL.pdf)
-- **[N]** A NBR 13103 recomenda que "as características construtivas do prisma de ventilação sejam avaliadas em função da quantidade e potência de aparelhos a gás". Para dutos de ventilação longos, aumenta a seção: 1,5× de 3 a 10 m e 2× acima de 10 m. É uma regra empírica de perda de carga — [NBR 13103:2020 (cópia)](https://normadedesempenho.com.br/wp-content/uploads/2024/02/NBR-13103-2020-Instalacao-de-aparelhos-a-gas-%E2%80%94-Requisitos-1-1_compressed.pdf)
+- **[N]** A NBR 13103 recomenda que "as características construtivas do prisma de ventilação sejam avaliadas em função da quantidade e potência de aparelhos a gás". Para dutos de ventilação longos, aumenta a seção: 1,5× de 3 a 10 m e 2× acima de 10 m. É uma regra empírica de perda de carga — NBR 13103:2020, texto lido na D3 (sem link, DEC-0140)
 
 ### Inferences
 - [X] A escala da NBR 13103 (1× até 3 m; 1,5× de 3 a 10 m; 2× acima de 10 m) é a única regra nacional achada que liga o comprimento do duto à seção. Ela poderia inspirar uma penalidade de comprimento no motor, rotulada [X], pois foi feita para gás.
