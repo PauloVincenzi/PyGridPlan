@@ -1,6 +1,6 @@
 # PyGridPlan — Documento de design do MVP
 
-Versão: 1.6 · Criado em: 2026-11-11 · Atualizado em: 2026-11-22 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06) aguarda aprovação do responsável; o design do M1.2 está em documento próprio (Proposta)**
+Versão: 1.7 · Criado em: 2026-11-11 · Atualizado em: 2026-11-22 · Status: **conteúdo aprovado até a seção 21; seção 22 (regras da conferência visual da S06; 22.5 revista na S07) aguarda aprovação do responsável; o design do M1.2 está em documento próprio (Proposta)**
 Fonte: decisões DEC-0001 a DEC-0061 do [DECISOES.md](../../DECISOES.md). O histórico de versões deste arquivo está no git. Cada item abaixo cita a decisão de origem. O que não vem de decisão do responsável está marcado como **[decisão do Agente]** ou **[a cargo do construtor]**.
 
 ---
@@ -382,7 +382,7 @@ A causa não era o peso dos critérios. Com retângulos livres numa grade de 10 
 2. **Cobertura exata.** Cômodos e até 2 **recortes de borda** cobrem a malha inteira. O bloco cheio e as paredes na mesma reta deixam de ser preferências: saem **por construção**. Um vazio fechado é impossível; a casa em L, T ou degrau continua possível, mas custa.
 3. **Fase 1 — topologia.** Decide quem fica ao lado de quem. O objetivo é só combinatório: relações, sol, áreas molhadas, cômodos iguais, recortes e uma **janela de área** (prêmio por cada cômodo ficar entre 0,8 e 1,25 vez o alvo).
 4. **Fase 2 — medidas.** Com a topologia fixa, só as linhas se movem. O objetivo é o exato: desvio de área, área vazia e área de circulação, com os mesmos pesos da nota.
-5. **Busca reprodutível.** Oito estratégias do CP-SAT rodam lado a lado com tempo determinístico e vale a melhor: a mesma semente dá a mesma planta.
+5. **Busca reprodutível.** Oito estratégias do CP-SAT rodam lado a lado com tempo determinístico e vale a melhor: a mesma semente dá a mesma planta. (O mecanismo foi revisto na S07: orçamento em lotes, sem LNS; ver 22.5.)
 
 ### 21.2 Circulação com função
 
@@ -457,11 +457,42 @@ O catálogo diz, com fonte, quanto cada tipo precisa de janela para o exterior (
 
 Duas alternativas que são o espelho uma da outra pareceram repetidas ao responsável, mesmo com a casa encostada num lado só. O espelho passa a ser proibido sempre (substitui o item 3 da seção 21.3).
 
-### 22.5 Tempo de busca (DEC-0101)
+### 22.5 Orçamento de busca e reprodutibilidade (DEC-0101, revista pela DEC-0123 na S07)
 
-O limite da fase 1 passa a 20 unidades determinísticas. Pedidos pequenos param antes, ao provar o ótimo. A casa de 12 cômodos precisava do tempo extra: com o limite de 4, saía uma "casa-corredor" de 15 m de circulação, com nota 0,77; com 20, a nota sobe para 0,88 e a circulação cai para 6,9 m².
+**Contrato.** O mesmo pedido, com a mesma semente e o mesmo orçamento, dá as mesmas plantas, inclusive quando a busca para sem provar o ótimo e com a máquina carregada. É o que o M2 ao vivo precisa. Foi medido com o OR-Tools 9.15.6755 nesta máquina (Windows, x86-64). Com outra versão do OR-Tools ou outro processador, a planta pode mudar, e a reprodutibilidade precisa ser conferida de novo: o teste abaixo faz isso. **[decisão do Agente]**
 
-**Reprodutibilidade limitada (achado da S06).** Quando a busca para pelo limite de tempo, sem provar o ótimo, o CP-SAT paralelo (8 estratégias intercaladas) pode devolver plantas diferentes em execuções diferentes, mesmo com o mesmo modelo, a mesma semente e os mesmos parâmetros. Na casa grande, o mesmo modelo deu objetivos de 4,21 a 4,85 em 3 execuções. Com limite 6, as execuções saíram idênticas. A promessa "mesma semente, mesma planta" vale, por enquanto, só para pedidos em que a busca prova o ótimo. Fica como pendência a investigar (uma estratégia só é reprodutível, mas pior).
+**Orçamento em lotes, não em tempo.** A busca para depois de um número fixo de **lotes sincronizados** do CP-SAT (`max_num_deterministic_batches`). O 1º lote de cada fase só carrega o modelo:
+
+- fase 1: `DEFAULT_BATCHES` = 6 (≈ 40 unidades determinísticas). Pedidos pequenos param antes, ao provar o ótimo. Na bancada, 10 das 20 alternativas param no orçamento;
+- fase 2: `POLISH_BATCHES` = 2. Na bancada, a fase 2 provou o ótimo nas 20 alternativas. Se um dia ela não terminar, vale a planta da fase 1, como antes.
+
+Na CLI, `--batches` substitui `--time-limit`; o mínimo útil é 2, e `batches` < 1 é recusado, porque no CP-SAT 0 lote significa "sem limite". O limite antigo de 20 unidades (DEC-0101) existia porque, com 4, a casa de 12 cômodos saía como "casa-corredor".
+
+**Configuração do CP-SAT:** 8 estratégias de busca completa intercaladas (`interleave_search`), **sem LNS** (`use_lns = False`) e **sem troca de cláusulas binárias** (`share_binary_clauses = False`). A troca de cláusulas *glue*, a de limites e as sementes não mudaram.
+
+**Diagnóstico (S07).** Medido com 3 execuções simultâneas por configuração, comparando o vetor de solução inteiro:
+
+| Causa | Evidência |
+|---|---|
+| **LNS** (busca por vizinhança) | No modelo da 2ª alternativa da casa grande, mesmo com todas as trocas desligadas e lotes fixos, o objetivo variou de 6,42 a 7,76. Só com o LNS desligado, as 3 execuções saíram idênticas. Com 1 worker e `interleave_search` (todas as estratégias, LNS incluído, numa thread só) também varia: 7,72 / 7,16 / 6,57. |
+| **Troca de cláusulas binárias** | Com o LNS desligado e as binárias ligadas: 7,55 / 7,69 / 7,81. No modelo da 1ª alternativa, ligar só as binárias já muda a planta. |
+| **Parada por tempo determinístico** | A parada só acontece entre lotes: com limite 20 a busca gastava de 20,0 a 21,1 (o total oscila com o LNS) e chegava a 28 no programa básico. Com o LNS desligado, o total fica exato, mas a contagem de lotes é determinística por construção e não depende disso. |
+
+O próprio código do OR-Tools reconhece a lacuna: em `ortools/sat/cp_model_solver.cc` (tag v9.15), um comentário de `FullProblemSolver` diz que parte da troca de informação entre threads ainda não acontece nos pontos de sincronização ("Fix that so we can have a deterministic parallel mode").
+
+**Opções medidas e descartadas:**
+- 1 worker com `interleave_search`: 3,7 × o tempo de relógio e ainda não reprodutível, por causa do LNS. Uma estratégia só, sem intercalar (e portanto sem LNS), já tinha sido descartada na calibração do M1.1, porque o resultado variava muito de um pedido para outro (`docs/plans/m1-1-calibration.md`, seção 4);
+- só a parada por lotes: não reprodutível;
+- binárias desligadas com LNS ligado: reprodutível na 1ª alternativa, não na 2ª;
+- sem LNS com 4 ou 5 lotes: mais rápido (até 35 % com 4 lotes), mas a pior alternativa da casa grande cai para 0,849 (4 lotes) ou 0,850 (5 lotes), abaixo de todas as execuções antigas (0,854 a 0,887).
+
+**Efeito na bancada** (5 pedidos × 4 alternativas; tabela na DEC-0123):
+- **Nota:** a média e a pior alternativa ficam dentro da faixa das execuções antigas ou acima dela, e a melhor fica igual ou acima.
+- **Área:** sobe nos 3 quartos (0,871). Na casa grande, a média (0,827) fica 0,003 abaixo da pior execução antiga.
+- **Tempo:** sobe ≈ 19 % (de 13 a 35 % nos 3 pedidos maiores), medido alternando antes e depois nas mesmas condições. É o custo da reprodutibilidade.
+- **Reprodutibilidade:** as 20 alternativas saíram idênticas em 3 execuções, duas delas simultâneas.
+
+**Teste:** `test_same_request_same_plans_when_the_search_stops_at_its_budget` gera 2 alternativas da casa grande duas vezes, ao mesmo tempo, confere que alguma resolução parou no orçamento e exige as mesmas plantas. A 2ª alternativa é a que exercita o LNS. O teste falhava antes da correção.
 
 ### 22.6 Segunda porta externa, para o M4 (DEC-0102)
 

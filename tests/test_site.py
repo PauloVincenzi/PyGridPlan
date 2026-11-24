@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from pygridplan.generators.cpsat import DEFAULT_TIME_LIMIT as TIME, GenerationError, generate_alternatives
+from pygridplan.generators.cpsat import DEFAULT_BATCHES as BATCHES, GenerationError, generate_alternatives
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import Site
 from pygridplan.model.request import Request, RoomRequest, load_request
@@ -14,7 +14,7 @@ SMALL_LOT = Path(__file__).parent / "fixtures" / "requests" / "small-lot.json"
 
 @pytest.fixture(scope="module")
 def small_lot_alternative():
-    return generate_alternatives(load_request(SMALL_LOT), load_catalog(), k=1, time_limit=TIME)[0]
+    return generate_alternatives(load_request(SMALL_LOT), load_catalog(), k=1, batches=BATCHES)[0]
 
 
 def _codes(alt):
@@ -45,7 +45,7 @@ def test_no_window_on_attached_side(small_lot_alternative):
 def test_explicit_attached_sides_are_kept():
     request = load_request(BASIC_PROGRAM)
     request = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset({"right"})})})
-    alt = generate_alternatives(request, load_catalog(), k=1, time_limit=TIME)[0]
+    alt = generate_alternatives(request, load_catalog(), k=1, batches=BATCHES)[0]
     assert "attached" not in _codes(alt)
     assert alt.plan.site.attached_sides == frozenset({"right"})
 
@@ -58,7 +58,7 @@ def test_too_small_even_attached_raises():
     site = Site(width_mm=3000, depth_mm=8000, setbacks=Setbacks(front=4000, back=2000, left=1500, right=1500))
     rooms = (RoomRequest(id="s", type="sala"), RoomRequest(id="q", type="quarto"))
     with pytest.raises(GenerationError):
-        generate_alternatives(Request(site=site, rooms=rooms), load_catalog(), time_limit=TIME)
+        generate_alternatives(Request(site=site, rooms=rooms), load_catalog(), batches=BATCHES)
 
 
 def test_room_categories():
@@ -82,7 +82,7 @@ def test_green_area_and_permeability_warning(basic_house):
 def test_timeout_does_not_trigger_auto_attach():
     # sem tempo para achar solução não é "não coube": não pode encostar na divisa
     with pytest.raises(GenerationError, match="esgotou"):
-        generate_alternatives(load_request(BASIC_PROGRAM), load_catalog(), time_limit=0.001)
+        generate_alternatives(load_request(BASIC_PROGRAM), load_catalog(), batches=1)
 
 
 def test_front_side_never_flagged_no_window():
@@ -101,7 +101,7 @@ def test_both_sides_attached_is_centered():
 
     request = load_request(BASIC_PROGRAM)
     site = request.site.model_copy(update={"attached_sides": frozenset({"left", "right"})})
-    plan = solve_layout(request.model_copy(update={"site": site}), load_catalog(), time_limit=TIME)
+    plan = solve_layout(request.model_copy(update={"site": site}), load_catalog(), batches=BATCHES)
     left = min(r.rect.x for r in plan.rooms) - 100
     right = 9900 - max(r.rect.x2 for r in plan.rooms)
     assert abs(left - right) <= 100
@@ -112,7 +112,7 @@ def test_every_alternative_has_a_bathroom_on_the_circulation():
     # o único banheiro da casa não pode ficar acessível só por dentro de um quarto (design 21.2)
     from pygridplan.validation.access import MIN_PASSAGE_MM, passages
 
-    for alt in generate_alternatives(load_request(SMALL_LOT), load_catalog(), k=4, time_limit=TIME):
+    for alt in generate_alternatives(load_request(SMALL_LOT), load_catalog(), k=4, batches=BATCHES):
         touching = {frozenset(pair) for pair, length in passages(alt.plan).items() if length >= MIN_PASSAGE_MM}
         assert frozenset(("banheiro", "circulacao")) in touching
 
