@@ -94,17 +94,20 @@ def solve_layout(request: Request, catalog: Catalog, *, seed: int = 0, batches: 
 
 
 def _solve(request: Request, catalog: Catalog, *, seed: int, batches: int,
-           forbidden: Sequence[Pattern] = (), min_diff: int = 1) -> tuple[Plan | None, str]:
-    """(planta, situação): situação é "ok", "infeasible" (provado que não cabe) ou "timeout" (orçamento esgotado)."""
-    status = "infeasible"
-    for shape in SHAPE_ATTEMPTS:
+           forbidden: Sequence[Pattern] = (), min_diff: int = 1, first_shape: int = 0) -> tuple[Plan | None, str, int]:
+    """(planta, situação, tentativa de forma em que a busca parou), a partir da tentativa `first_shape`.
+
+    A situação é "ok", "infeasible" (provado que não cabe) ou "timeout" (orçamento esgotado).
+    """
+    status, attempt = "infeasible", first_shape
+    for attempt, shape in enumerate(SHAPE_ATTEMPTS[first_shape:], first_shape):
         plan, status, topology = _phase(request, catalog, seed, batches, forbidden, min_diff, None, shape)
         if plan is not None:
             polished = _phase(request, catalog, seed, POLISH_BATCHES, forbidden, min_diff, topology, shape)[0]
-            return polished or plan, "ok"
+            return polished or plan, "ok", attempt
         if status != "infeasible":
             break
-    return None, status
+    return None, status, attempt
 
 
 def _phase(request: Request, catalog: Catalog, seed: int, batches: int, forbidden: Sequence[Pattern],
@@ -488,29 +491,49 @@ SIDE_PT = {"left": "esquerda", "right": "direita", "back": "do fundo"}
 
 
 def _attach_if_needed(request: Request, catalog: Catalog, seed: int, batches: int,
-                      min_diff: int) -> tuple[Request, Plan | None, Issue | None]:
-    """Primeira resolução; sem lados encostados no pedido e sem solução, tenta encostar nas divisas."""
-    plan, status = _solve(request, catalog, seed=seed, batches=batches, min_diff=min_diff)
+                      min_diff: int) -> tuple[Request, Plan | None, Issue | None, int]:
+    """Primeira resolução; sem lados encostados no pedido e sem solução, tenta encostar nas divisas.
+
+    O último item é a tentativa de forma que deu a planta: as anteriores foram provadas inviáveis.
+    """
+    plan, status, shape = _solve(request, catalog, seed=seed, batches=batches, min_diff=min_diff)
+    out_of_budget = GenerationError("A busca esgotou o orçamento sem achar nenhuma planta: aumente --batches "
+                                    "(isso não significa que o programa não cabe no terreno).")
     if status == "timeout":
-        raise GenerationError("A busca esgotou o orçamento sem achar nenhuma planta: aumente --batches "
-                              "(isso não significa que o programa não cabe no terreno).")
+        raise out_of_budget
     if plan is not None or request.site.attached_sides:
-        return request, plan, None
+        return request, plan, None, shape
+    timed_out = False
     for sides in ATTACH_SEQUENCE:
         attached = request.model_copy(update={"site": request.site.model_copy(update={"attached_sides": frozenset(sides)})})
-        plan, status = _solve(attached, catalog, seed=seed, batches=batches, min_diff=min_diff)
+        plan, status, shape = _solve(attached, catalog, seed=seed, batches=batches, min_diff=min_diff)
         if plan is not None:
             names = " e ".join(SIDE_PT[s] for s in sides)
             note = Issue(code="attached", message=f"casa encostada na divisa {names}: o programa, com as áreas "
                                                   "pedidas, não coube com os afastamentos")
-            return attached, plan, note
-    return request, None, None
+            return attached, plan, note, shape
+        timed_out = timed_out or status == "timeout"
+    if timed_out:
+        raise out_of_budget
+    return request, None, None, 0
+
+
+FEWER_CODE = "fewer_alternatives"  # aviso da rodada, igual em todas as plantas
+# por que a geração parou antes de K plantas (DEC-0138)
+STOP_REASONS = {
+    "timeout": "a busca esgotou o orçamento antes de achar outra planta; pode haver mais, aumente --batches",
+    "infeasible": "não há mais plantas diferentes o bastante das já encontradas, com esta implantação",
+    "attempts": "o limite de tentativas acabou antes de achar outra planta válida",
+}
 
 
 def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, seed: int = 0,
                           batches: int = DEFAULT_BATCHES, max_attempts: int = 20,
                           defaults: SiteDefaults | None = None) -> list[Alternative]:
-    """K plantas válidas e diferentes entre si; soluções rejeitadas são proibidas e o solver roda de novo."""
+    """K plantas válidas e diferentes entre si; soluções rejeitadas são proibidas e o solver roda de novo.
+
+    Com menos de K, todas levam o aviso `FEWER_CODE` com o motivo.
+    """
     if not any(catalog.get(r.type).passage == "traversable" for r in request.rooms):
         raise GenerationError("O programa precisa de ao menos um cômodo atravessável (ex.: sala) para a entrada.")
     pairs = math.comb(len(request.rooms), 2)
@@ -518,19 +541,22 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
     defaults = defaults or load_site_defaults()
     seen: list[Pattern] = []
     accepted: list[Alternative] = []
-    request, plan, attach_note = _attach_if_needed(request, catalog, seed, batches, min_diff)
+    request, plan, attach_note, shape = _attach_if_needed(request, catalog, seed, batches, min_diff)
     if plan is None:
         raise GenerationError(_no_fit_message(request, catalog))
+    stop = "attempts"
     # a planta espelhada não é uma alternativa de verdade (design 22.4), nem com um lado encostado
     for attempt in range(max_attempts):
         if len(accepted) == k:
             break
         if attempt > 0:
             forbidden = seen + [mirrored(s) for s in seen]
-            plan = solve_layout(request, catalog, seed=seed + attempt, batches=batches,
-                                forbidden=forbidden, min_diff=min_diff)
+            # os padrões proibidos só acrescentam restrições: a forma já provada inviável continua inviável (DEC-0126)
+            plan, status, shape = _solve(request, catalog, seed=seed + attempt, batches=batches,
+                                         forbidden=forbidden, min_diff=min_diff, first_shape=shape)
             if plan is None:
-                break  # não há mais alternativas diferentes
+                stop = status
+                break
         assert plan is not None
         seen.append(relative_pattern(plan))
         if validate_geometry(plan) or check_access(plan, catalog):
@@ -540,8 +566,11 @@ def generate_alternatives(request: Request, catalog: Catalog, *, k: int = 4, see
         accepted.append(Alternative(plan=plan, score=score_plan(plan, request, catalog),
                                     warnings=notes + tuple(check_site(plan, defaults))))
     if not accepted:
-        raise GenerationError(f"Nenhuma das {len(seen)} soluções encontradas gerou uma planta válida (acesso ou geometria). "
-                              "Tente mais lotes de busca (--batches) ou revise o programa.")
+        raise GenerationError(f"Nenhuma das {len(seen)} soluções encontradas gerou uma planta válida (acesso ou geometria): "
+                              f"{STOP_REASONS[stop]}.")
+    if len(accepted) < k:
+        short = Issue(code=FEWER_CODE, message=f"{len(accepted)} de {k} alternativas: {STOP_REASONS[stop]}")
+        accepted = [alt.model_copy(update={"warnings": (*alt.warnings, short)}) for alt in accepted]
     return accepted
 
 

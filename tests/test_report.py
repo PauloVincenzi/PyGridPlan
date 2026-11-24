@@ -54,6 +54,17 @@ def test_cli_generate_reports_error(tmp_path, capsys):
 
 
 @pytest.mark.slow
+def test_cli_generate_says_why_there_are_fewer_plans(tmp_path, capsys):
+    request = {"site": {"width_mm": 10000, "depth_mm": 25000},
+               "rooms": [{"id": "s", "type": "sala"}, {"id": "c", "type": "cozinha"}]}
+    path = tmp_path / "small.json"
+    path.write_text(json.dumps(request), encoding="utf-8")
+    assert main(["generate", str(path), str(tmp_path / "o"), "--k", "6"]) == 0
+    assert "3 de 6" in capsys.readouterr().err
+    assert "3 de 6" in (tmp_path / "o" / "report.html").read_text(encoding="utf-8")
+
+
+@pytest.mark.slow
 def test_cli_survives_windows_cp1252_console(tmp_path):
     import os
     import subprocess
