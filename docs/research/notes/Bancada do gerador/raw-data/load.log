@@ -1,0 +1,14 @@
+one-bedroom old load=25 python=0 freeMB=814
+one-bedroom new load=15 python=0 freeMB=807
+small-lot new load=5 python=0 freeMB=844
+small-lot old load=45 python=0 freeMB=837
+basic-program old load= python=0 freeMB=852
+basic-program new load=3 python=0 freeMB=472
+three-bedroom new load=5 python=0 freeMB=898
+three-bedroom old load=3 python=0 freeMB=804
+large-house old load=31 python=0 freeMB=869
+large-house new load=24 python=0 freeMB=725
+small-lot old load=35 python=0 freeMB=914
+small-lot new load=44 python=0 freeMB=885
+small-lot new load=36 python=0 freeMB=852
+small-lot old load=40 python=0 freeMB=698
