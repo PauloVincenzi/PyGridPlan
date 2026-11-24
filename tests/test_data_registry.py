@@ -4,7 +4,7 @@ from pathlib import Path
 
 import yaml
 
-from pygridplan.model.sources import DATA_DIR, load_sources
+from pygridplan.model.sources import DATA_DIR, Source, load_sources
 
 
 def _cited_ids(node):
@@ -26,6 +26,11 @@ def test_sources_registry_loads():
     sources = load_sources()
     assert "nbr15575-1-anexo" in sources
     assert sources["codigo-civil"].kind == "L-fed"
+
+
+def test_state_law_is_a_source_kind():
+    # DEC-0140: decreto ou especificação estadual, com o mesmo tratamento da lei municipal (data/README.md, regra 4)
+    Source(id="x", title="x", org="x", kind="L-est", accessed="2026-11-24")
 
 
 def test_every_citation_in_data_is_registered():
