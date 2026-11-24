@@ -12,7 +12,7 @@ sources:
     url: https://autogestao.unmp.org.br/wp-content/uploads/2014/09/Anexo-G_NBR-15575_1_Requisitos-Gerais.pdf
     kind: N
     accessed: "2026-11-11"
-    note: "Cópia do Anexo G (ed. 2013) publicada pela UNMP; anexo informativo. A norma não fixa área mínima de cômodo."
+    note: "Cópia UNMP intitulada 'Anexo G' (Tabelas 1 e 2); na edição publicada de 2013 é o Anexo F (informativo), Tabelas F.1 e F.2, com os mesmos valores (trilha D2). Edição 2024 não conferida. Páginas 1–2 conferidas visualmente na S07 (sala, mesas, estante). A norma não fixa área mínima de cômodo."
   - id: mcmv-725-2023
     title: "Portaria MCID nº 725/2023, compilada até a Portaria 1.079/2026 (MCMV)"
     org: Ministério das Cidades
@@ -20,7 +20,7 @@ sources:
     url: https://www.gov.br/cidades/pt-br/acesso-a-informacao/institucional/base-juridica/portarias/2023/Port.MCIDn725_2023COMPILADA.pdf
     kind: F
     accessed: "2026-11-19"
-    note: "Obrigatória só para empreendimentos do programa. Anexo III: portas 0,80 × 2,10 e duas portas de acesso na casa; Anexo II 4.III.b: janelas de sala e dormitório não podem dar para poço (trilha D2)."
+    note: "Obrigatória só para empreendimentos do programa. Anexo III: mobiliário por cômodo (item 2.I.c), módulos de manobra e 1,20 m livres na frente das portas (2.I.c.vii), portas 0,80 × 2,10 e duas portas de acesso na casa (4.b); Anexo II 4.III.b: janelas de sala e dormitório não podem dar para poço (trilha D2)."
   - id: mcmv-espec-2017
     title: "Especificação Mínima CAIXA para UH PMCMV, versão 07"
     org: CAIXA
@@ -28,7 +28,7 @@ sources:
     url: https://autogestao.unmp.org.br/wp-content/uploads/2014/09/Espec_Min_CAIXA_UH_Fase3_-v07.pdf
     kind: F
     accessed: "2026-11-11"
-    note: "Possivelmente superada pela Portaria 725/2023; conferir (lacuna de prioridade alta)."
+    note: "Substituída pela Portaria 725/2023 (trilha D2); mantida como referência histórica."
   - id: bh-11834-2025
     title: "Lei municipal de Belo Horizonte nº 11.834/2025 (áreas mínimas, multifamiliar)"
     org: Prefeitura de Belo Horizonte
@@ -189,3 +189,35 @@ sources:
     kind: L-mun
     accessed: "2026-11-11"
     note: "Referência municipal; usada só como aviso, nunca como regra nacional."
+  - id: mendonca-2015
+    title: "Mendonça — Apartamentos mínimos contemporâneos (dissertação, PPGAU-UFU)"
+    org: Universidade Federal de Uberlândia
+    year: 2015
+    url: https://repositorio.ufu.br/bitstream/123456789/12268/1/ApartamentosMinimosContemporaneos.pdf
+    kind: A
+    accessed: "2026-11-19"
+    note: "Quadros Avaliativos 1–22 (pp. ~198–229) reproduzem as dimensões de uso de Pedro (LNEC, 2011; nível mínimo) e de Panero e Zelnik (2002). Obras originais não consultadas; quadros ambíguos (mesa de centro, tanque) não foram promovidos (trilha D2)."
+  - id: kapitzky-2019
+    title: "Kapitzky, Muniz e Cunha — espaço de atividades na habitação (VI SBQP, 2019)"
+    org: ANTAC / SBQP
+    year: 2019
+    url: https://eventos.antac.org.br/index.php/sbqp/article/download/3139/2592/9376
+    kind: A
+    accessed: "2026-11-19"
+    note: "Tabela 1 (pp. 325–326) reproduz o espaço de atividades de Boueri (2008). Obra original não consultada (trilha D2)."
+  - id: naurb-ufpel
+    title: "Caderno de Recomendações Construtivas para Habitação Social Evolutiva (NAURB/UFPel)"
+    org: NAURB / Universidade Federal de Pelotas
+    year: 2020
+    url: https://wp.ufpel.edu.br/naurb/files/2020/08/Caderno_de_Recomendacoes_Construtivas_NAURB.pdf
+    kind: A
+    accessed: "2026-11-19"
+    note: "Ano aproximado (pasta de publicação 2020/08). Box mínimo confortável 0,75 × 0,90 com 0,60 livres na frente; 0,60 livres na frente das peças sanitárias nos desenhos; 1,20 entre bancadas (trilha D2)."
+  - id: madeiramadeira-colchoes
+    title: "MadeiraMadeira — guia de medidas de colchão"
+    org: MadeiraMadeira
+    year: 2026
+    url: https://www.madeiramadeira.com.br/central-de-dicas/artigos/como-comprar-colchao-pela-internet
+    kind: P
+    accessed: "2026-11-19"
+    note: "Página aberta e conferida na trilha D2. Convenção de mercado (não há norma de dimensão de colchão); medida do colchão, sem a estrutura da cama."

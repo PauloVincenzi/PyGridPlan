@@ -1,6 +1,6 @@
 # Dados de referência
 
-Versão: 0.2 · Atualizado em: 2026-11-11
+Versão: 0.3 · Atualizado em: 2026-11-22
 
 Dados curados que o motor lê como **conhecimento a priori**: valores padrão quando o usuário não informa algo. Todo valor tem **fonte, versão e data** (DEC-0024). A pesquisa completa que originou estes arquivos está em [docs/research/](../docs/research/).
 
@@ -10,6 +10,7 @@ Dados curados que o motor lê como **conhecimento a priori**: valores padrão qu
 |---|---|---|
 | `sources.yaml` | Registro de fontes. É a **fonte única** das citações | `model/sources.py` e testes |
 | `room_types.yaml` | Catálogo de tipos de cômodo: zona, passagem, atributos, mínimos, faixa de conforto | `model/catalog.py` (gerador, validador, DXF) |
+| `furniture.yaml` | Mobiliário mínimo por tipo de cômodo, dimensões físicas e folgas de uso por perfil (`nbr`, `mcmv`, `ergonomico`, `folgado`), larguras mínimas e módulos livres do MCMV | M1.2 (verificação "cabe?"); teste `tests/test_furniture_data.py` |
 | `costs/consumption.yaml` | Consumo de material por unidade de serviço (composições SINAPI) | estimador de custo (fase futura) |
 | `costs/prices.yaml` | Preços de insumos e referências de verificação (CUB, IBGE) | estimador de custo (fase futura) |
 | `costs/finish_classes.yaml` | Classes de acabamento: econômica, média, alto | estimador de custo (fase futura) |
@@ -29,7 +30,7 @@ Dados curados que o motor lê como **conhecimento a priori**: valores padrão qu
 
 ## Perfil padrão do catálogo
 
-"Piso nacional": o mais exigente entre o anexo de mobiliário da NBR 15575-1 e o MCMV, quando ambos existem. A NBR não fixa área mínima de cômodo; por isso `min_area_m2` só existe quando há fonte, e a área-alvo do gerador vem de `comfort_area_m2`. A conclusão central da pesquisa é que **a área mínima real de um cômodo é consequência do mobiliário mais as folgas**; o validador de "cabe o mobiliário?" entra com o mobiliário (M8).
+"Piso nacional": o mais exigente entre o anexo de mobiliário da NBR 15575-1 e o MCMV, quando ambos existem. A NBR não fixa área mínima de cômodo; por isso `min_area_m2` só existe quando há fonte, e a área-alvo do gerador vem de `comfort_area_m2`. A conclusão central da pesquisa é que **a área mínima real de um cômodo é consequência do mobiliário mais as folgas**; o validador de "cabe o mobiliário?" entra no M1.2 ([design](../docs/design/m1-2-furniture-sizing.md), Proposta). Em `furniture.yaml`, cada perfil cai no do `fallback` quando não tem o valor; valor ausente na cadeia inteira = exigência inexistente naquele perfil. Regras de composição (lados com zona de uso, encosto na parede) não são números com fonte: são decisões registradas no design.
 
 ## Esquema de custos
 

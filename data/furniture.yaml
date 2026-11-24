@@ -1,0 +1,306 @@
+# Mobiliário mínimo e folgas por cômodo — dados que o M1.2 lê (trilha D2; DEC-0119, proposta).
+# Design: docs/design/m1-2-furniture-sizing.md · Pesquisa: docs/research/Mobiliário mínimo e folgas por cômodo.md
+#
+# Unidades: mm. Dimensão física = w (largura, o lado da frente do móvel) × d (profundidade).
+# Toda medida é um mapa com `w`/`d` ou `mm` e uma `source` (id de data/sources.yaml); sem fonte, o valor não entra.
+# Perfis: cada valor pode existir por perfil; o que falta num perfil vem do perfil em `fallback`.
+#   Ausente na cadeia inteira = exigência inexistente naquele perfil (ex.: frente do box no perfil nbr).
+# O que NÃO é número com fonte é regra de composição do agente [X] e está no design, seção 5:
+#   lados com zona de uso (`zones`), encosto na parede (`wall`), `nightstand`, `paired_side`, `short_side_on_wall`.
+# NBR 15575-1: anexo informativo de mobiliário, Tabelas 1 e 2 da cópia UNMP ("Anexo G"; Anexo F, Tabelas F.1 e F.2,
+#   na edição publicada de 2013); páginas 1 e 2 conferidas visualmente na S07.
+version: "0.1"
+updated: "2026-11-22"
+
+default_profile: ergonomico
+
+profiles:
+  nbr:
+    name: "NBR 15575-1 (informativo)"
+    description: "Anexo informativo de mobiliário da NBR 15575-1:2013. Perfil-base: todos os outros caem nele."
+    fallback: null
+  mcmv:
+    name: "MCMV (Portaria 725/2023)"
+    description: >-
+      Obrigatório só no Minha Casa Minha Vida. A portaria manda aplicar também a NBR, "respeitado o regramento
+      mais rigoroso" (art. 5º): o que ela não diz vem do perfil nbr. Inclui os módulos de manobra livres.
+    fallback: nbr
+    free_zones:  # áreas livres de móveis (podem sobrepor zonas de uso); Anexo III, item 2.I.c.vii
+      modulo_180: {w: 1200, d: 1500, source: mcmv-725-2023, rooms_except: [varanda]}
+      modulo_360: {mm: 1500, shape: circle, source: mcmv-725-2023, rooms: [banheiro]}  # diâmetro
+  ergonomico:
+    name: "Ergonômico"
+    description: >-
+      Folgas de uso típicas da ergonomia lusófona (Pedro/LNEC 2011 e Boueri 2008, lidos nas reproduções de
+      Mendonça 2015 e Kapitzky et al. 2019), com as dimensões físicas da NBR.
+    fallback: nbr
+  folgado:
+    name: "Folgado (Panero e Zelnik)"
+    description: "Folgas da antropometria norte-americana (Panero e Zelnik 2002, via Mendonça 2015)."
+    fallback: ergonomico
+
+# Largura útil mínima do cômodo, por perfil (só onde a fonte fixa).
+room_min_width:
+  sala:
+    nbr: {mm: 2400, source: nbr15575-1-anexo}
+    mcmv: {mm: 2400, source: mcmv-725-2023}
+  sala_jantar:
+    nbr: {mm: 2400, source: nbr15575-1-anexo}  # "sala de estar/jantar e sala de jantar (isolada)"
+  cozinha:
+    nbr: {mm: 1500, source: nbr15575-1-anexo}  # necessária, não suficiente (geladeira 700 + 850 = 1550)
+    mcmv: {mm: 1800, source: mcmv-725-2023}
+  banheiro:
+    nbr: {mm: 1100, source: nbr15575-1-anexo}  # "exceto no box"
+    mcmv: {mm: 1500, source: mcmv-725-2023}
+
+# Vão da zona livre de chegada da porta (as portas só são escolhidas no M4).
+door_zone_width: {mm: 800, source: mcmv-725-2023}  # vão livre de todas as portas; único valor federal
+
+# Folgas: profundidade da zona de uso na frente (ou no lado) do móvel.
+clearances:
+  lateral_cama:
+    nbr: {mm: 500, source: nbr15575-1-anexo}  # "entre o mobiliário e/ou paredes"
+    mcmv: {mm: 500, source: mcmv-725-2023}
+    ergonomico: {mm: 600, source: mendonca-2015}  # Pedro: acesso lateral à cama
+    folgado: {mm: 910, source: mendonca-2015}  # Panero
+  pe_cama:
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    mcmv: {mm: 500, source: mcmv-725-2023}
+    ergonomico: {mm: 600, source: mendonca-2015}
+    folgado: {mm: 910, source: mendonca-2015}
+  entre_camas:
+    nbr: {mm: 600, source: nbr15575-1-anexo}
+    mcmv: {mm: 800, source: mcmv-725-2023}
+    ergonomico: {mm: 600, source: mendonca-2015}  # Pedro
+  frente_guarda_roupa:
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    mcmv: {mm: 500, source: mcmv-725-2023}
+    ergonomico: {mm: 600, source: mendonca-2015}  # Pedro (0,90 para alcançar a parte baixa ajoelhado)
+    folgado: {mm: 860, source: mendonca-2015}
+  frente_criado_mudo:
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    ergonomico: {mm: 500, source: mendonca-2015}
+  frente_assento:
+    nbr: {mm: 500, source: nbr15575-1-anexo}  # "para sentar, levantar e circular"
+    ergonomico: {mm: 500, source: mendonca-2015}
+    folgado: {mm: 760, source: mendonca-2015}
+  frente_estante:
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    ergonomico: {mm: 600, source: mendonca-2015}  # Pedro: rack só com prateleiras ou gavetas (0,90 com portas)
+    folgado: {mm: 1010, source: mendonca-2015}
+  borda_mesa:
+    nbr: {mm: 750, source: nbr15575-1-anexo}  # "espaço para afastar a cadeira e levantar"
+    folgado: {mm: 760, source: mendonca-2015}
+  frente_pia:
+    nbr: {mm: 850, source: nbr15575-1-anexo}
+    folgado: {mm: 1010, source: mendonca-2015}
+  frente_fogao:
+    nbr: {mm: 850, source: nbr15575-1-anexo}
+    folgado: {mm: 1010, source: mendonca-2015}
+  frente_geladeira:
+    nbr: {mm: 850, source: nbr15575-1-anexo}
+    folgado: {mm: 910, source: mendonca-2015}
+  frente_vaso:
+    nbr: {mm: 400, source: nbr15575-1-anexo}
+    ergonomico: {mm: 600, source: naurb-ufpel}
+  frente_lavatorio:
+    nbr: {mm: 400, source: nbr15575-1-anexo}
+    ergonomico: {mm: 500, source: mendonca-2015}
+    folgado: {mm: 680, source: mendonca-2015}
+  frente_box:  # a NBR não dá folga na frente do box: no perfil nbr não há zona
+    ergonomico: {mm: 600, source: mendonca-2015}  # Pedro: área de uso 0,70 × 0,60
+    folgado: {mm: 760, source: mendonca-2015}
+  frente_tanque:
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    ergonomico: {mm: 600, source: kapitzky-2019}  # Boueri
+  frente_maquina:
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    ergonomico: {mm: 600, source: kapitzky-2019}  # Boueri; máquina de abertura superior
+  circulacao:  # passagem livre entre móveis; também a largura mínima de alcance e a zona da porta sem valor próprio
+    nbr: {mm: 500, source: nbr15575-1-anexo}
+    mcmv: {mm: 500, source: mcmv-725-2023}
+    ergonomico: {mm: 600, source: kapitzky-2019}  # Boueri: circulação
+    folgado: {mm: 760, source: mendonca-2015}
+  frente_porta:  # espaço livre na frente das portas
+    mcmv: {mm: 1200, source: mcmv-725-2023}
+
+# Itens. `footprint` vale em todos os perfis, salvo `by_profile`.
+items:
+  cama_casal:
+    name: Cama de casal
+    footprint: {w: 1400, d: 1900, source: nbr15575-1-anexo}
+    wall: back  # cabeceira na parede
+    zones: {left: lateral_cama, right: lateral_cama, front: pe_cama}
+    sleeps: 2
+  cama_queen:
+    name: Cama queen (colchão)
+    footprint: {w: 1580, d: 1980, source: madeiramadeira-colchoes}  # medida do colchão, sem a estrutura
+    wall: back
+    zones: {left: lateral_cama, right: lateral_cama, front: pe_cama}
+    sleeps: 2
+  cama_king:
+    name: Cama king (colchão)
+    footprint: {w: 1860, d: 1980, source: madeiramadeira-colchoes}  # medida do colchão, sem a estrutura
+    wall: back
+    zones: {left: lateral_cama, right: lateral_cama, front: pe_cama}
+    sleeps: 2
+  cama_solteiro:
+    name: Cama de solteiro
+    footprint: {w: 800, d: 1900, source: nbr15575-1-anexo}
+    by_profile:
+      mcmv: {w: 900, d: 1900, source: mcmv-725-2023}
+    wall: back
+    zones: {side: lateral_cama}  # um dos lados longos (Pedro: acesso por uma face)
+    paired_side: entre_camas  # com duas camas de solteiro, a zona lateral usa a maior das duas folgas
+    sleeps: 1
+  criado_mudo:
+    name: Criado-mudo
+    footprint: {w: 500, d: 500, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_criado_mudo}
+    nightstand: true  # pode ficar dentro da zona lateral da cama, junto da cabeceira
+  guarda_roupa_casal:
+    name: Guarda-roupa de casal
+    footprint: {w: 1600, d: 500, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_guarda_roupa}
+  guarda_roupa_duplo:
+    name: Guarda-roupa (2 pessoas)
+    footprint: {w: 1500, d: 500, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_guarda_roupa}
+  armario_solteiro:
+    name: Armário (1 pessoa)
+    footprint: {w: 1200, d: 500, source: nbr15575-1-anexo}  # extração da cópia 2013 leu 1,50; a UNMP, conferida, diz 1,20
+    wall: back
+    zones: {front: frente_guarda_roupa}
+  sofa_3:
+    name: Sofá de 3 lugares
+    footprint: {w: 1700, d: 700, source: nbr15575-1-anexo}  # com braço
+    wall: back
+    zones: {front: frente_assento}
+    seats: 3
+  sofa_2:
+    name: Sofá de 2 lugares
+    footprint: {w: 1200, d: 700, source: nbr15575-1-anexo}  # com braço
+    wall: back
+    zones: {front: frente_assento}
+    seats: 2
+  poltrona:
+    name: Poltrona
+    footprint: {w: 800, d: 700, source: nbr15575-1-anexo}  # com braço
+    wall: back
+    zones: {front: frente_assento}
+    seats: 1
+  estante_tv:
+    name: Estante ou armário de TV
+    footprint: {w: 800, d: 500, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_estante}
+  mesa_4:
+    name: Mesa de 4 lugares
+    footprint: {w: 1200, d: 800, source: nbr15575-1-anexo}  # retangular
+    zones: {front: borda_mesa, back: borda_mesa, left: borda_mesa, right: borda_mesa}
+    short_side_on_wall: true  # a NBR admite o lado menor encostado na parede
+  mesa_6:
+    name: Mesa de 6 lugares
+    footprint: {w: 1500, d: 800, source: nbr15575-1-anexo}  # retangular
+    zones: {front: borda_mesa, back: borda_mesa, left: borda_mesa, right: borda_mesa}
+    short_side_on_wall: true
+  pia:
+    name: Pia de cozinha
+    footprint: {w: 1200, d: 500, source: nbr15575-1-anexo}  # o armário sob a pia fica no mesmo espaço
+    wall: back
+    zones: {front: frente_pia}
+  fogao:
+    name: Fogão
+    footprint: {w: 550, d: 600, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_fogao}
+  geladeira:
+    name: Geladeira
+    footprint: {w: 700, d: 700, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_geladeira}
+  lavatorio:
+    name: Lavatório
+    footprint: {w: 390, d: 290, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_lavatorio}
+  vaso:
+    name: Vaso sanitário com caixa acoplada
+    footprint: {w: 600, d: 700, source: nbr15575-1-anexo}  # 0,60 de largura já funciona como envelope de uso
+    wall: back
+    zones: {front: frente_vaso}
+  box:
+    name: Box com chuveiro
+    footprint: {w: 800, d: 800, source: nbr15575-1-anexo}  # box quadrado
+    by_profile:
+      mcmv: {w: 900, d: 950, source: mcmv-725-2023}
+      folgado: {w: 1370, d: 910, source: mendonca-2015}  # Panero
+    wall: back
+    zones: {front: frente_box}
+  tanque:
+    name: Tanque
+    footprint: {w: 520, d: 530, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_tanque}
+  maquina:
+    name: Máquina de lavar roupa
+    footprint: {w: 600, d: 650, source: nbr15575-1-anexo}
+    wall: back
+    zones: {front: frente_maquina}
+
+# Conjunto mínimo por tipo de cômodo. `source` = documento que lista os itens.
+room_sets:
+  quarto_casal:
+    type: quarto
+    default: true
+    items: [cama_casal, criado_mudo, guarda_roupa_casal]  # Tabela 1: "criado-mudo (mínimo 1)"; MCMV: 1
+    source: nbr15575-1-anexo
+  quarto_duplo:
+    type: quarto
+    items: [cama_solteiro, cama_solteiro, criado_mudo, guarda_roupa_duplo]
+    source: nbr15575-1-anexo
+  quarto_solteiro:
+    type: quarto_solteiro
+    default: true
+    items: [cama_solteiro, criado_mudo, armario_solteiro]
+    source: nbr15575-1-anexo
+  sala_estar:
+    type: sala
+    default: true
+    items: [sofa_3, poltrona, estante_tv]  # Tabela 1: sofá + armário/estante + poltrona
+    seats_from_beds: true  # assentos >= nº de leitos (NBR e MCMV)
+    dining_unless: [sala_jantar, copa]  # sem sala de jantar nem copa, a mesa de 4 vai para a sala (NBR, MCMV)
+    source: nbr15575-1-anexo
+  sala_jantar:
+    type: sala_jantar
+    default: true
+    items: [mesa_4]  # "mínimo: 1 mesa para 4 pessoas"
+    source: nbr15575-1-anexo
+  copa:
+    type: copa
+    default: true
+    items: [mesa_4]  # a tabela da mesa vale para "sala de jantar/copa" e "copa/cozinha"
+    source: nbr15575-1-anexo
+  cozinha:
+    type: cozinha
+    default: true
+    items: [pia, fogao, geladeira]
+    source: nbr15575-1-anexo
+  banheiro:
+    type: banheiro
+    default: true
+    items: [lavatorio, vaso, box]
+    source: nbr15575-1-anexo
+  lavabo:
+    type: lavabo
+    default: true
+    items: [lavatorio, vaso]  # "no caso de lavabos, não é necessário o chuveiro"
+    source: nbr15575-1-anexo
+  lavanderia:
+    type: lavanderia
+    default: true
+    items: [tanque, maquina]
+    source: nbr15575-1-anexo
