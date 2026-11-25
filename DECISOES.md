@@ -2403,3 +2403,113 @@ Status: Aprovada na DEC-0140; a escolha da fonte aguarda o responsável.
   - o aviso da rodada conta como um aviso a mais em cada planta na CLI;
   - o limite de 20 tentativas não é validado contra `--k` nem aparece na CLI.
 - **Estado da tarefa:** **concluída**. Fica pronta para a calibração 2 (DEC-0146 a DEC-0148), que é o próximo passo no `cpsat.py`. As pendências anteriores da S08 continuam.
+
+## Sessão S09 — 2026-11-24
+
+### Log da sessão (prompts e ações, em resumo)
+
+1. **Responsável:** pediu, numa conversa própria e só com documentos, o brainstorming e o design do M1.3 (forma livre, blocos destacados e edícula, DEC-0145), com perguntas uma a uma, validação por seções e mockups se ajudassem. A calibração 2 corria em paralelo, dona de `src/`, `tests/`, `data/` e `mvp.md`; o solver não podia rodar. Autorizou os commits, com o plano mostrado antes, e pediu o aviso à orquestradora, sem push nem PR.
+
+   **Agente:** criou o branch `docs/m1-3-design` a partir da `main` (`52c6e5a`), num worktree; leu o design, a teoria, o gerador e as 16 plantas da conferência e mostrou o que achou (espessura da casa grande, escopo em comum com a DEC-0146, código que supõe um bloco só, custo baixo de um bloco pequeno).
+2. **Responsável**, nas perguntas:
+   - **quem decide um bloco a mais:** concorda com as três origens (pedido, separação do que foi pedido, acréscimo do gerador); o acréscimo só com o usuário ciente e querendo, como um efeito surpresa que pode agradar ou não (ex.: despensa perto da cozinha). Citou como pedidos a edícula com passagem coberta e a oficina perto da piscina;
+   - **fração do lote ocupada:** a mesma área, mais espalhada. Depende do usuário, mas por padrão, numa casa média ou grande, prefere ganhar área externa (quintal, lazer, oficina, hobbies, esporte, academia, céu aberto);
+   - **as 4 alternativas:** uma de cada família de forma. Das 6 silhuetas desenhadas, as de que mais gostou foram a 3 (L) e a 2 (comprido); a 6 é outra proposta, com mais cômodos e usos, e não se compara com as demais;
+   - **ligação:** passagem coberta conforme o uso. O escritório separado só com a lavanderia não é natural;
+   - **abordagem:** implantação primeiro, planta depois, mas com o solver vendo as escolhas futuras;
+   - **anexos:** edícula e oficina encostadas no fundo, numa lateral ou no canto, salvo menção específica;
+   - aprovou as seções 1 a 5, a trilha D4 e a ordem; respondeu A1 e B1 às duas perguntas da revisão, concordou com as decisões da tabela e **aprovou o documento**.
+
+   **Agente:** desenhou 6 famílias de forma (a 1ª é saída real; as outras, esquemas à mão), comparou 3 abordagens, escreveu o design e o submeteu a uma revisão independente (11 perguntas e 26 achados, sem rodar o solver). Levou 2 perguntas ao responsável e resolveu o resto. **Corrigiu duas afirmações que tinha feito na conversa:** o esquema comprido cabe na malha de hoje (4 × 6, depois de juntar linhas próximas), e ser comprido não garante janela a todos.
+
+### Decisões
+
+**DEC-0152 — M1.3: três origens de bloco ou cômodo, e o pedido que não cabe**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável (opções do Agente) · Categoria: Produto
+Decisão:
+- **pedido pelo usuário:** aparece nas formas em que couber. Se não couber em nenhuma, saem as plantas sem ele, com o motivo em destaque (B1);
+- **separação:** um cômodo já pedido e destacável (lavanderia; depósito e área gourmet com área informada; garagem só depois da D4) sai da casa em no máximo uma das 4 alternativas. O escritório não sai sozinho;
+- **acréscimo:** só com o modo surpresa ligado pelo usuário, sempre marcado como "sugerido", também dentro da casa. Desligado, a sobra de lote vira só um texto de sugestão. O conteúdo do modo tem brainstorming próprio antes da E5.
+
+Status: Aprovada.
+
+**DEC-0153 — M1.3: mais área externa por padrão e três tipos de elemento no lote**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável (forma do Agente) · Categoria: Produto
+Decisão:
+- os m² pedidos são respeitados, e o lote que sobra vira área externa. A preferência `space_priority` (−2 casa maior, +2 mais área externa; padrão +1) inverte isso para quem não valoriza quintal;
+- o lote tem blocos construídos (cômodos e paredes), áreas com medida (piscina, quadra, horta, deck; a medida é do usuário até haver fonte) e sobra com nome (quintal, jardim, com mínimo opcional). As relações perto e longe valem entre todos.
+
+Status: Aprovada.
+
+**DEC-0154 — M1.3: implantação primeiro, planta depois, com visão do futuro**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável (proposta do Agente) · Categoria: Arquitetura
+Contexto: comparadas três abordagens: solver único do lote; implantação e depois planta por bloco; casa montada por alas.
+Decisão: a segunda, incorporando o ponto forte da primeira, a pedido do responsável. Contas rápidas descartam o que não cabe; um modelo pequeno posiciona envelopes; a casa é resolvida sabendo o que há em cada lado; a inviabilidade provada volta como restrição, com o contexto; um ajuste fecha com as medidas reais. A abordagem por alas é o plano B do U.
+Consequências: nenhum tempo foi medido. A meta é não passar do tempo de hoje; os ~20 s não são prometidos. Detalhe em [docs/design/m1-3-free-form-and-blocks.md](docs/design/m1-3-free-form-and-blocks.md), seções 5 e 6.
+Status: Aprovada.
+
+**DEC-0155 — M1.3: uma planta por família de forma, janela antes de variedade**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável (opções do Agente) · Categoria: Produto / Algoritmo
+Decisão:
+- famílias: largo, comprido, L, U e casa + bloco. Cada uma que cabe gera uma planta; vagas sobrando viram outros arranjos internos;
+- **janela antes de variedade (A1):** enquanto uma forma der janela a todos os cômodos que a pedem, as que não dão saem da lista. Só se nenhuma conseguir a exigência relaxa, para todas;
+- a regra dos 15 % vale também entre famílias; mudar só a posição no lote não é outra alternativa;
+- o recorte só é bom se dá janela a quem não a teria ou contém área com uso. Concilia o recorte "área perdida" do lote pequeno com os recortes pedidos na casa grande.
+
+Consequências: se só uma forma der janela a todos, as 4 alternativas serão dela. A meta de famílias da E1 é revista com a E0.
+Status: Aprovada.
+
+**DEC-0156 — M1.3: nota que não pune a forma**
+Data: 2026-11-24 · Sessão: S09 · Autor: Agente (proposta) · Responsável (aprovação e comparabilidade) · Categoria: Algoritmo
+Contexto: nos esquemas, com os pesos de hoje, o L perde 0,052 pela compacidade; dois banheiros sem janela custam 0,015.
+Decisão:
+- `compactness` vira `form`: só o recorte inútil tira nota, por bloco;
+- critério novo `outdoor`: área externa aproveitável sobre o lote dentro do muro;
+- "perto" entre blocos e áreas é distância; com cômodo destacado pelo gerador, vale 0;
+- a parede externa é informação, com peso zero por padrão. Parede externa a mais não é objetivo em si;
+- a nota só compara plantas com o **mesmo programa** (pedido do responsável);
+- a preferência pelos esquemas L e comprido vira teste de coerência: não podem perder do largo só pela forma.
+
+Status: Aprovada (pesos a calibrar).
+
+**DEC-0157 — M1.3: posição dos anexos e ligação com a casa**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável · Categoria: Produto
+Decisão:
+- edícula, oficina e rancho ficam encostados no fundo, numa lateral ou no canto, salvo menção específica, com aviso para conferir a lei do município. O lado encostado não tem janela;
+- ligação: passagem coberta curta quando o gerador separa um cômodo de uso diário (lavanderia); caminho aberto nos demais casos, salvo pedido.
+
+Status: Aprovada.
+
+**DEC-0158 — M1.3: modelo de dados com blocos, áreas e caminhos**
+Data: 2026-11-24 · Sessão: S09 · Autor: Agente (aprovado pelo Responsável) · Categoria: Arquitetura
+Decisão: `Room.block` e `Room.origin`, `Block`, `SiteArea` e `Path`, todos opcionais; pedidos e plantas atuais continuam válidos; coordenadas continuam no lote e as paredes continuam derivadas; validação e caixa envolvente por bloco; o bloco é a unidade do telhado no 3D futuro. A varanda deixa de tapar a fachada de quem está atrás (defeito de hoje).
+Status: Aprovada.
+
+**DEC-0159 — Trilha D4 (implantação e áreas externas) e regras do lote**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável (proposta do Agente) · Categoria: Dados
+Decisão: abre a trilha D4, só documentos, sobre: recuo de edícula e oficina, distância entre blocos, recortes e reentrâncias, varanda na frente da janela, o que conta na taxa de ocupação e na permeabilidade, edícula como moradia independente, medidas de piscina, quadra, horta, deck, oficina, rancho e academia, passagem coberta e acesso de carro. Até lá, os números são [X], configuráveis, e nenhuma medida pronta é inventada. Só são duras a geometria, a lei federal e o que o usuário informou (DEC-0108).
+Consequências: não bloqueia o algoritmo; bloqueia as medidas prontas e os avisos com número.
+Status: Aprovada.
+
+**DEC-0160 — M1.3: etapas, ordem e aprovação do design**
+Data: 2026-11-24 · Sessão: S09 · Autor: Responsável (proposta do Agente) · Categoria: Processo
+Decisão:
+- etapas: E0 spikes, E1 formas, E2 terreno, E3 blocos pedidos, E4 U e casa + bloco, E5 surpresas;
+- ordem: calibração 2 → E0 → M1.2 → E1 → E2 → E3 → E4 → E5. O M2 (implementação) começa depois da E2, em paralelo com a E3 em diante; a D4 e o design do M2 correm em paralelo, só documentos;
+- a linha de base é medida logo antes da E1; os spikes S1 e S2 se repetem ali. O plano de implementação vem depois da calibração 2 e da E0, um por etapa;
+- o documento [docs/design/m1-3-free-form-and-blocks.md](docs/design/m1-3-free-form-and-blocks.md) está **aprovado** (versão 1.0).
+
+Consequências: o que muda no mvp.md está na seção 14 do documento e só se aplica em cada etapa. A fachada a 1,50 m da divisa e as janelas como restrição são da calibração 2, não do M1.3.
+Status: Aprovada.
+
+### Pendências abertas (S09)
+
+- **Responsável:**
+  - conferir, quando vierem a E0, a D4 e as conferências visuais, os números [X] da seção 17 do design;
+  - decidir a divergência antiga sobre a garagem: o mvp.md 20.1 a chama de externa construída, o catálogo não a marca como `exterior`.
+- **Agente:**
+  - E0 (spikes) depois do merge da calibração 2; antes da E1, conferir o que a calibração 2 entregou e ajustar as seções 7, 9 e 10 do design;
+  - trilha D4;
+  - brainstorming do modo surpresa, antes da E5;
+  - a versão 1.0 incorpora a revisão da 0.1; não houve segunda revisão.
+- **Estado da tarefa:** design do M1.3 **concluído** (documento aprovado e revisado). O M1.3 como marco segue **em andamento**, sem código, e o que ele espera é a calibração 2. Nada aqui bloqueia o M1.2 nem o design do M2. As pendências da S08 continuam.
