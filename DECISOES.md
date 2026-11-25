@@ -2335,3 +2335,71 @@ Status: Aprovada (a implementar na calibração).
   4. implementação do M1.2 depois da calibração 2, porque as duas mexem no `cpsat.py`;
   5. o brainstorming do M2 depois do M1.3, ou em paralelo, conforme o tempo do responsável.
 - As pendências anteriores da S08 continuam, menos a conferência das plantas e a DEC-0142, que estão resolvidas.
+
+### Log da sessão — continuação 2 (2026-11-24)
+
+6. **Responsável:** pediu, numa conversa própria, os ajustes pequenos do gerador aprovados na S08, antes da calibração 2 e sem mudar as regras de layout: `ortools` fixo e a DEC-0126 (DEC-0137), o motivo de menos de K plantas e o design descrevendo o código (DEC-0138), `L-est` e o link da NBR 13103 (DEC-0140), e uma bancada limpa dos 5 pedidos. Autorizou os commits, com o plano mostrado antes, e pediu que o resultado fosse mandado à conversa orquestradora.
+
+   **Agente:**
+   - **Branch:** `fix/generator-adjustments`, a partir da `main` (`8c6dd64`), num worktree. A última decisão da `main` era a DEC-0148, e não a DEC-0149 citada no prompt; a numeração continua na DEC-0149.
+   - **Código, em TDD:** 10 testes novos, 7 vistos falhar antes do código. Os outros 3 passaram direto: o caso negativo (entrega as K plantas, sem aviso) e 2 escritos depois da revisão, para cobrir caminhos já implementados (plantas reprovadas e formas no encosto automático).
+   - **`L-est`:** o registro de fontes (`SourceKind`) recusaria o tipo, então ele entrou também no código, em `sources.yaml` e no teste da regra 4. Nenhuma fonte foi promovida.
+   - **NBR 13103:** várias fontes secundárias candidatas vistas. A escolhida foi a palestra sobre a edição de 2020 do Seminário Técnico ABNT de Florianópolis (21/09/2023), com apoio da de Belém (16/05/2023). Os dois PDFs foram baixados e lidos.
+   - **Revisão independente:** nenhum achado crítico e 2 importantes, corrigidos: a mensagem "não há mais" valia só para a implantação usada, e a teoria dizia que só mudar o pedido ajudaria. Dos menores, foram corrigidos os de precisão dos textos, o teste de plantas reprovadas, o teste do caminho encostado e o orçamento esgotado no encosto automático. Os outros estão nas pendências.
+   - **Verificação:** suíte completa com **179 testes passando** (17 min 45 s, com 8 threads do solver) e `pyright` com 0 erros.
+
+### Decisões — continuação 2 (2026-11-24)
+
+**DEC-0149 — DEC-0126 implementada e bancada limpa da S08**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (pedido) / Agente (medição) · Categoria: Arquitetura
+Decisão: a partir da 2ª alternativa, a busca começa pela tentativa de forma em que a anterior parou. O `pyproject.toml` fixa `ortools==9.15.6755`.
+Resultado: as 20 plantas são **idênticas** antes e depois, com as mesmas notas e áreas da DEC-0123.
+
+| Pedido | Nota média (pior–melhor) | Área média | Tempo de 4 alternativas |
+|---|---|---|---|
+| 1 quarto | 0,917 (0,912–0,923) | 0,896 | 1,8 → 1,8 s |
+| Lote pequeno | 0,846 (0,821–0,919) | 0,745 | 54,3 → 40,2 s (medianas de 3), −26 % |
+| Programa básico | 0,910 (0,899–0,923) | 0,848 | 114,1 → 113,2 s |
+| 3 quartos | 0,938 (0,918–0,955) | 0,871 | 116,7 → 120,3 s |
+| Casa grande | 0,918 (0,896–0,936) | 0,827 | 153,7 → 151,2 s |
+
+Total: 441 → 427 s. Fora do lote pequeno, o código faz as mesmas resoluções, e a variação (−2 a +3 %) é ruído.
+Condições: nenhum outro processo Python. Chrome, VS Code e outros programas do responsável seguiram abertos (carga de 3 a 45 % antes das execuções, 0,5 a 0,9 GB de RAM livre em 8 GB).
+Consequências:
+- **método de medição:** a 1ª bancada foi descartada para tempo, porque o Windows rebaixou o processo lançado em segundo plano pelo agente (os 3 quartos levaram 605 e 696 s). Com prioridade alta e sem economia de energia, voltaram a ≈ 120 s. As próximas bancadas usam o mesmo lançador. O mesmo pode acontecer no M2, se o motor rodar em segundo plano;
+- dados brutos em `docs/research/notes/Bancada do gerador/raw-data/` (DEC-0141);
+- a meta de ~20 s do design continua não atingida.
+
+Status: Aprovada (implementação da DEC-0137); o método de medição é proposta do Agente.
+
+**DEC-0150 — Motivo de menos de K plantas e design descrevendo o código**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (DEC-0138) / Agente (forma) · Categoria: Arquitetura
+Decisão:
+- a geração continua devolvendo uma lista de alternativas. Com menos de K, todas levam o aviso `fewer_alternatives`, como já acontece com `attached`; o relatório HTML mostra o aviso e a CLI o escreve na saída de erro;
+- são **três** motivos, e não dois: orçamento esgotado (pode haver mais), não há mais plantas diferentes o bastante (provado, com aquela implantação) e limite de 20 tentativas. O terceiro já existia no código sem nome;
+- o erro de "nenhuma planta válida" também diz o motivo;
+- **além do pedido:** no encosto automático, se uma implantação parou por orçamento e nenhuma deu planta, o erro diz que o orçamento esgotou. Antes dizia "não coube", sem prova;
+- o design (versão 1.8, seções 5.6 e 9) descreve o código, com nota de que o tema volta no M3 e no M7; o documento de teoria passa à versão 1.1.
+
+Status: Aprovada na DEC-0138; a forma do aviso e o item "além do pedido" são do Agente e aguardam o responsável.
+
+**DEC-0151 — `L-est` no registro de fontes e fonte secundária da NBR 13103**
+Data: 2026-11-24 · Sessão: S08 · Autor: Responsável (DEC-0140) / Agente (fonte) · Categoria: Dados
+Decisão:
+- `L-est` = decreto ou especificação estadual, no `data/README.md` (0.4), no `sources.yaml` e no código, com a mesma proibição de virar padrão nacional;
+- o link da cópia saiu dos 2 arquivos da D3 em que aparecia (5 ocorrências). Os valores confirmados pelas palestras passam a citá-las. Os que nenhuma fonte secundária confirma (19,5 m³, 100 + 100 cm², prisma de 4 m², escala do duto e outros) continuam com o texto da norma lido na D3, sem link.
+
+Consequências: um resultado de busca sugere uma nova edição da NBR 13103 em março de 2024, mas a página recusou a leitura. Não foi confirmado, e reforça a lacuna que a D3 já registrava.
+Status: Aprovada na DEC-0140; a escolha da fonte aguarda o responsável.
+
+### Pendências abertas (S08) — atualização 2
+
+- **Responsável:**
+  - confirmar o item "além do pedido" da DEC-0150 e a fonte da DEC-0151;
+  - a nota da D3 ainda aponta para um projeto de revisão da NBR 13103 ("descaracterizado", linha 107 na versão anterior): decidir se o critério da DEC-0140 vale também para ele;
+  - decidir se `L-est` inclui lei estadual, além de decreto e especificação.
+- **Agente, menores da revisão, sem bloquear a calibração 2:**
+  - o aviso não diz quantas plantas foram reprovadas quando isso contribui para o motivo;
+  - o aviso da rodada conta como um aviso a mais em cada planta na CLI;
+  - o limite de 20 tentativas não é validado contra `--k` nem aparece na CLI.
+- **Estado da tarefa:** **concluída**. Fica pronta para a calibração 2 (DEC-0146 a DEC-0148), que é o próximo passo no `cpsat.py`. As pendências anteriores da S08 continuam.

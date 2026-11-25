@@ -1,6 +1,6 @@
 # Dados de referência
 
-Versão: 0.3 · Atualizado em: 2026-11-22
+Versão: 0.4 · Atualizado em: 2026-11-24
 
 Dados curados que o motor lê como **conhecimento a priori**: valores padrão quando o usuário não informa algo. Todo valor tem **fonte, versão e data** (DEC-0024). A pesquisa completa que originou estes arquivos está em [docs/research/](../docs/research/).
 
@@ -17,14 +17,14 @@ Dados curados que o motor lê como **conhecimento a priori**: valores padrão qu
 
 ## Tipos de fonte (`kind`)
 
-`N` norma ABNT · `L-fed` lei federal · `L-mun` lei municipal (vale só na cidade) · `F` programa federal ou referência oficial de custo · `A` acadêmico · `P` prática, mercado, popular · `X` proposta do agente, sem fonte externa.
+`N` norma ABNT · `L-fed` lei federal · `L-mun` lei municipal (vale só na cidade) · `L-est` decreto ou especificação estadual (vale só no estado; mesmo tratamento de `L-mun`) · `F` programa federal ou referência oficial de custo · `A` acadêmico · `P` prática, mercado, popular · `X` proposta do agente, sem fonte externa.
 
 ## Regras
 
 1. **Citação obrigatória.** Todo número do catálogo (`min_width_mm`, `min_area_m2`, `comfort_area_m2`) tem uma entrada em `sources` que aponta para um `id` de `sources.yaml`. `load_catalog` recusa o arquivo sem isso, e `tests/test_data_registry.py` confere todas as citações de `data/`.
 2. **Sem número inventado.** Sem fonte, o campo fica vazio. Um valor derivado pelo agente usa a fonte `agente` (`X`) e precisa de fonte real antes de virar referência.
 3. **Normas pagas.** Guardamos só o valor e a citação; o texto da norma não entra no repositório.
-4. **Legislação municipal** entra como referência ou, no futuro, como perfil opcional, **nunca** como padrão nacional.
+4. **Legislação municipal ou estadual** (`L-mun`, `L-est`) entra como referência ou, no futuro, como perfil opcional, **nunca** como padrão nacional.
 5. **Preços** têm mês de referência (`reference_month`), abrangência (`scope`: UF, cidade ou média nacional) e tipo (`sinapi` ou `varejo`). Preço zerado é inválido. Varejo é amostra indicativa.
 6. **Versão:** cada arquivo tem `version` e `updated`; mudanças de valor são registradas no DECISOES.md.
 

@@ -9,9 +9,9 @@ from pydantic import BaseModel, ConfigDict
 DATA_DIR = Path(__file__).resolve().parents[3] / "data"
 DEFAULT_SOURCES_PATH = DATA_DIR / "sources.yaml"
 
-# N norma ABNT · L-fed lei federal · L-mun lei municipal · F programa federal
-# A acadêmico · P prática/popular · X proposta do agente (sem fonte externa)
-SourceKind = Literal["N", "L-fed", "L-mun", "F", "A", "P", "X"]
+# N norma ABNT · L-fed lei federal · L-mun lei municipal · L-est decreto ou especificação estadual
+# F programa federal · A acadêmico · P prática/popular · X proposta do agente (sem fonte externa)
+SourceKind = Literal["N", "L-fed", "L-mun", "L-est", "F", "A", "P", "X"]
 
 
 class Source(BaseModel):

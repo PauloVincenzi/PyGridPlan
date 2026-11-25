@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from pygridplan.export.dxf import export_dxf
 from pygridplan.export.report import write_report
-from pygridplan.generators.cpsat import DEFAULT_BATCHES, GenerationError, generate_alternatives
+from pygridplan.generators.cpsat import DEFAULT_BATCHES, FEWER_CODE, GenerationError, generate_alternatives
 from pygridplan.model.catalog import load_catalog
 from pygridplan.model.plan import load_plan, save_plan
 from pygridplan.model.request import load_request
@@ -66,6 +66,9 @@ def _generate(args: argparse.Namespace) -> int:
         save_plan(alt.plan, args.output / f"alt-{n}.json")
         export_dxf(alt.plan, args.output / f"alt-{n}.dxf", catalog)
         print(f"alt-{n}  nota {alt.score.total:.2f}".replace(".", ",") + f"  avisos {len(alt.warnings)}")
+    for issue in alternatives[0].warnings:
+        if issue.code == FEWER_CODE:
+            print(f"AVISO: {issue.message}", file=sys.stderr)
     write_report(alternatives, catalog, args.output / "report.html")
     print(f"{len(alternatives)} alternativas em {time.perf_counter() - start:.1f} s → {args.output / 'report.html'}")
     return 0

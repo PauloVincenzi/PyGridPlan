@@ -1,7 +1,7 @@
 # Registro de fontes dos dados de referência (DEC-0024, DEC-0074).
 # Toda citação em data/ (chaves `source` ou `sources`) aponta para um `id` daqui.
-# kind: N norma ABNT · L-fed lei federal · L-mun lei municipal · F programa federal
-#       A acadêmico · P prática/popular · X proposta do agente (sem fonte externa)
+# kind: N norma ABNT · L-fed lei federal · L-mun lei municipal · L-est decreto ou especificação estadual
+#       F programa federal · A acadêmico · P prática/popular · X proposta do agente (sem fonte externa)
 # Normas ABNT são pagas: os valores vêm de reproduções citadas em `note`; nenhum texto foi copiado.
 # Pesquisa completa: docs/research/Dados de referência para plantas.md
 sources:
